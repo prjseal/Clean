@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AssemblyVersion>4.0.0</AssemblyVersion>
-    <Version>4.0.0-rc1</Version>
+    <Version>4.0.0</Version>
     <InformationalVersion>4.0.0</InformationalVersion>
     <TargetFramework>net8.0</TargetFramework>
     <Authors>Paul Seal</Authors>
@@ -48,16 +48,12 @@
 
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="13.0.0" />
-    <PackageReference Include="Clean.Core" Version="4.0.0-rc1" />
+    <PackageReference Include="Clean.Core" Version="4.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />
 	<None Include="../README.md" Pack="true" PackPath="\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Clean.Core\Clean.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

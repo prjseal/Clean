@@ -1,3 +1,6 @@
+using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Extensions;
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.CreateUmbracoBuilder()

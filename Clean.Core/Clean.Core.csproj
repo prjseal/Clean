@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AssemblyVersion>4.0.0</AssemblyVersion>
-    <Version>4.0.0-rc1</Version>
+    <Version>4.0.0</Version>
     <InformationalVersion>4.0.0</InformationalVersion>
     <TargetFramework>net8.0</TargetFramework>
     <Authors>Paul Seal</Authors>
