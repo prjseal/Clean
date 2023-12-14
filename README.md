@@ -6,7 +6,7 @@ Latest Release Details:
 - Made it specifically for .NET 8 and above and Umbraco 13 and above
 - Removed dependency on Contentment
 
-To try it out on Windows, Mac or Linux, make sure you have [downloaded the latest .Net 6 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) and then run this block of commands in a folder somewhere.
+To try it out on Windows, Mac or Linux, make sure you have [downloaded the latest .Net 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) and then run this block of commands in a folder somewhere.
 
 ```ps
 # Ensure we have the latest Umbraco templates
