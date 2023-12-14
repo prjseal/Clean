@@ -1,0 +1,15 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/Clean.Core/bin/Debug/net5.0
+/Clean.Core/obj
+/Clean.Models/bin/Debug/net5.0
+/Clean.Models/obj
+/.vs
+/Clean/bin/Debug
+/Clean/obj
+/Clean.Core/bin/Debug
+/Clean.Models/bin/Debug
+/.idea
+/Clean.Site/Smidge
