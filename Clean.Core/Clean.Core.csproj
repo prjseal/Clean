@@ -21,19 +21,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Contentment\AuthorDataListSource.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Web.Website" Version="13.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Contentment\" />
   </ItemGroup>
 
 </Project>

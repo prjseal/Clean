@@ -21,11 +21,12 @@ namespace Clean.Core.Helpers
 
         private static string GetClassIfNotEmpty(string prefix, string value)
         {
-            if(!string.IsNullOrWhiteSpace(value))
+            if (string.IsNullOrWhiteSpace(value) || value == "Unset")
             {
-                return prefix + value;
+                return "";
             }
-            return "";
+
+            return prefix + value;
         }
     }
 }
