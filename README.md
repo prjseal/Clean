@@ -23,3 +23,6 @@ dotnet add "MyProject" package clean
 dotnet run --project "MyProject"
 #Running
 ```
+
+| :zap:        If you're looking for Clean for Umbraco V9-12, see [Clean Starter Kit](https://github.com/prjseal/Clean-Starter-Kit-for-Umbraco-v9)!   |
+|-----------------------------------------|
