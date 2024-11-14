@@ -22,6 +22,14 @@ namespace Umbraco.Cms.Web.Common.PublishedModels
 	/// <summary>SEO Controls</summary>
 	public partial interface ISEocontrols : IPublishedContent
 	{
+		/// <summary>Is Followable</summary>
+		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "13.0.0+9dfb300")]
+		bool IsFollowable { get; }
+
+		/// <summary>Is Indexable</summary>
+		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "13.0.0+9dfb300")]
+		bool IsIndexable { get; }
+
 		/// <summary>Meta Description</summary>
 		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "13.0.0+9dfb300")]
 		[global::System.Diagnostics.CodeAnalysis.MaybeNull]
@@ -68,6 +76,28 @@ namespace Umbraco.Cms.Web.Common.PublishedModels
 		}
 
 		// properties
+
+		///<summary>
+		/// Is Followable: Set this to true if you want the page to be followable by robots
+		///</summary>
+		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "13.0.0+9dfb300")]
+		[ImplementPropertyType("isFollowable")]
+		public virtual bool IsFollowable => GetIsFollowable(this, _publishedValueFallback);
+
+		/// <summary>Static getter for Is Followable</summary>
+		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "13.0.0+9dfb300")]
+		public static bool GetIsFollowable(ISEocontrols that, IPublishedValueFallback publishedValueFallback) => that.Value<bool>(publishedValueFallback, "isFollowable");
+
+		///<summary>
+		/// Is Indexable: Set this to true if you want this page to be indexable by robots
+		///</summary>
+		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "13.0.0+9dfb300")]
+		[ImplementPropertyType("isIndexable")]
+		public virtual bool IsIndexable => GetIsIndexable(this, _publishedValueFallback);
+
+		/// <summary>Static getter for Is Indexable</summary>
+		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "13.0.0+9dfb300")]
+		public static bool GetIsIndexable(ISEocontrols that, IPublishedValueFallback publishedValueFallback) => that.Value<bool>(publishedValueFallback, "isIndexable");
 
 		///<summary>
 		/// Meta Description: Enter the meta description for this page

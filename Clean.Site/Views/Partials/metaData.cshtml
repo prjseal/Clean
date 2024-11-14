@@ -7,6 +7,8 @@
     string metaName = Model.Value<string>("metaName");
     string metaDescription = Model.Value<string>("metaDescription");
     var metaKeywords = Model.Value<IEnumerable<string>>("metaKeywords");
+    bool isFollowable = Model.Value<bool>("isFollowable", fallback: Fallback.ToAncestors);
+    bool isIndexable = Model.Value<bool>("isIndexable", fallback: Fallback.ToAncestors);
 }
 
 <meta charset="utf-8" />
@@ -19,6 +21,7 @@
 <meta name="Description" content="@(metaDescription ?? @Model.Name)" />
 <meta name="Name" content="@metaName" />
 <meta name="Keywords" content="@string.Join(",", metaKeywords)" />
+<meta name="robots" content="@(isFollowable ? "FOLLOW," : "NOFOLLOW,")@(isIndexable ? "INDEX" : "NOINDEX")" />
 <link rel="canonical" href="@canonicalLink" />
 
 <meta property="og:type" content="article" />
