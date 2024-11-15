@@ -2,12 +2,14 @@
     "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
 
     "AuthorDetails": {
-        "Description": "Paul is an Umbraco Master and 5 x Umbraco MVP who loves making tutorials and small Umbraco packages.",
+        "Name": "Paul Seal",
+        "Description": "Paul is an Umbraco Master and 7 x Umbraco MVP who loves making tutorials and small Umbraco packages.",
         "Url": "http://codeshare.co.uk",
         "ImageUrl": "https://codeshare.co.uk/media/mkzbdrvf/paul-seal-profile-2019-square.jpg?anchor=center&mode=crop&width=500"
     },
     "Category": "Themes & Starter Kits",
-    "IssueTrackerUrl": "https://github.com/prjseal/Clean-Starter-Kit-for-Umbraco-v9/issues",
+    "Description": "A simple, clean blog starter kit for Umbraco",
+    "IssueTrackerUrl": "https://github.com/prjseal/Clean/issues",
     "LicenseTypes": ["Free"],
     "PackageType": "Package",
     "Tags": [
