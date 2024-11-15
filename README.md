@@ -1,4 +1,9 @@
-# Clean Starter Kit for Umbraco 13
+# Clean Starter Kit for Umbraco 13 and 15
+
+## version 4.1.0 is for Umbraco 13 (Long Term Support)
+
+## version 5.0.0 is for Umbraco 15 (Standard Term Support)
+
 
 If you want the older versions you need to go to the ones lower than version 4.0.0
 
