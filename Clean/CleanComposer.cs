@@ -1,5 +1,7 @@
-﻿using Umbraco.Cms.Core.Composing;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Infrastructure.Manifest;
 
 namespace Clean
 {
@@ -7,7 +9,7 @@ namespace Clean
     {
         public void Compose(IUmbracoBuilder builder)
         {
-            builder.ManifestFilters().Append<CleanManifestFilter>();
+            builder.Services.AddSingleton<IPackageManifestReader, CleanManifestReader>();
         }
     }
 }
