@@ -1,0 +1,62 @@
+{
+    "$schema": "https://json.schemastore.org/template.json",
+    "author": "Paul Seal",
+    "classifications": [
+      "Web",
+      "Umbraco",
+      "Package"
+    ],
+    "name": "Clean Umbraco Template",
+    "description": "A solution template for creating an Umbraco website with the Clean Bootstrap Theme Thingy",
+    "identity": "Clean.Template",
+    "shortName": "clean-template",
+    "tags": {
+      "language": "C#",
+      "type": "solution"
+    },
+    "sourceName": "Clean",
+    "defaultName": "Clean1",
+    "preferNameDirectory": true,
+    "sources": [
+      {
+        "modifiers": [
+          {
+            "exclude": [
+              "**/.git/**",
+              "**/.vs/**",
+              "Clean/**",
+              "Clean.sln",
+              "images/**",
+              "umbraco-marketplace.json",
+              "**/umbraco/**"
+            ]
+          }
+        ]
+      }
+    ],
+    "guids": [
+      "1920FD88-FF75-4B97-8F9D-9EAD34EAEEA0",
+      "9724AF4A-8568-4E1B-8511-08C426E9E4A8",
+      "F55CA369-982C-4AE8-A80A-095E692C1B06"
+    ],
+    "symbols": {
+      "httpPort": {
+        "type": "generated",
+        "generator": "port",
+        "parameters": {
+          "fallback": 5000
+        },
+        "replaces": "38357"
+      },
+      "httpsPort": {
+        "type": "generated",
+        "generator": "port",
+        "parameters": {
+          "low": 44300,
+          "high": 44399,
+          "fallback": 5001
+        },
+        "replaces": "44340"
+      }
+    }
+  }

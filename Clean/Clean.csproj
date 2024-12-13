@@ -47,7 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.Website" Version="15.0.0" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="15.1.1" />
     <PackageReference Include="Clean.Core" Version="5.0.0" />
   </ItemGroup>
 
