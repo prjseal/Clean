@@ -50,57 +50,11 @@ namespace Umbraco.Cms.Web.Common.PublishedModels
 		// properties
 
 		///<summary>
-		/// Is Approved
-		///</summary>
-		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "15.0.0+76ed170")]
-		[ImplementPropertyType("umbracoMemberApproved")]
-		public virtual bool UmbracoMemberApproved => this.Value<bool>(_publishedValueFallback, "umbracoMemberApproved");
-
-		///<summary>
 		/// Comments
 		///</summary>
 		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "15.0.0+76ed170")]
 		[global::System.Diagnostics.CodeAnalysis.MaybeNull]
 		[ImplementPropertyType("umbracoMemberComments")]
 		public virtual string UmbracoMemberComments => this.Value<string>(_publishedValueFallback, "umbracoMemberComments");
-
-		///<summary>
-		/// Failed Password Attempts
-		///</summary>
-		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "15.0.0+76ed170")]
-		[global::System.Diagnostics.CodeAnalysis.MaybeNull]
-		[ImplementPropertyType("umbracoMemberFailedPasswordAttempts")]
-		public virtual string UmbracoMemberFailedPasswordAttempts => this.Value<string>(_publishedValueFallback, "umbracoMemberFailedPasswordAttempts");
-
-		///<summary>
-		/// Last Lockout Date
-		///</summary>
-		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "15.0.0+76ed170")]
-		[global::System.Diagnostics.CodeAnalysis.MaybeNull]
-		[ImplementPropertyType("umbracoMemberLastLockoutDate")]
-		public virtual string UmbracoMemberLastLockoutDate => this.Value<string>(_publishedValueFallback, "umbracoMemberLastLockoutDate");
-
-		///<summary>
-		/// Last Login Date
-		///</summary>
-		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "15.0.0+76ed170")]
-		[global::System.Diagnostics.CodeAnalysis.MaybeNull]
-		[ImplementPropertyType("umbracoMemberLastLogin")]
-		public virtual string UmbracoMemberLastLogin => this.Value<string>(_publishedValueFallback, "umbracoMemberLastLogin");
-
-		///<summary>
-		/// Last Password Change Date
-		///</summary>
-		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "15.0.0+76ed170")]
-		[global::System.Diagnostics.CodeAnalysis.MaybeNull]
-		[ImplementPropertyType("umbracoMemberLastPasswordChangeDate")]
-		public virtual string UmbracoMemberLastPasswordChangeDate => this.Value<string>(_publishedValueFallback, "umbracoMemberLastPasswordChangeDate");
-
-		///<summary>
-		/// Is Locked Out
-		///</summary>
-		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "15.0.0+76ed170")]
-		[ImplementPropertyType("umbracoMemberLockedOut")]
-		public virtual bool UmbracoMemberLockedOut => this.Value<bool>(_publishedValueFallback, "umbracoMemberLockedOut");
 	}
 }
