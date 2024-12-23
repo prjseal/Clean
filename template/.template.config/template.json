@@ -6,10 +6,10 @@
       "Umbraco",
       "Package"
     ],
-    "name": "Clean Umbraco Template",
-    "description": "A solution template for creating an Umbraco website with the Clean Bootstrap Theme Thingy",
-    "identity": "Clean.Template",
-    "shortName": "clean-template",
+    "name": "Clean Starter Kit Template for Umbraco",
+    "description": "A solution template for creating an Umbraco website with the Clean Blog Bootstrap Theme",
+    "identity": "Umbraco.Community.Templates.Clean",
+    "shortName": "umbraco-starter-clean",
     "tags": {
       "language": "C#",
       "type": "solution"
@@ -29,6 +29,9 @@
               "images/**",
               "umbraco-marketplace.json",
               "**/umbraco/**"
+            ],
+            "CopyOnly": [
+             "Clean.Blog/uSync/**"
             ]
           }
         ]
@@ -37,7 +40,7 @@
     "guids": [
       "1920FD88-FF75-4B97-8F9D-9EAD34EAEEA0",
       "9724AF4A-8568-4E1B-8511-08C426E9E4A8",
-      "F55CA369-982C-4AE8-A80A-095E692C1B06"
+      "1361321B-8096-47BC-9DEE-DFC6A14E512B"
     ],
     "symbols": {
       "httpPort": {

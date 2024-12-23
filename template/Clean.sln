@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Clean.Models", "Clean.Model
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Clean", "Clean\Clean.csproj", "{2B71464C-99F3-4768-836A-792D81C89DB4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Clean.Site", "Clean.Site\Clean.Site.csproj", "{308C7195-A439-48A7-A730-709277435CB0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Clean.Blog", "Clean.Blog\Clean.Blog.csproj", "{308C7195-A439-48A7-A730-709277435CB0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

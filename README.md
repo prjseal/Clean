@@ -1,4 +1,4 @@
-# Clean Starter Kit for Umbraco 13
+# Clean Starter Kit for Umbraco 13 and 15
 
 ## version 4.1.0 is for Umbraco 13 (Long Term Support)
 
@@ -8,8 +8,20 @@ If you want the older versions you need to go to the ones lower than version 4.0
 
 Latest Release Details:
 - Now works on Umbraco 15 with dotnet 9
+- You can now use the dotnet new template to install Clean Starter Kit with the Source Code rather than as a package
 
 To try it out on Windows, Mac or Linux, make sure you have [downloaded the latest .Net 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) and then run this block of commands in a folder somewhere.
+
+## Install it using the dotnet template
+
+```ps
+# Ensure we have the latest Clean Starter Kit Template installed
+dotnet new install Umbraco.Community.Templates.Clean --force
+
+dotnet new umbraco-starter-clean -n MyProject
+```
+
+## Install it as a Package
 
 ### Install on Umbraco 15
 
