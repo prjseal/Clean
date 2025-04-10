@@ -24,6 +24,7 @@
     <Copy
       SourceFiles="@(CleanViewsFiles)"
       DestinationFiles="@(CleanViewsFiles->'$(MSBuildProjectDirectory)\Views\%(RecursiveDir)%(Filename)%(Extension)')"
+      Condition="!Exists('$(MSBuildProjectDirectory)\Views\%(RecursiveDir)%(Filename)%(Extension)')"
       SkipUnchangedFiles="true" />
   </Target>
   
