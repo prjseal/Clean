@@ -14,6 +14,7 @@
     <!-- Opt-in to app-local ICU to ensure consistent globalization APIs across different platforms -->
     <PackageReference Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.1" />
     <ProjectReference Include="..\Clean.Core\Clean.Core.csproj" />
+    <ProjectReference Include="..\Clean.Headless\Clean.Headless.csproj" />
     <ProjectReference Include="..\Clean.Models\Clean.Models.csproj" />
     <RuntimeHostConfigurationOption Include="System.Globalization.AppLocalIcu" Value="72.1.0.1" Condition="$(RuntimeIdentifier.StartsWith('linux')) or $(RuntimeIdentifier.StartsWith('win')) or ('$(RuntimeIdentifier)' == '' and !$([MSBuild]::IsOSPlatform('osx')))" />
   </ItemGroup>

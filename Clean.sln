@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Clean", "Clean\Clean.csproj
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Clean.Site", "Clean.Site\Clean.Site.csproj", "{308C7195-A439-48A7-A730-709277435CB0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clean.Headless", "Clean.Headless\Clean.Headless.csproj", "{8F13F421-266D-4AF9-9219-0F7782917107}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
