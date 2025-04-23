@@ -6,11 +6,14 @@
 /Clean.Core/obj
 /Clean.Models/bin/Debug/net5.0
 /Clean.Models/obj
+/Clean.Headless/bin/Debug/net5.0
+/Clean.Headless/obj
 /.vs
 /Clean/bin/Debug
 /Clean/obj
 /Clean.Core/bin/Debug
 /Clean.Models/bin/Debug
+/Clean.Headless/bin/Debug
 /.idea
 /Clean.Site/Smidge
 /Clean/bin
