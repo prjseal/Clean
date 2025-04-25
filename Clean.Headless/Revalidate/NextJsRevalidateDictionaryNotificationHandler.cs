@@ -19,6 +19,7 @@ namespace Clean.Headless.Revalidate
             ILogger<NextJsRevalidatePublishedNotificationHandler> logger)
         {
             _revalidateService = revalidateService;
+            _config = options.Value;
             _logger = logger;
         }
 
