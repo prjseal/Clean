@@ -2,8 +2,7 @@
 
 @{
     var homePage = Model.AncestorOrSelf<Home>();
-    string domainAddress = homePage.Url(mode:UrlMode.Absolute).TrimEnd('/');
-    string canonicalLink = domainAddress + Model.Url();
+    string canonicalLink = homePage.Url(mode:UrlMode.Absolute).TrimEnd('/');
     string metaName = Model.Value<string>("metaName");
     string metaDescription = Model.Value<string>("metaDescription");
     var metaKeywords = Model.Value<IEnumerable<string>>("metaKeywords");
