@@ -19,3 +19,5 @@
 /template/Clean/bin
 /template/Clean.Core/bin
 /template/Clean.Models/bin
+/template/Clean.Headless/bin
+/template/Clean.Headless/obj

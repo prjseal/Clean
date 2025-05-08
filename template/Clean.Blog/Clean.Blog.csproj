@@ -10,6 +10,7 @@
 	<ItemGroup>
 		<PackageReference Include="Umbraco.Cms" Version="15.1.1" />
 		<ProjectReference Include="..\Clean.Core\Clean.Core.csproj" />
+		<ProjectReference Include="..\Clean.Headless\Clean.Headless.csproj" />
 		<ProjectReference Include="..\Clean.Models\Clean.Models.csproj" />
 		<PackageReference Include="uSync" Version="15.1.0" />
 	</ItemGroup>

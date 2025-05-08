@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <AssemblyVersion>5.1.0</AssemblyVersion>
+        <Version>5.1.0</Version>
+        <InformationalVersion>5.1.0</InformationalVersion>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <Authors>Paul Seal</Authors>
+        <ContentTargetFolders>.</ContentTargetFolders>
+        <Product>Clean.Headless</Product>
+        <PackageId>Clean.Headless</PackageId>
+        <Title>Clean.Headless</Title>
+        <Description>Headless Extension for the Clean Starter Kit for Umbraco</Description>
+        <PackageTags>umbraco plugin package starter kit Clean core library headless</PackageTags>
+        <PackageProjectUrl>https://github.com/prjseal/Clean</PackageProjectUrl>
+        <PackageIcon>logo.png</PackageIcon>
+        <PackageIconUrl>https://github.com/prjseal/Clean/blob/master/images/logo.png?raw=true</PackageIconUrl>
+        <RepositoryUrl>https://github.com/prjseal/Clean</RepositoryUrl>
+        <RepositoryType>Git</RepositoryType>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Umbraco.Cms.Web.Website" Version="15.1.1" />
+        <PackageReference Include="Umbraco.Cms.Api.Common" Version="15.1.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Revalidate\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Clean.Models\Clean.Models.csproj" />
+    </ItemGroup>
+
+</Project>
