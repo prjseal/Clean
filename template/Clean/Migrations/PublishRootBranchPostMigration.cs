@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Migrations;
 
@@ -24,7 +25,7 @@ namespace Clean.Migrations
             var contentHome = _contentService.GetRootContent().FirstOrDefault(x => x.ContentType.Alias == "home");
             if (contentHome != null)
             {
-                _contentService.SaveAndPublishBranch(contentHome, true);
+                _contentService.PublishBranch(contentHome, PublishBranchFilter.All, new[] { "en-US" } );
             }
             else
             {
