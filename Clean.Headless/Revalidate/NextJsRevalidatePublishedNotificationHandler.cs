@@ -29,7 +29,7 @@ namespace Clean.Headless.Revalidate
         }
 
         private readonly string[] _allowedContentContentType =
-            new string[] { Content.ModelTypeAlias, Home.ModelTypeAlias, Contact.ModelTypeAlias, ArticleList.ModelTypeAlias, Article.ModelTypeAlias };
+            new string[] { "content", "home", "contact", "articleList", "article" };
 
         public async Task HandleAsync(ContentPublishedNotification notification, CancellationToken cancellationToken)
         {

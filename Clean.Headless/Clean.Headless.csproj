@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <AssemblyVersion>4.1.0</AssemblyVersion>
-        <Version>4.1.0</Version>
-        <InformationalVersion>4.1.0</InformationalVersion>
+        <AssemblyVersion>4.2.2</AssemblyVersion>
+        <Version>4.2.2</Version>
+        <InformationalVersion>4.2.2</InformationalVersion>
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
-        <Authors>Paul Seal</Authors>
+        <Authors>Paul Seal,Phil Whittaker</Authors>
         <ContentTargetFolders>.</ContentTargetFolders>
         <Product>Clean.Headless</Product>
         <PackageId>Clean.Headless</PackageId>
@@ -26,12 +26,13 @@
         <PackageReference Include="Umbraco.Cms.Api.Common" Version="13.0.0" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Revalidate\" />
-    </ItemGroup>
+	<ItemGroup>
+		<None Include="../images/logo.png" Pack="true" PackPath="\" />
+		<None Include="../README.md" Pack="true" PackPath="\" />
+	</ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\Clean.Models\Clean.Models.csproj" />
+	<ItemGroup>
+      <Folder Include="Revalidate\" />
     </ItemGroup>
 
 </Project>

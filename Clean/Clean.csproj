@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyVersion>4.1.0</AssemblyVersion>
-    <Version>4.1.0</Version>
-    <InformationalVersion>4.1.0</InformationalVersion>
+    <AssemblyVersion>4.2.2</AssemblyVersion>
+    <Version>4.2.2</Version>
+    <InformationalVersion>4.2.2</InformationalVersion>
     <TargetFramework>net8.0</TargetFramework>
     <Authors>Paul Seal</Authors>
     <ContentTargetFolders>.</ContentTargetFolders>
@@ -48,7 +48,8 @@
 
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="13.0.0" />
-    <PackageReference Include="Clean.Core" Version="4.1.0" />
+    <PackageReference Include="Clean.Core" Version="4.2.2" />
+	  <PackageReference Include="Clean.Headless" Version="4.2.2" />
   </ItemGroup>
 
   <ItemGroup>

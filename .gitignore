@@ -19,3 +19,5 @@
 /Clean/bin
 /Clean.Core/bin
 /Clean.Models/bin
+/Clean.Headless/bin/Release
+/Clean/wwwroot/media
