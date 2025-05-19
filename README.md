@@ -12,10 +12,11 @@ Latest Release Details:
 - Removed dependency on Contentment
 
 To try it out on Windows, Mac or Linux, make sure you have [downloaded the latest .Net 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) and then run this block of commands in a folder somewhere.
-```ps
+
 ## Umbraco 13
 ### NuGet Package
 
+```ps
 # Ensure we have the version specific Umbraco templates
 dotnet new install Umbraco.Templates::13.8.1 --force
 
