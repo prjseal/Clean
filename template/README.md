@@ -1,65 +1,102 @@
-# Clean Starter Kit for Umbraco 13 and 15
+# Clean Starter Kit for Umbraco 13, 15 and 16
 
 ## version 4.1.0 is for Umbraco 13 (Long Term Support)
 
 ## version 5.0.0 is for Umbraco 15 (Standard Term Support)
 
+## version 6.0.0 is for Umbraco 16 (Standard Term Support)
+
 If you want the older versions you need to go to the ones lower than version 4.0.0
 
 Latest Release Details:
 
-- Now works on Umbraco 15 with dotnet 9
-- You can now use the dotnet new template to install Clean Starter Kit with the Source Code rather than as a package
+- Made it specifically for .NET 8 and above and Umbraco 13 and above
+- Removed dependency on Contentment
 
-To try it out on Windows, Mac or Linux, make sure you have [downloaded the latest .Net 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) and then run this block of commands in a folder somewhere.
+To try it out on Windows, Mac or Linux, make sure you have [downloaded the latest .Net 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) and then run this block of commands in a folder somewhere.
 
-## Install it using the dotnet template
+## Umbraco 13
 
-```ps
-# Ensure we have the latest Clean Starter Kit Template installed
-dotnet new install Umbraco.Community.Templates.Clean --force
-
-dotnet new umbraco-starter-clean -n MyProject
-```
-
-## Install it as a Package
-
-### Install on Umbraco 15
-
-```ps
-# Ensure we have the latest Umbraco templates
-dotnet new install Umbraco.Templates::15.0.0 --force
-
-# Create solution/project
-dotnet new sln --name "MySolution"
-dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
-dotnet sln add "MyProject"
-
-#Add starter kit
-dotnet add "MyProject" package Clean --version 5.0.0
-
-#Add Packages
-#Ignored Clean as it was added as a starter kit
-
-dotnet run --project "MyProject"
-```
-
-### Install on Umbraco 13
+### NuGet Package
 
 ```ps
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::13.5.2 --force
+dotnet new install Umbraco.Templates::13.8.1 --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
-dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
+dotnet new umbraco --force -n "MyProject"  --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
 dotnet sln add "MyProject"
 
-#Add starter kit
-dotnet add "MyProject" package clean -version 4.1.0
+
+#Add Packages
+dotnet add "MyProject" package Clean --version 4.2.2
 
 dotnet run --project "MyProject"
 #Running
+```
+
+## Umbraco 15
+
+### NuGet Package
+
+```ps
+# Ensure we have the version specific Umbraco templates
+dotnet new install Umbraco.Templates::15.4.1 --force
+
+# Create solution/project
+dotnet new sln --name "MySolution"
+dotnet new umbraco --force -n "MyProject"  --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
+dotnet sln add "MyProject"
+
+
+#Add Packages
+dotnet add "MyProject" package Clean --version 5.2.2
+
+dotnet run --project "MyProject"
+#Running
+```
+
+### dotnet template
+
+```ps
+#Install the template for Clean Starter Kit
+dotnet new install Umbraco.Community.Templates.Clean::5.2.0 --force
+
+#Create a new project using the umbraco-starter-clean template
+dotnet new umbraco-starter-clean -n MyProject
+
+#Go to the folder of the project that we created
+cd MyProject
+
+#Run the new website we created
+dotnet run --project "MyProject.Blog"
+
+# Login with admin@example.com and 1234567890.
+# Save and publish the home page and do a save on one of the dictionary items in the translation section.
+# The site should be running and visible on the front end now
+```
+
+## Umbraco 16
+
+### dotnet template
+
+```ps
+#Install the template for Clean Starter Kit
+dotnet new install Umbraco.Community.Templates.Clean::6.0.0-rc3 --force
+
+#Create a new project using the umbraco-starter-clean template
+dotnet new umbraco-starter-clean -n MyProject
+
+#Go to the folder of the project that we created
+cd MyProject
+
+#Run the new website we created
+dotnet run --project "MyProject.Blog"
+
+# Login with admin@example.com and 1234567890.
+# Save and publish the home page and do a save on one of the dictionary items in the translation section.
+# The site should be running and visible on the front end now
 ```
 
 | :zap: If you're looking for Clean for Umbraco V9-12, see [Clean Starter Kit](https://github.com/prjseal/Clean-Starter-Kit-for-Umbraco-v9)! |
