@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <AssemblyVersion>6.0.0</AssemblyVersion>
-        <Version>6.0.0-rc2</Version>
+        <Version>6.0.0-rc3</Version>
         <InformationalVersion>6.0.0</InformationalVersion>
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
@@ -21,8 +21,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Umbraco.Cms.Web.Website" Version="16.0.0-rc3" />
-        <PackageReference Include="Umbraco.Cms.Api.Common" Version="16.0.0-rc3" />
+        <PackageReference Include="Umbraco.Cms.Web.Website" Version="16.0.0-rc4" />
+        <PackageReference Include="Umbraco.Cms.Api.Common" Version="16.0.0-rc4" />
     </ItemGroup>
 
     <ItemGroup>

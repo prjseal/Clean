@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AssemblyVersion>6.0.0</AssemblyVersion>
-    <Version>6.0.0-rc2</Version>
+    <Version>6.0.0-rc3</Version>
     <InformationalVersion>6.0.0</InformationalVersion>
     <TargetFramework>net9.0</TargetFramework>
     <Authors>Paul Seal</Authors>
@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.Website" Version="16.0.0-rc3" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="16.0.0-rc4" />
   </ItemGroup>
 
   <ItemGroup>
