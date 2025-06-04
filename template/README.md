@@ -79,6 +79,27 @@ dotnet run --project "MyProject.Blog"
 
 ## Umbraco 16
 
+### NuGet Package
+
+```ps
+# Ensure we have the version specific Umbraco templates
+dotnet new install Umbraco.Templates::16.0.0-rc4 --force
+
+# Create solution/project
+dotnet new sln --name "MySolution"
+dotnet new umbraco --force -n "MyProject"  --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
+dotnet sln add "MyProject"
+
+
+#Add Packages
+dotnet add "MyProject" package Clean --version 6.0.0-rc3
+
+dotnet run --project "MyProject"
+# Login with admin@example.com and 1234567890.
+# Save and publish the home page and do a save on one of the dictionary items in the translation section.
+# The site should be running and visible on the front end now
+```
+
 ### dotnet template
 
 ```ps
