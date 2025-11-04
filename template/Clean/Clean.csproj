@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<AssemblyVersion>6.0.0</AssemblyVersion>
-		<Version>6.0.0-rc3</Version>
-		<InformationalVersion>6.0.0</InformationalVersion>
-		<TargetFramework>net9.0</TargetFramework>
+		<AssemblyVersion>7.0.0</AssemblyVersion>
+		<Version>7.0.0-beta</Version>
+		<InformationalVersion>7.0.0</InformationalVersion>
+		<TargetFramework>net10.0</TargetFramework>
 		<Authors>Paul Seal</Authors>
 		<ContentTargetFolders>.</ContentTargetFolders>
 		<Product>Clean</Product>
