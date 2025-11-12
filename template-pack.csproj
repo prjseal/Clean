@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageVersion>7.0.0-rc1</PackageVersion>
+    <PackageType>Template</PackageType>
+    <PackageId>Umbraco.Community.Templates.Clean</PackageId>
+    <Title>Umbraco.Community.Templates.Clean</Title>
+    <Authors>Paul Seal</Authors>
+    <Description>Clean Starter Kit Template for Umbraco</Description>
+    <PackageTags>dotnet-new;templates;umbraco</PackageTags>
+    <TargetFramework>net10.0</TargetFramework>
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <NoDefaultExcludes>true</NoDefaultExcludes>
+    <Copyright>2025 © Paul Seal</Copyright>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/prjseal/Clean</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/prjseal/Clean</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="template\**\*" Exclude="template\**\bin\**;template\**\obj\**,template\.vs\**,template\**\created-packages\**" />
+    <Compile Remove="**\*" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="images\logo.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

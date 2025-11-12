@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyVersion>7.0.0</AssemblyVersion>
+    <Version>7.0.0-rc1</Version>
+    <InformationalVersion>7.0.0</InformationalVersion>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <Authors>Paul Seal,Phil Whittaker</Authors>
+    <ContentTargetFolders>.</ContentTargetFolders>
+    <Product>Clean.Headless</Product>
+    <PackageId>Clean.Headless</PackageId>
+    <Title>Clean.Headless</Title>
+    <Description>Headless Extension for the Clean Starter Kit for Umbraco</Description>
+    <PackageTags>umbraco plugin package starter kit Clean core library headless</PackageTags>
+    <PackageProjectUrl>https://github.com/prjseal/Clean</PackageProjectUrl>
+    <PackageIconUrl>https://github.com/prjseal/Clean/blob/master/images/logo.png?raw=true</PackageIconUrl>
+    <RepositoryUrl>https://github.com/prjseal/Clean</RepositoryUrl>
+    <RepositoryType>Git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="17.0.0-rc1" />
+    <PackageReference Include="Umbraco.Cms.Api.Common" Version="17.0.0-rc1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Revalidate\" />
+  </ItemGroup>
+</Project>
