@@ -1,5 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyVersion>7.0.0</AssemblyVersion>
     <Version>7.0.0-rc1</Version>
@@ -19,17 +18,13 @@
     <RepositoryType>Git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Web.Website" Version="17.0.0-rc1" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />
   </ItemGroup>
-
   <ItemGroup>
     <Folder Include="TagHelpers\" />
   </ItemGroup>
-
 </Project>

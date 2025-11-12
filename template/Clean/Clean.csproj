@@ -1,66 +1,54 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-	<PropertyGroup>
-		<AssemblyVersion>7.0.0</AssemblyVersion>
-		<Version>7.0.0-rc1</Version>
-		<InformationalVersion>7.0.0</InformationalVersion>
-		<TargetFramework>net10.0</TargetFramework>
-		<Authors>Paul Seal</Authors>
-		<ContentTargetFolders>.</ContentTargetFolders>
-		<Product>Clean</Product>
-		<PackageId>Clean</PackageId>
-		<Title>Clean</Title>
-		<Description>Clean Starter Kit for Umbraco</Description>
-		<PackageProjectUrl>https://github.com/prjseal/Clean</PackageProjectUrl>
-		<PackageIcon>logo.png</PackageIcon>
-		<PackageIconUrl>https://github.com/prjseal/Clean/blob/master/images/logo.png?raw=true</PackageIconUrl>
-		<RepositoryUrl>https://github.com/prjseal/Clean</RepositoryUrl>
-		<RepositoryType>Git</RepositoryType>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageTags>umbraco;umbraco-marketplace;clean;starter;kit;starterkit</PackageTags>
-	</PropertyGroup>
-
-	<ItemGroup>
-		<None Include="build\**\*.*">
-			<Pack>True</Pack>
-			<PackagePath>buildTransitive</PackagePath>
-		</None>
-
-		<Content Include="wwwroot\**\*.*">
-			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
-		</Content>
-
-		<None Remove="Views\Components\Contact\default.cshtml" />
-
-		<Content Include="Views\**\*.*">
-			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
-		</Content>
-
-		<None Remove="Migrations\package.zip" />
-
-		<None Remove="Views\Components\Pagination\default.cshtml" />
-		<EmbeddedResource Include="Migrations\package.zip" />
-
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Umbraco.Cms.Web.Website" Version="17.0.0-rc1" />
-		<PackageReference Include="Clean.Core" Version="7.0.0-rc1" />
-		<PackageReference Include="Clean.Headless" Version="7.0.0-rc1" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Include="../images/logo.png" Pack="true" PackPath="\" />
-		<None Include="../README.md" Pack="true" PackPath="\" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Content Update="Views\Components\Pagination\Default.cshtml">
-			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-		</Content>
-	</ItemGroup>
-	
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyVersion>7.0.0</AssemblyVersion>
+    <Version>7.0.0-rc1</Version>
+    <InformationalVersion>7.0.0</InformationalVersion>
+    <TargetFramework>net10.0</TargetFramework>
+    <Authors>Paul Seal</Authors>
+    <ContentTargetFolders>.</ContentTargetFolders>
+    <Product>Clean</Product>
+    <PackageId>Clean</PackageId>
+    <Title>Clean</Title>
+    <Description>Clean Starter Kit for Umbraco</Description>
+    <PackageProjectUrl>https://github.com/prjseal/Clean</PackageProjectUrl>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageIconUrl>https://github.com/prjseal/Clean/blob/master/images/logo.png?raw=true</PackageIconUrl>
+    <RepositoryUrl>https://github.com/prjseal/Clean</RepositoryUrl>
+    <RepositoryType>Git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>umbraco;umbraco-marketplace;clean;starter;kit;starterkit</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="build\**\*.*">
+      <Pack>True</Pack>
+      <PackagePath>buildTransitive</PackagePath>
+    </None>
+    <Content Include="wwwroot\**\*.*">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
+    <None Remove="Views\Components\Contact\default.cshtml" />
+    <Content Include="Views\**\*.*">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
+    <None Remove="Migrations\package.zip" />
+    <None Remove="Views\Components\Pagination\default.cshtml" />
+    <EmbeddedResource Include="Migrations\package.zip" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="17.0.0-rc1" />
+    <PackageReference Include="Clean.Core" Version="7.0.0-rc1" />
+    <PackageReference Include="Clean.Headless" Version="7.0.0-rc1" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../images/logo.png" Pack="true" PackPath="\" />
+    <None Include="../README.md" Pack="true" PackPath="\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="Views\Components\Pagination\Default.cshtml">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
 </Project>
