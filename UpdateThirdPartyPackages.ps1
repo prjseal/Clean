@@ -40,12 +40,25 @@ param(
 
 # ----------------------------- Utilities -----------------------------
 function Write-Log {
-  param([string]$Message, [string]$Level = 'INFO')
-  $ts = (Get-Date).ToString('s')
-  Write-Host ('[{0}] [{1}] {2}' -f $ts, $Level, $Message)
+    param(
+        [string]$Prefix,
+        [string]$Value,
+        [string]$Suffix,
+        [ValidateSet("Black","DarkBlue","DarkGreen","DarkCyan","DarkRed","DarkMagenta","DarkYellow","Gray","DarkGray","Blue","Green","Cyan","Red","Magenta","Yellow","White")]
+        [string]$ValueColor = "White",
+        [string]$Level = 'INFO'
+    )
+
+    $ts = (Get-Date).ToString('s')
+    Write-Host "[${ts}] [$Level] " -NoNewline
+    if ($Prefix) { Write-Host $Prefix -NoNewline }
+    if ($Value) { Write-Host $Value -ForegroundColor $ValueColor -NoNewline }
+    if ($Suffix) { Write-Host $Suffix -NoNewline }
+    Write-Host ""  # Move to next line
 }
+
+
 function Fail-Fast {
-  param([string]$Message)
   Write-Log $Message "ERROR"
   exit 1
 }
@@ -102,7 +115,7 @@ function Stop-TemplateProcesses {
     Write-Log "No running template-related processes detected."
     return
   }
-  Write-Log ("Found {0} template-related process(es) to stop..." -f $procs.Count)
+Write-Log -Prefix "Found " -Value $procs.Count -ValueColor Cyan -Suffix " template-related process(es) to stop..."
   foreach ($p in $procs) {
     try {
       Write-Log ("Stopping PID {0} '{1}' (soft)" -f $p.ProcessId, $p.Name)
@@ -425,7 +438,7 @@ $csprojFiles = Get-ChildItem -Path $templatePath -Filter *.csproj -Recurse -File
 if ($csprojFiles.Count -eq 0) {
   Fail-Fast ("No .csproj files found in '{0}'." -f $templatePath)
 }
-Write-Log ('Found {0} csproj files.' -f $csprojFiles.Count)
+Write-Log -Prefix "Found " -Value $csprojFiles.Count -ValueColor Cyan -Suffix " csproj files."
 
 $versionCache  = @{}
 $updateResults = @()
@@ -465,29 +478,16 @@ foreach ($result in $updateResults) {
     }
 }
 
-Write-Host ("`n===== PACKAGE UPDATE RESULTS =====")
-if ($packageChanges.Count -gt 0) {
-
-$sorted = $packageChanges |
-    Sort-Object `
-        @{ Expression = 'File Name';    Ascending = $true }, `
-        @{ Expression = 'Package Name'; Ascending = $true }
-
-    Write-AsciiTable -Rows $sorted `
-                     -Headers @('File Name','Package Name','Old Version','New Version') `
-                     -AlignRight @('Old Version','New Version')
-} else {
-    Write-Host "No packages to update" -ForegroundColor DarkGray
-}
 
 # ------------------------------ BUILD SECTION -----------------------------
 
 Write-Log ('Scanning for sln files...')
 $slnFiles = Get-ChildItem -Path $RootPath -Filter *.sln -Recurse -File
-Write-Log ('Found {0} sln files.' -f $slnFiles.Count)
+Write-Log -Prefix "Found " -Value $slnFiles.Count -ValueColor Cyan -Suffix " sln files."
 
 $buildResults = @()
 $timestamp = (Get-Date).ToString('yyyyMMdd_HHmmss')
+$buildSummaryRows = New-Object System.Collections.Generic.List[object]
 
 foreach ($sln in $slnFiles) {
     $slnName = [System.IO.Path]::GetFileNameWithoutExtension($sln.FullName)
@@ -504,10 +504,23 @@ foreach ($sln in $slnFiles) {
     $cleanCmd = ('clean "{0}" -clp:Summary -v:m' -f $sln.FullName)
     $cleanResult = Run-DotNet -Command $cleanCmd -Path $sln.DirectoryName -DryRunFlag:$DryRun -StdOutFile $stdoutClean -StdErrFile $stderrClean
 
+    if($cleanResult.Success) {
+        Write-Log ('Clean succeeded for {0}' -f $sln.Name)
+    } else {
+        Write-Log ('Clean FAILED for {0}' -f $sln.Name) "WARN"
+    }
+
     # BUILD (no binlog per your preference)
     Write-Log ('Building {0}' -f $sln.FullName)
     $buildCmd = ('build "{0}" -clp:Summary -v:m' -f $sln.FullName)
     $buildResult = Run-DotNet -Command $buildCmd -Path $sln.DirectoryName -DryRunFlag:$DryRun -StdOutFile $stdoutBuild -StdErrFile $stderrBuild
+
+    if($buildResult.Success) {
+        Write-Log ('Build succeeded for {0}' -f $sln.Name)
+    } else {
+        Write-Log ('Build FAILED for {0}' -f $sln.Name) "WARN"
+    }
+
 
     # Extract top error lines from both streams
     $errorLines = @(
@@ -526,10 +539,43 @@ foreach ($sln in $slnFiles) {
         ErrorLines   = $errorLines
     }
 
-    # Inline summary per solution
-    $status = if ($buildResult.Success) { "SUCCESS" } else { "FAILED" }
-    $color  = if ($buildResult.Success) { "Green" } else { "Red" }
-    Write-Host ('{0}: {1} (ExitCode={2})' -f $slnName, $status, $buildResult.ExitCode) -ForegroundColor $color
+    
+    # --- Parse Errors/Warnings from build output ---
+    # Prefer the MSBuild summary counts; fallback to counting diagnostics if missing.
+    $combinedOut = ($buildResult.StdOut + "`n" + $buildResult.StdErr)
+
+    # Try summary-style extraction first (e.g., "X Warning(s)", "Y Error(s)")
+    $errCount = 0
+    $warnCount = 0
+
+    $errSummaryMatch = [regex]::Match($combinedOut, '(?mi)^\s*(\d+)\s+Error\(s\)')
+    $warnSummaryMatch = [regex]::Match($combinedOut, '(?mi)^\s*(\d+)\s+Warning\(s\)')
+
+    if ($errSummaryMatch.Success) { $errCount = [int]$errSummaryMatch.Groups[1].Value }
+    if ($warnSummaryMatch.Success) { $warnCount = [int]$warnSummaryMatch.Groups[1].Value }
+
+    # Fallback: count diagnostics if summary lines are not found
+    if (-not $errSummaryMatch.Success) {
+        $errCount = ([regex]::Matches($combinedOut, '(?i)(^|\s)error\s[A-Z]?\d{3,}\b')).Count
+    }
+    if (-not $warnSummaryMatch.Success) {
+        $warnCount = ([regex]::Matches($combinedOut, '(?i)(^|\s)warning\s[A-Z]?\d{3,}\b')).Count
+    }
+
+    
+    $buildSummaryRows.Add([pscustomobject]@{
+        'Solution Name' = [System.IO.Path]::GetFileName($sln.FullName)
+        'Clean Result'  = if ($cleanResult.Success) { 'Success' } else { 'Failed' }
+        'Build Result'  = if ($buildResult.Success) { 'Success' } else { 'Failed' }
+        'Errors'        = $errCount
+        'Warnings'      = $warnCount
+    })
+
+
+    # # Inline summary per solution
+    # $status = if ($buildResult.Success) { "SUCCESS" } else { "FAILED" }
+    # $color  = if ($buildResult.Success) { "Green" } else { "Red" }
+    # Write-Host ('{0}: {1} (ExitCode={2})' -f $slnName, $status, $buildResult.ExitCode) -ForegroundColor $color
 
     if (-not $buildResult.Success) {
         if ($cleanResult.Success -eq $false) {
@@ -548,19 +594,7 @@ foreach ($sln in $slnFiles) {
         Write-Host ("  Full logs:") -ForegroundColor Yellow
         Write-Host ("    StdOut: {0}" -f $stdoutBuild)
         Write-Host ("    StdErr: {0}" -f $stderrBuild)
-    } else {
-        Write-Host ("  Logs: {0}, {1}" -f $stdoutBuild, $stderrBuild)
     }
-}
-
-Write-Host ("`n===== BUILD RESULTS =====")
-foreach ($br in $buildResults) {
-    $slnName = [System.IO.Path]::GetFileName($br.Solution)
-    $status = if ($br.BuildSuccess) { "SUCCESS" } else { "FAILED" }
-    $color  = if ($br.BuildSuccess) { "Green" } else { "Red" }
-    Write-Host ('{0}: {1} (ExitCode={2})' -f $slnName, $status, $br.ExitCode) -ForegroundColor $color
-    Write-Host ('  StdOut: {0}' -f $br.StdOutFile)
-    Write-Host ('  StdErr: {0}' -f $br.StdErrFile)
 }
 
 # Proactively stop running app instances that could lock bin/obj
@@ -570,3 +604,39 @@ if ($KillRunning) {
 }
 
 Write-Log "Package update script completed."
+
+# Write-Host ("`n===== BUILD RESULTS =====")
+# foreach ($br in $buildResults) {
+#     $slnName = [System.IO.Path]::GetFileName($br.Solution)
+#     $status = if ($br.BuildSuccess) { "SUCCESS" } else { "FAILED" }
+#     $color  = if ($br.BuildSuccess) { "Green" } else { "Red" }
+#     Write-Host ('{0}: {1} (ExitCode={2})' -f $slnName, $status, $br.ExitCode) -ForegroundColor $color
+#     Write-Host ('  StdOut: {0}' -f $br.StdOutFile)
+#     Write-Host ('  StdErr: {0}' -f $br.StdErrFile)
+# }
+
+Write-Host "`n===== PACKAGE UPDATE RESULTS ====="
+if ($packageChanges.Count -gt 0) {
+
+$sorted = $packageChanges |
+    Sort-Object `
+        @{ Expression = 'File Name';    Ascending = $true }, `
+        @{ Expression = 'Package Name'; Ascending = $true }
+
+    Write-AsciiTable -Rows $sorted `
+                     -Headers @('File Name','Package Name','Old Version','New Version') `
+                     -AlignRight @('Old Version','New Version')
+} else {
+    Write-Host "No packages to update" -ForegroundColor DarkGray
+}
+Write-Host ""
+
+Write-Host "`n===== BUILD SUMMARY ====="
+if ($buildSummaryRows.Count -gt 0) {
+    $summarySorted = $buildSummaryRows | Sort-Object 'Solution Name'
+    Write-AsciiTable -Rows $summarySorted `
+        -Headers @('Solution Name','Clean Result','Build Result','Errors','Warnings') `
+        -AlignRight @('Errors','Warnings')
+} else {
+    Write-Host "(no solutions found)" -ForegroundColor DarkGray
+}
