@@ -1,225 +1,572 @@
 <#
 .SYNOPSIS
-  Update Umbraco/uSync NuGet packages in the template folder, optionally include prerelease, build, and run Clean.Blog.
-.DESCRIPTION
-Scans for .csproj files in the template folder and updates Umbraco/uSync packages
-Queries NuGet for latest (or prerelease) versions
-Updates csproj files, builds solutions, and runs Clean.Blog project
-Outputs results as color-coded lists
+ Update NuGet packages in the 'template' folder, optionally include prerelease, build, and run Clean.Blog.
+ Outputs a console table of package updates and detailed per-solution diagnostics (stdout/stderr and inline error summaries).
+
+.PARAMETER RootPath
+ Repository root. The script expects a 'template' subfolder under this path.
+
+.PARAMETER DryRun
+ If set, no files are changed and no dotnet commands are executed (logic still runs).
+
+.PARAMETER IncludePrerelease
+ If set, uses latest including prerelease versions; otherwise uses latest stable where possible.
+
+.PARAMETER IgnorePackages
+ Exact package IDs to skip (case-insensitive). Example: -IgnorePackages "Newtonsoft.Json","Microsoft.NET.Test.Sdk"
+
+.PARAMETER IgnorePatterns
+ One or more regex patterns applied to package IDs (case-insensitive). Example: -IgnorePatterns "^Microsoft\.", "Analyzers$"
+
+.PARAMETER InternalPackages
+ Exact package IDs considered internal (skip updating), case-insensitive.
+
+.PARAMETER InternalPatterns
+ Regex patterns to identify internal packages (skip updating), case-insensitive.
+
+.PARAMETER KillRunning
+ If set, the script will stop any running processes that appear to be executing from the template folder (e.g., Clean.Blog, dotnet with that path) before building.
 #>
 param(
-    [string]$RootPath = (Get-Location).Path,
-    [switch]$DryRun,
-    [switch]$IncludePrerelease
+  [string]$RootPath = (Get-Location).Path,
+  [switch]$DryRun,
+  [switch]$IncludePrerelease,
+  [string[]]$IgnorePackages   = @(),
+  [string[]]$IgnorePatterns   = @(),
+  [string[]]$InternalPackages = @(),
+  [string[]]$InternalPatterns = @(),
+  [switch]$KillRunning
 )
 
+# ----------------------------- Utilities -----------------------------
 function Write-Log {
-    param([string]$Message, [string]$Level = 'INFO')
-    $ts = (Get-Date).ToString('s')
-    Write-Host "[$ts] [$Level] $Message"
+  param([string]$Message, [string]$Level = 'INFO')
+  $ts = (Get-Date).ToString('s')
+  Write-Host ('[{0}] [{1}] {2}' -f $ts, $Level, $Message)
 }
-
 function Fail-Fast {
-    param([string]$Message)
-    Write-Log $Message "ERROR"
-    exit 1
+  param([string]$Message)
+  Write-Log $Message "ERROR"
+  exit 1
+}
+function Ensure-Directory {
+  param(
+    [Parameter(Mandatory)]
+    [string]$Path
+  )
+  try {
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+      throw "Path argument is null or whitespace."
+    }
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+      New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    }
+    $resolved = Resolve-Path -LiteralPath $Path -ErrorAction Stop
+    return $resolved.Path
+  }
+  catch {
+    Write-Log ("Failed to ensure directory '{0}': {1}" -f $Path, $_.Exception.Message) "ERROR"
+    throw
+  }
 }
 
-function Get-LatestNuGetVersion {
-    param(
-        [string]$packageId,
-        [ref]$cache,
-        [switch]$IncludePrerelease
-    )
-    if ($cache.Value.ContainsKey($packageId.ToLower())) {
-        return $cache.Value[$packageId.ToLower()]
+# ---------------- Process discovery/termination (NEW) -----------------
+function Get-TemplateProcesses {
+  param(
+    [Parameter(Mandatory)][string]$TemplatePath,
+    [string[]]$PreferredNames = @('Clean.Blog') # add more exe names here if helpful
+  )
+  # Use CIM so we can filter on CommandLine reliably
+  $tpl = $TemplatePath.ToLowerInvariant()
+  try {
+    $procs = Get-CimInstance Win32_Process | Where-Object {
+      # Either the command line references the template folder, or the process name is one we know
+      ($_.CommandLine -and $_.CommandLine.ToLower().Contains($tpl)) -or
+      ($PreferredNames -and ($PreferredNames -contains $_.Name))
     }
-    $lowerId = $packageId.ToLower()
-    $url = "https://api.nuget.org/v3-flatcontainer/$lowerId/index.json" 
+    return $procs
+  } catch {
+    Write-Log ("Failed to enumerate processes: {0}" -f $_.Exception.Message) "WARN"
+    return @()
+  }
+}
+
+function Stop-TemplateProcesses {
+  param(
+    [Parameter(Mandatory)][string]$TemplatePath,
+    [int]$GraceMs = 1500,
+    [string[]]$PreferredNames = @('Clean.Blog')
+  )
+  $procs = Get-TemplateProcesses -TemplatePath $TemplatePath -PreferredNames $PreferredNames
+  if (-not $procs -or $procs.Count -eq 0) {
+    Write-Log "No running template-related processes detected."
+    return
+  }
+  Write-Log ("Found {0} template-related process(es) to stop..." -f $procs.Count)
+  foreach ($p in $procs) {
     try {
-        Write-Log "Querying NuGet for ${packageId}"
-        $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 10 -ErrorAction Stop
-        if (-not $resp.versions) {
-            Write-Log "No versions found for ${packageId}" "WARN"
-            $cache.Value[$lowerId] = $null
-            return $null
+      Write-Log ("Stopping PID {0} '{1}' (soft)" -f $p.ProcessId, $p.Name)
+      Stop-Process -Id $p.ProcessId -ErrorAction SilentlyContinue
+    } catch { }
+  }
+  Start-Sleep -Milliseconds $GraceMs
+  # Force kill anything still running
+  foreach ($p in Get-TemplateProcesses -TemplatePath $TemplatePath -PreferredNames $PreferredNames) {
+    try {
+      Write-Log ("Killing PID {0} '{1}' (hard)" -f $p.ProcessId, $p.Name) "WARN"
+      Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+    } catch { }
+  }
+}
+
+# ----------------------- Console ASCII Table Helper -------------------
+function Write-AsciiTable {
+<#
+      .SYNOPSIS
+        Renders a simple ASCII table with borders, similar to benchmarking tools.
+      .PARAMETER Rows
+        Enumerable of objects that share the same property names as the headers.
+      .PARAMETER Headers
+        Ordered list of headers (strings) that map to property names in each row.
+      .PARAMETER AlignRight
+        Property names to right-align (e.g., versions).
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IEnumerable]$Rows,
+        [Parameter(Mandatory)]
+        [string[]]$Headers,
+        [string[]]$AlignRight = @()
+    )
+
+    $rowsArray = @($Rows)
+    if ($rowsArray.Count -eq 0) {
+        Write-Host "(no rows)" -ForegroundColor DarkGray
+        return
+    }
+
+    $columns = foreach ($h in $Headers) {
+        [pscustomobject]@{
+            Name  = $h
+            Width = [math]::Max($h.Length, 1)
+            Align = $(if ($AlignRight -contains $h) { 'Right' } else { 'Left' })
         }
-        $versions = $resp.versions | ForEach-Object { $_ }
-        if (-not $IncludePrerelease) {
-            $stable = $versions | Where-Object { $_ -notmatch '-' }
-            $chosen = if ($stable.Count -gt 0) { $stable[-1] } else { $versions[-1] }
+    }
+
+    foreach ($row in $rowsArray) {
+        foreach ($col in $columns) {
+            $val = $row | Select-Object -ExpandProperty $col.Name
+            if ($val.Length -gt $col.Width) { $col.Width = $val.Length }
+        }
+    }
+
+    function Border($columns) {
+        $parts = @('+')
+        foreach ($c in $columns) {
+            $parts += ('{0}' -f ('-' * ($c.Width + 2)))
+            $parts += '+'
+        }
+        return ($parts -join '')
+    }
+
+    function Cell($text, $width, $align) {
+        $text = [string]$text
+        $w = [int]$width
+        if ($align -eq 'Right') {
+            return ((' {0,'  + $w + '} ') -f $text)
         } else {
-            $chosen = $versions[-1]
+            return ((' {0,-' + $w + '} ') -f $text)
         }
-        $cache.Value[$lowerId] = $chosen
-        return $chosen
-    } catch {
-        Write-Log "Failed to query NuGet for ${packageId}: $($_.Exception.Message)" "ERROR"
-        return $null
     }
+
+    $top    = Border $columns
+    $header = '|' + ($columns | ForEach-Object { Cell $_.Name $_.Width 'Left' }) -join '|' + '|'
+    $sep    = Border $columns
+
+    Write-Host $top
+    Write-Host $header
+    Write-Host $sep
+
+    $lastFile = ''
+    foreach ($row in $rowsArray) {
+        $file = $row.'File Name'
+        if ($lastFile -ne '' -and $file -ne $lastFile) {
+            Write-Host $sep
+        }
+        $lastFile = $file
+
+        $lineParts = @('|')
+        foreach ($c in $columns) {
+            $val = $row | Select-Object -ExpandProperty $c.Name
+            $lineParts += (Cell $val $c.Width $c.Align)
+            $lineParts += '|'
+        }
+        Write-Host ($lineParts -join '')
+    }
+
+    Write-Host $top
 }
 
+# ------------------------- NuGet Version Helper -----------------------
+function Get-LatestNuGetVersion {
+  param(
+    [string]$packageId,
+    [hashtable]$cache,
+    [switch]$IncludePrerelease
+  )
+  if (-not ($cache -is [hashtable])) {
+    throw "cache parameter must be a [hashtable]"
+  }
+  $key = $packageId.ToLower()
+  if ($cache.ContainsKey($key)) {
+    return $cache[$key]
+  }
+  $url = ('https://api.nuget.org/v3-flatcontainer/{0}/index.json' -f $key)
+  try {
+    Write-Log ('Querying NuGet for {0}' -f $packageId)
+    $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 20 -ErrorAction Stop
+    $versions = @($resp.versions | ForEach-Object { [string]$_ })
+    if ($versions.Count -eq 0) {
+      Write-Log ('No versions found for {0}' -f $packageId) "WARN"
+      $cache[$key] = $null
+      return $null
+    }
+    if ($IncludePrerelease) {
+      $chosen = $versions[-1]
+    } else {
+      $stable = @($versions | Where-Object { $_ -notmatch '-' })
+      $chosen = if ($stable.Count -gt 0) { $stable[-1] } else { $versions[-1] }
+    }
+    $cache[$key] = $chosen
+    return $chosen
+  }
+  catch {
+    Write-Log ('Failed to query NuGet for {0}: {1}' -f $packageId, $_.Exception.Message) "ERROR"
+    return $null
+  }
+}
+
+# ---------------------- .csproj Package Updating ----------------------
 function Update-Csproj-PackageReferences {
-    param(
-        [string]$csprojPath,
-        [ref]$versionCache,
-        [switch]$DryRunFlag,
-        [switch]$IncludePrerelease
-    )
-    $result = [ordered]@{
-        Path     = $csprojPath
-        Updated  = $false
-        Changes  = @()
-        Errors   = @()
-    }
-    try {
-        [xml]$xml = Get-Content -Path $csprojPath -Raw
-    } catch {
-        $result.Errors += "Failed to read XML: $($_.Exception.Message)"
-        return $result
-    }
-    $pattern = '^(?i)^(Umbraco\..*|uSync|usync)$'
-    $prNodes = $xml.SelectNodes("//PackageReference")
-    foreach ($pr in $prNodes) {
-        $pkgId = $pr.Include
-        if (-not $pkgId) { continue }
-        if ($pkgId -match $pattern) {
-            $existingVersion = if ($pr.HasAttribute("Version")) { $pr.Version } else {
-                ($pr.SelectSingleNode("Version")).InnerText
-            }
-            $latest = Get-LatestNuGetVersion -packageId $pkgId -cache ([ref]$versionCache.Value) -IncludePrerelease:$IncludePrerelease
-            if (-not $latest) { continue }
-            if ($existingVersion -and ($existingVersion -ieq $latest)) { continue }
-            if (-not $DryRunFlag) {
-                if ($pr.HasAttribute("Version")) {
-                    $pr.SetAttribute("Version", $latest)
-                } else {
-                    $verNode = $pr.SelectSingleNode("Version")
-                    if ($verNode) {
-                        $verNode.InnerText = $latest
-                    } else {
-                        $verNode = $xml.CreateElement("Version")
-                        $verNode.InnerText = $latest
-                        $pr.AppendChild($verNode) | Out-Null
-                    }
-                }
-            }
-            $result.Updated = $true
-            $result.Changes += [ordered]@{
-                Package     = $pkgId
-                OldVersion  = $existingVersion
-                NewVersion  = $latest
-            }
-        }
-    }
-    if ($result.Updated -and -not $DryRunFlag) {
-        try { $xml.Save($csprojPath) }
-        catch { $result.Errors += "Failed to save XML: $($_.Exception.Message)" }
-    }
+  param(
+    [string]$csprojPath,
+    [hashtable]$versionCache,
+    [switch]$DryRunFlag,
+    [switch]$IncludePrerelease,
+    [string[]]$IgnorePackages   = @(),
+    [string[]]$IgnorePatterns   = @(),
+    [string[]]$InternalPackages = @(),
+    [string[]]$InternalPatterns = @()
+  )
+
+  $result = [ordered]@{
+    Path    = $csprojPath
+    Updated = $false
+    Changes = @()
+    Errors  = @()
+  }
+
+  try { [xml]$xml = Get-Content -Path $csprojPath -Raw }
+  catch {
+    $result.Errors += ('Failed to read XML: {0}' -f $_.Exception.Message)
     return $result
+  }
+
+  # Consider ALL PackageReference nodes
+  $prNodes = $xml.SelectNodes("//PackageReference")
+  foreach ($pr in $prNodes) {
+    $pkgId = $pr.Include
+    if (-not $pkgId) { continue }
+
+    # Only attempt updates if there is a Version *attribute* (skip <Version> child and CPM)
+    if (-not $pr.HasAttribute("Version")) { continue }
+
+    # ---- EARLY SKIPS: DO NOT call NuGet for any of the following ----
+
+    $idLower = $pkgId.ToLowerInvariant()
+
+    # Ignore: exact
+    $ignoredByExact = $false
+    if ($IgnorePackages.Count -gt 0) {
+      $ignoredByExact = $IgnorePackages |
+        ForEach-Object { $_.ToLowerInvariant() } |
+        Where-Object { $_ -eq $idLower } |
+        Select-Object -First 1
+    }
+
+    # Ignore: regex
+    $ignoredByPattern = $false
+    foreach ($pat in $IgnorePatterns) {
+      if ([string]::IsNullOrWhiteSpace($pat)) { continue }
+      if ($pkgId -imatch $pat) { $ignoredByPattern = $true; break }
+    }
+
+    if ($ignoredByExact -or $ignoredByPattern) { continue }
+
+    # Internal: exact
+    $internalByExact = $false
+    if ($InternalPackages.Count -gt 0) {
+      $internalByExact = $InternalPackages |
+        ForEach-Object { $_.ToLowerInvariant() } |
+        Where-Object { $_ -eq $idLower } |
+        Select-Object -First 1
+    }
+
+    # Internal: regex
+    $internalByPattern = $false
+    foreach ($pat in $InternalPatterns) {
+      if ([string]::IsNullOrWhiteSpace($pat)) { continue }
+      if ($pkgId -imatch $pat) { $internalByPattern = $true; break }
+    }
+
+    if ($internalByExact -or $internalByPattern) { continue }
+
+    # ---- ONLY NOW query NuGet ----
+    $existingVersion = $pr.Version
+    $latest = Get-LatestNuGetVersion -packageId $pkgId -cache $versionCache -IncludePrerelease:$IncludePrerelease
+    if (-not $latest) { continue }
+    if ($existingVersion -and ($existingVersion -ieq $latest)) { continue }
+
+    if (-not $DryRunFlag) {
+      $pr.SetAttribute("Version", $latest)
+    }
+
+    $result.Updated = $true
+    $result.Changes += [ordered]@{
+      Package    = $pkgId
+      OldVersion = $existingVersion
+      NewVersion = $latest
+    }
+  }
+
+  if ($result.Updated -and -not $DryRunFlag) {
+    try { $xml.Save($csprojPath) }
+    catch { $result.Errors += ('Failed to save XML: {0}' -f $_.Exception.Message) }
+  }
+
+  return $result
 }
 
+# ----------------------------- dotnet Runner --------------------------
 function Run-DotNet {
-    param(
-        [string]$Command,
-        [string]$Path,
-        [switch]$DryRunFlag
-    )
-    $result = [ordered]@{
-        Command = $Command
-        Path    = $Path
-        Success = $true
-        ExitCode = 0
-        Output = ""
-        Error  = ""
-    }
-    if ($DryRunFlag) {
-        $result.Output = "DryRun"
-        return $result
-    }
-    try {
-        Push-Location $Path
-        $output = & dotnet $Command 2>&1
-        $result.Output = $output -join "`n"
-        $result.ExitCode = $LASTEXITCODE
-        $result.Success = ($LASTEXITCODE -eq 0)
-    } catch {
-        $result.Success = $false
-        $result.Error = $_.Exception.Message
-    } finally {
-        Pop-Location
-    }
+  param(
+    [string]$Command, # e.g., 'build "My.sln" -c Release'
+    [string]$Path,
+    [switch]$DryRunFlag,
+    [string]$StdOutFile,
+    [string]$StdErrFile
+  )
+  $result = [ordered]@{
+    Command  = $Command
+    Path     = $Path
+    Success  = $true
+    ExitCode = 0
+    StdOut   = ""
+    StdErr   = ""
+  }
+  if ($DryRunFlag) {
+    $result.StdOut = "DryRun"
     return $result
+  }
+  try {
+    Push-Location $Path
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = "dotnet"
+    $psi.Arguments = $Command
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError  = $true
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow  = $true
+    $proc = New-Object System.Diagnostics.Process
+    $proc.StartInfo = $psi
+    [void]$proc.Start()
+    $stdOut = $proc.StandardOutput.ReadToEnd()
+    $stdErr = $proc.StandardError.ReadToEnd()
+    $proc.WaitForExit()
+    $result.ExitCode = $proc.ExitCode
+    $result.Success  = ($proc.ExitCode -eq 0)
+    $result.StdOut   = $stdOut
+    $result.StdErr   = $stdErr
+    if ($StdOutFile) { $stdOut | Out-File -FilePath $StdOutFile -Encoding UTF8 }
+    if ($StdErrFile) { $stdErr | Out-File -FilePath $StdErrFile -Encoding UTF8 }
+  }
+  catch {
+    $result.Success = $false
+    $result.StdErr  = $_.Exception | Out-String
+  }
+  finally {
+    Pop-Location
+  }
+  return $result
 }
 
-# MAIN
-Write-Log "Starting package update... IncludePrerelease=$IncludePrerelease, DryRun=$DryRun"
+# =============================== MAIN =================================
+Write-Log ('Starting package update... IncludePrerelease={0}, DryRun={1}' -f $IncludePrerelease, $DryRun)
 
 $templatePath = Join-Path $RootPath "template"
 if (-not (Test-Path $templatePath)) {
-    Fail-Fast "Template folder not found at '$templatePath'."
+  Fail-Fast ("Template folder not found at '{0}'." -f $templatePath)
 }
 
-Write-Log "Scanning for csproj files in template folder..."
+# Proactively stop running app instances that could lock bin/obj
+if ($KillRunning) {
+  Write-Log "Checking for running template processes to stop..."
+  Stop-TemplateProcesses -TemplatePath $templatePath -PreferredNames @('Clean.Blog')
+}
+
+# Artifacts layout
+$artifactsRoot = Join-Path $RootPath ".artifacts"
+$logsDir       = Join-Path $artifactsRoot "logs"
+$null = Ensure-Directory $artifactsRoot
+$null = Ensure-Directory $logsDir
+
+Write-Log ('Scanning for csproj files in template folder...')
 $csprojFiles = Get-ChildItem -Path $templatePath -Filter *.csproj -Recurse -File
-if ($csprojFiles.Count -eq 0) { Fail-Fast "No .csproj files found in '$templatePath'." }
-Write-Log "Found $($csprojFiles.Count) csproj files."
+if ($csprojFiles.Count -eq 0) {
+  Fail-Fast ("No .csproj files found in '{0}'." -f $templatePath)
+}
+Write-Log ('Found {0} csproj files.' -f $csprojFiles.Count)
 
-$versionCache = @{}
+$versionCache  = @{}
 $updateResults = @()
+
 foreach ($csproj in $csprojFiles) {
-    $updateResults += Update-Csproj-PackageReferences -csprojPath $csproj.FullName -versionCache ([ref]$versionCache) -DryRunFlag:$DryRun -IncludePrerelease:$IncludePrerelease
+  $updateResults += Update-Csproj-PackageReferences `
+    -csprojPath $csproj.FullName `
+    -versionCache $versionCache `
+    -DryRunFlag:$DryRun `
+    -IncludePrerelease:$IncludePrerelease `
+    -IgnorePackages $IgnorePackages `
+    -IgnorePatterns $IgnorePatterns `
+    -InternalPackages $InternalPackages `
+    -InternalPatterns $InternalPatterns
 }
 
-Write-Host "`n===== PACKAGE UPDATE RESULTS ====="
+# ---------------------- PACKAGE UPDATE RESULTS (TABLE) ---------------------
+
+# Flatten changes into rows for the table
+$packageChanges = New-Object System.Collections.Generic.List[object]
+
 foreach ($result in $updateResults) {
     $projName = [System.IO.Path]::GetFileName($result.Path)
-    if ($result.Updated) {
-        Write-Host "`n${projName}" -ForegroundColor Cyan
-        foreach ($change in $result.Changes) {
-            Write-Host "  " -NoNewline
-            Write-Host "$($change.Package)" -ForegroundColor Green -NoNewline
-            Write-Host " updated from " -NoNewline
-            Write-Host "$($change.OldVersion)" -ForegroundColor Yellow -NoNewline
-            Write-Host " to " -NoNewline
-            Write-Host "$($change.NewVersion)" -ForegroundColor Green
-        }
-    } else {
-        Write-Host "`n${projName}: No packages to update" -ForegroundColor DarkGray
+
+    foreach ($change in $result.Changes) {
+        $packageChanges.Add([pscustomobject]@{
+            'File Name'    = $projName
+            'Package Name' = $change.Package
+            'Old Version'  = $change.OldVersion
+            'New Version'  = $change.NewVersion
+        })
+    }
+
+    # Surface any XML errors per file (rare but useful)
+    foreach ($err in $result.Errors) {
+        Write-Host ('XML Error in {0}: {1}' -f $projName, $err) -ForegroundColor Red
     }
 }
 
-Write-Log "Scanning for sln files..."
+Write-Host ("`n===== PACKAGE UPDATE RESULTS =====")
+if ($packageChanges.Count -gt 0) {
+
+$sorted = $packageChanges |
+    Sort-Object `
+        @{ Expression = 'File Name';    Ascending = $true }, `
+        @{ Expression = 'Package Name'; Ascending = $true }
+
+    Write-AsciiTable -Rows $sorted `
+                     -Headers @('File Name','Package Name','Old Version','New Version') `
+                     -AlignRight @('Old Version','New Version')
+} else {
+    Write-Host "No packages to update" -ForegroundColor DarkGray
+}
+
+# ------------------------------ BUILD SECTION -----------------------------
+
+Write-Log ('Scanning for sln files...')
 $slnFiles = Get-ChildItem -Path $RootPath -Filter *.sln -Recurse -File
-Write-Log "Found $($slnFiles.Count) sln files."
+Write-Log ('Found {0} sln files.' -f $slnFiles.Count)
 
 $buildResults = @()
+$timestamp = (Get-Date).ToString('yyyyMMdd_HHmmss')
+
 foreach ($sln in $slnFiles) {
-    $cleanResult = Run-DotNet -Command "clean `"$($sln.FullName)`"" -Path $sln.DirectoryName -DryRunFlag:$DryRun
-    $buildResult = Run-DotNet -Command "build `"$($sln.FullName)`"" -Path $sln.DirectoryName -DryRunFlag:$DryRun
+    $slnName = [System.IO.Path]::GetFileNameWithoutExtension($sln.FullName)
+    $safeName = ($slnName -replace '[^\w\.-]','_')
+
+    $slnLogBase   = Join-Path $logsDir    ("{0}__{1}" -f $safeName, $timestamp)
+    $stdoutClean  = ("{0}.clean.stdout.txt" -f $slnLogBase)
+    $stderrClean  = ("{0}.clean.stderr.txt" -f $slnLogBase)
+    $stdoutBuild  = ("{0}.build.stdout.txt" -f $slnLogBase)
+    $stderrBuild  = ("{0}.build.stderr.txt" -f $slnLogBase)
+
+    # CLEAN
+    Write-Log ('Cleaning {0}' -f $sln.FullName)
+    $cleanCmd = ('clean "{0}" -clp:Summary -v:m' -f $sln.FullName)
+    $cleanResult = Run-DotNet -Command $cleanCmd -Path $sln.DirectoryName -DryRunFlag:$DryRun -StdOutFile $stdoutClean -StdErrFile $stderrClean
+
+    # BUILD (no binlog per your preference)
+    Write-Log ('Building {0}' -f $sln.FullName)
+    $buildCmd = ('build "{0}" -clp:Summary -v:m' -f $sln.FullName)
+    $buildResult = Run-DotNet -Command $buildCmd -Path $sln.DirectoryName -DryRunFlag:$DryRun -StdOutFile $stdoutBuild -StdErrFile $stderrBuild
+
+    # Extract top error lines from both streams
+    $errorLines = @(
+        ($buildResult.StdErr -split "`r?`n"),
+        ($buildResult.StdOut -split "`r?`n")
+    ) | Where-Object { $_ -match "(:\s*error\s*[A-Z]?\d{3,}|^error\s)" } |
+        Select-Object -Unique -First 20
+
     $buildResults += [ordered]@{
-        Solution = $sln.FullName
-        Success  = $buildResult.Success
+        Solution     = $sln.FullName
+        CleanSuccess = $cleanResult.Success
+        BuildSuccess = $buildResult.Success
+        ExitCode     = $buildResult.ExitCode
+        StdOutFile   = $stdoutBuild
+        StdErrFile   = $stderrBuild
+        ErrorLines   = $errorLines
+    }
+
+    # Inline summary per solution
+    $status = if ($buildResult.Success) { "SUCCESS" } else { "FAILED" }
+    $color  = if ($buildResult.Success) { "Green" } else { "Red" }
+    Write-Host ('{0}: {1} (ExitCode={2})' -f $slnName, $status, $buildResult.ExitCode) -ForegroundColor $color
+
+    if (-not $buildResult.Success) {
+        if ($cleanResult.Success -eq $false) {
+            Write-Host ("  Clean failed. See:") -ForegroundColor Yellow
+            Write-Host ("    {0}" -f $stdoutClean)
+            Write-Host ("    {0}" -f $stderrClean)
+        }
+        if ($errorLines.Count -gt 0) {
+            Write-Host ("  Top error lines:") -ForegroundColor Yellow
+            foreach ($line in $errorLines) {
+                Write-Host ("    {0}" -f $line) -ForegroundColor Red
+            }
+        } else {
+            Write-Host ("  No error lines detected; check full logs.") -ForegroundColor Yellow
+        }
+        Write-Host ("  Full logs:") -ForegroundColor Yellow
+        Write-Host ("    StdOut: {0}" -f $stdoutBuild)
+        Write-Host ("    StdErr: {0}" -f $stderrBuild)
+    } else {
+        Write-Host ("  Logs: {0}, {1}" -f $stdoutBuild, $stderrBuild)
     }
 }
 
-Write-Host "`n===== BUILD RESULTS ====="
+Write-Host ("`n===== BUILD RESULTS =====")
 foreach ($br in $buildResults) {
     $slnName = [System.IO.Path]::GetFileName($br.Solution)
-    $status = if ($br.Success) { "SUCCESS" } else { "FAILED" }
-    $color = if ($br.Success) { "Green" } else { "Red" }
-    Write-Host "${slnName}: $status" -ForegroundColor $color
+    $status = if ($br.BuildSuccess) { "SUCCESS" } else { "FAILED" }
+    $color  = if ($br.BuildSuccess) { "Green" } else { "Red" }
+    Write-Host ('{0}: {1} (ExitCode={2})' -f $slnName, $status, $br.ExitCode) -ForegroundColor $color
+    Write-Host ('  StdOut: {0}' -f $br.StdOutFile)
+    Write-Host ('  StdErr: {0}' -f $br.StdErrFile)
 }
 
-$blogProj = Get-ChildItem -Path $templatePath -Recurse -Filter *.csproj | Where-Object { $_.Name -match '(?i)clean\.blog' } | Select-Object -First 1
-if ($blogProj) {
-    Write-Host "`nClean.Blog project found: $($blogProj.Name)" -ForegroundColor Cyan
-    if (-not $DryRun) {
-        $runResult = Run-DotNet -Command "run --project `"$($blogProj.FullName)`"" -Path $blogProj.DirectoryName
-        $status = if ($runResult.Success) { "SUCCESS" } else { "FAILED" }
-        $color = if ($runResult.Success) { "Green" } else { "Red" }
-        Write-Host "Run result: $status" -ForegroundColor $color
-    } else {
-        Write-Host "Run skipped (DryRun)" -ForegroundColor DarkGray
-    }
+# Proactively stop running app instances that could lock bin/obj
+if ($KillRunning) {
+  Write-Log "Checking for running template processes to stop..."
+  Stop-TemplateProcesses -TemplatePath $templatePath -PreferredNames @('Clean.Blog')
 }
+
+Write-Log "Package update script completed."
