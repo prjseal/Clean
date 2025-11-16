@@ -1,0 +1,29 @@
+name: Update NuGet Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: 'Run without making changes'
+        required: false
+        default: 'false'
+      includePrerelease:
+        description: 'Include prerelease versions'
+        required: false
+        default: 'true'
+
+jobs:
+  update-packages:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run UpdateThirdPartyPackages script
+        shell: pwsh
+        run: |
+          ./UpdateThirdPartyPackages.ps1 `
+            -RootPath "${{ github.workspace }}" `
+            -DryRun:$(if (${{ github.event.inputs.dryRun }} -eq 'true') { $true } else { $false }) `
+            -IncludePrerelease:$(if (${{ github.event.inputs.includePrerelease }} -eq 'true') { $true } else { $false }) `
