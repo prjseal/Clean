@@ -23,7 +23,14 @@ jobs:
       - name: Run UpdateThirdPartyPackages script
         shell: pwsh
         run: |
+          # Convert GitHub input strings to PowerShell booleans
+          $dryRunFlag = if ('${{ github.event.inputs.dryRun }}' -eq 'true') { $true } else { $false }
+          $includePrereleaseFlag = if ('${{ github.event.inputs.includePrerelease }}' -eq 'true') { $true } else { $false }
+
+          Write-Host "DryRunFlag = $dryRunFlag"
+          Write-Host "IncludePrereleaseFlag = $includePrereleaseFlag"
+
           ./UpdateThirdPartyPackages.ps1 `
             -RootPath "${{ github.workspace }}" `
-            -DryRun:$(if (${{ github.event.inputs.dryRun }} -eq 'true') { $true } else { $false }) `
-            -IncludePrerelease:$(if (${{ github.event.inputs.includePrerelease }} -eq 'true') { $true } else { $false }) `
+            -DryRun:$dryRunFlag `
+            -IncludePrerelease:$includePrereleaseFlag
