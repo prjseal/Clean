@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
- Update NuGet packages in the 'template' folder, optionally include prerelease, build, and run Clean.Blog.
+ Update NuGet packages in the RootPath folder, optionally include prerelease and build
  Outputs a console table of package updates and detailed per-solution diagnostics (stdout/stderr and inline error summaries).
 
 .PARAMETER RootPath
- Repository root. The script expects a 'template' subfolder under this path.
+ Repository root. It defaults to the current working directory.
 
 .PARAMETER DryRun
  If set, no files are changed and no dotnet commands are executed (logic still runs).
@@ -25,7 +25,7 @@
  Regex patterns to identify internal packages (skip updating), case-insensitive.
 
 .PARAMETER KillRunning
- If set, the script will stop any running processes that appear to be executing from the template folder (e.g., Clean.Blog, dotnet with that path) before building.
+ If set, the script will stop any running processes that appear to be executing from the RootPath folder before building.
 #>
 param(
   [string]$RootPath = (Get-Location).Path,
@@ -86,16 +86,16 @@ function Ensure-Directory {
 # ---------------- Process discovery/termination (NEW) -----------------
 function Get-TemplateProcesses {
   param(
-    [Parameter(Mandatory)][string]$TemplatePath,
-    [string[]]$PreferredNames = @('Clean.Blog') # add more exe names here if helpful
+    [Parameter(Mandatory)][string]$TemplatePath
   )
   # Use CIM so we can filter on CommandLine reliably
   $tpl = $TemplatePath.ToLowerInvariant()
   try {
+    $currentPid = $PID
+
     $procs = Get-CimInstance Win32_Process | Where-Object {
       # Either the command line references the template folder, or the process name is one we know
-      ($_.CommandLine -and $_.CommandLine.ToLower().Contains($tpl)) -or
-      ($PreferredNames -and ($PreferredNames -contains $_.Name))
+      ($_.CommandLine -and $_.CommandLine.ToLower().Contains($tpl)) -and $_.Id -ne $currentPid
     }
     return $procs
   } catch {
@@ -107,10 +107,9 @@ function Get-TemplateProcesses {
 function Stop-TemplateProcesses {
   param(
     [Parameter(Mandatory)][string]$TemplatePath,
-    [int]$GraceMs = 1500,
-    [string[]]$PreferredNames = @('Clean.Blog')
+    [int]$GraceMs = 1500
   )
-  $procs = Get-TemplateProcesses -TemplatePath $TemplatePath -PreferredNames $PreferredNames
+  $procs = Get-TemplateProcesses -TemplatePath $TemplatePath
   if (-not $procs -or $procs.Count -eq 0) {
     Write-Log "No running template-related processes detected."
     return
@@ -124,7 +123,7 @@ Write-Log -Prefix "Found " -Value $procs.Count -ValueColor Cyan -Suffix " templa
   }
   Start-Sleep -Milliseconds $GraceMs
   # Force kill anything still running
-  foreach ($p in Get-TemplateProcesses -TemplatePath $TemplatePath -PreferredNames $PreferredNames) {
+  foreach ($p in Get-TemplateProcesses -TemplatePath $TemplatePath) {
     try {
       Write-Log ("Killing PID {0} '{1}' (hard)" -f $p.ProcessId, $p.Name) "WARN"
       Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
@@ -240,7 +239,7 @@ function Get-LatestNuGetVersion {
     $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 20 -ErrorAction Stop
     $versions = @($resp.versions | ForEach-Object { [string]$_ })
     if ($versions.Count -eq 0) {
-      Write-Log ('No versions found for {0}' -f $packageId) "WARN"
+      Write-Log ('No versions found for {0}' -f $packageId) -Level "WARN"
       $cache[$key] = $null
       return $null
     }
@@ -254,8 +253,8 @@ function Get-LatestNuGetVersion {
     return $chosen
   }
   catch {
-    Write-Log ('Failed to query NuGet for {0}: {1}' -f $packageId, $_.Exception.Message) "ERROR"
-    return $null
+    Write-Log ('Failed to query NuGet for {0}: {1}' -f $packageId, $_.Exception.Message) -Level "ERROR"
+    throw
   }
 }
 
@@ -416,16 +415,28 @@ function Run-DotNet {
 # =============================== MAIN =================================
 Write-Log ('Starting package update... IncludePrerelease={0}, DryRun={1}' -f $IncludePrerelease, $DryRun)
 
-$templatePath = Join-Path $RootPath "template"
+$templatePath = $RootPath
 if (-not (Test-Path $templatePath)) {
   Fail-Fast ("Template folder not found at '{0}'." -f $templatePath)
 }
 
-# Proactively stop running app instances that could lock bin/obj
 if ($KillRunning) {
-  Write-Log "Checking for running template processes to stop..."
-  Stop-TemplateProcesses -TemplatePath $templatePath -PreferredNames @('Clean.Blog')
+    Write-Log "Checking for running template processes to stop..."
+
+    # Get current process ID
+    $currentPid = $PID
+
+    # Find processes related to the template path
+    $processes = Get-Process | Where-Object {
+        $_.Path -like "*$templatePath*" -and $_.Id -ne $currentPid
+    }
+
+    foreach ($proc in $processes) {
+        Write-Log "Stopping process: $($proc.ProcessName) (PID: $($proc.Id))"
+        Stop-Process -Id $proc.Id -Force
+    }
 }
+
 
 # Artifacts layout
 $artifactsRoot = Join-Path $RootPath ".artifacts"
@@ -597,23 +608,24 @@ foreach ($sln in $slnFiles) {
     }
 }
 
-# Proactively stop running app instances that could lock bin/obj
 if ($KillRunning) {
-  Write-Log "Checking for running template processes to stop..."
-  Stop-TemplateProcesses -TemplatePath $templatePath -PreferredNames @('Clean.Blog')
+    Write-Log "Checking for running template processes to stop..."
+
+    # Get current process ID
+    $currentPid = $PID
+
+    # Find processes related to the template path
+    $processes = Get-Process | Where-Object {
+        $_.Path -like "*$templatePath*" -and $_.Id -ne $currentPid
+    }
+
+    foreach ($proc in $processes) {
+        Write-Log "Stopping process: $($proc.ProcessName) (PID: $($proc.Id))"
+        Stop-Process -Id $proc.Id -Force
+    }
 }
 
 Write-Log "Package update script completed."
-
-# Write-Host ("`n===== BUILD RESULTS =====")
-# foreach ($br in $buildResults) {
-#     $slnName = [System.IO.Path]::GetFileName($br.Solution)
-#     $status = if ($br.BuildSuccess) { "SUCCESS" } else { "FAILED" }
-#     $color  = if ($br.BuildSuccess) { "Green" } else { "Red" }
-#     Write-Host ('{0}: {1} (ExitCode={2})' -f $slnName, $status, $br.ExitCode) -ForegroundColor $color
-#     Write-Host ('  StdOut: {0}' -f $br.StdOutFile)
-#     Write-Host ('  StdErr: {0}' -f $br.StdErrFile)
-# }
 
 Write-Host "`n===== PACKAGE UPDATE RESULTS ====="
 if ($packageChanges.Count -gt 0) {
