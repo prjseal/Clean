@@ -132,9 +132,6 @@ jobs:
 
           # Create PR body in a file to avoid escaping issues
           $prBodyFile = "${{ github.workspace }}\.artifacts\pr-body.md"
-          $summary = @'
-${{ steps.read-summary.outputs.summary }}
-'@
           $prBody = @"
 This PR updates NuGet packages to the latest versions.
 
@@ -143,7 +140,7 @@ This PR updates NuGet packages to the latest versions.
 
 ### Updated Packages:
 ``````
-$summary
+${{ steps.read-summary.outputs.summary }}
 ``````
 "@
 
