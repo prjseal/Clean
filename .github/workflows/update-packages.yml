@@ -27,6 +27,10 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Install GitHub CLI
+        run: |
+          choco install gh -y
+
       - name: Run UpdateThirdPartyPackages script
         shell: pwsh
         run: |
@@ -60,23 +64,18 @@ jobs:
           }
           git commit -m "Update NuGet packages"
 
-          # Use PAT for authentication
-          git remote set-url origin https://x-access-token:$env:PAT_TOKEN@github.com/${{ github.repository }}.git
-          git push origin $branchName
+          # Push using PAT explicitly
+          git push https://x-access-token:$env:PAT_TOKEN@github.com/${{ github.repository }}.git $branchName
 
       - name: Create Pull Request
         if: ${{ github.event.inputs.dryRun != 'true' }}
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: 'Update NuGet packages'
-          body: |
-            This PR updates NuGet packages to the latest versions.
-            - IncludePrerelease: ${{ github.event.inputs.includePrerelease }}
-            - Triggered by: ${{ github.actor }}
-          base: main
-          branch: ${{ steps.commit-and-push.outputs.branchName }}
-          labels: |
-            dependencies
-            automated-update
-          reviewers: |
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          gh auth login --with-token <<< "$GITHUB_TOKEN"
+          gh pr create \
+            --title "Update NuGet packages" \
+            --body "This PR updates NuGet packages to the latest versions.\n\n**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}\n**Triggered by:** ${{ github.actor }}\n\nPlease review the changes." \
+            --base main \
+            --head ${{ steps.commit-and-push.outputs.branchName }} \
+            --label dependencies --label automated-update
