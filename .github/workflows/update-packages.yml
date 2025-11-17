@@ -79,8 +79,51 @@ jobs:
             echo "EOF" >> $env:GITHUB_OUTPUT
           }
 
-      - name: Create Pull Request
+      - name: Check for existing similar PRs
+        id: check-existing-pr
         if: ${{ github.event.inputs.dryRun != 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          echo $env:GITHUB_TOKEN | gh auth login --with-token
+
+          # Get current package summary
+          $currentSummary = "${{ steps.read-summary.outputs.summary }}"
+
+          # List all open PRs with branches matching our pattern
+          $existingPRs = gh pr list --state open --json number,headRefName,body --limit 100 | ConvertFrom-Json
+
+          $skipPR = $false
+          $matchingPR = $null
+
+          foreach ($pr in $existingPRs) {
+            if ($pr.headRefName -like "update-nuget-packages-*") {
+              # Extract the package table from the PR body
+              $prBody = $pr.body
+
+              # Extract content between triple backticks (the package table)
+              if ($prBody -match '```([^`]*)```') {
+                $prPackages = $matches[1].Trim()
+
+                # Compare with current summary (normalize whitespace for comparison)
+                $currentNormalized = $currentSummary -replace '\s+', ' '
+                $prNormalized = $prPackages -replace '\s+', ' '
+
+                if ($currentNormalized -eq $prNormalized) {
+                  $skipPR = $true
+                  $matchingPR = $pr.number
+                  Write-Host "Found existing PR #$matchingPR with identical package updates. Skipping PR creation."
+                  break
+                }
+              }
+            }
+          }
+
+          echo "skip=$skipPR" >> $env:GITHUB_OUTPUT
+          echo "existing_pr_number=$matchingPR" >> $env:GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        if: ${{ github.event.inputs.dryRun != 'true' && steps.check-existing-pr.outputs.skip != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
@@ -90,3 +133,16 @@ jobs:
             --body "This PR updates NuGet packages to the latest versions.`n`n**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}`n**Triggered by:** ${{ github.actor }}`n`n### Updated Packages:`n\`\`\`\`n${{ steps.read-summary.outputs.summary }}\`n\`\`\`" `
             --base main `
             --head ${{ steps.commit-and-push.outputs.branchName }}
+
+      - name: Summary - PR Skipped
+        if: ${{ github.event.inputs.dryRun != 'true' && steps.check-existing-pr.outputs.skip == 'true' }}
+        run: |
+          Write-Host "================================================" -ForegroundColor Yellow
+          Write-Host "PR CREATION SKIPPED" -ForegroundColor Yellow
+          Write-Host "================================================" -ForegroundColor Yellow
+          Write-Host ""
+          Write-Host "An existing PR (#${{ steps.check-existing-pr.outputs.existing_pr_number }}) already has identical package updates." -ForegroundColor Cyan
+          Write-Host "No need to create a duplicate PR." -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "Existing PR: https://github.com/${{ github.repository }}/pull/${{ steps.check-existing-pr.outputs.existing_pr_number }}" -ForegroundColor Green
+          Write-Host "================================================" -ForegroundColor Yellow
