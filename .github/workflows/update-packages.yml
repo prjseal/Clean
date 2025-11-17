@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Required for creating branches
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
@@ -28,7 +30,6 @@ jobs:
       - name: Run UpdateThirdPartyPackages script
         shell: pwsh
         run: |
-          # Convert GitHub input strings to PowerShell booleans
           $dryRunFlag = if ('${{ github.event.inputs.dryRun }}' -eq 'true') { $true } else { $false }
           $includePrereleaseFlag = if ('${{ github.event.inputs.includePrerelease }}' -eq 'true') { $true } else { $false }
 
@@ -39,3 +40,39 @@ jobs:
             -RootPath "${{ github.workspace }}" `
             -DryRun:$dryRunFlag `
             -IncludePrerelease:$includePrereleaseFlag
+
+      - name: Commit and push changes
+        id: commit-and-push
+        if: ${{ github.event.inputs.dryRun != 'true' }}
+        run: |
+          $branchName = "update-nuget-packages-$(Get-Date -Format 'yyyyMMddHHmmss')"
+          echo "branchName=$branchName" >> $env:GITHUB_OUTPUT
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git checkout -b $branchName
+          git add .
+          if (git diff --cached --quiet) {
+            Write-Host "No changes detected. Skipping commit and PR."
+            exit 0
+          }
+          git commit -m "Update NuGet packages"
+          git push origin $branchName
+
+      - name: Create Pull Request
+        if: ${{ github.event.inputs.dryRun != 'true' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: 'Update NuGet packages'
+          body: |
+            This PR updates NuGet packages to the latest versions.
+            - IncludePrerelease: ${{ github.event.inputs.includePrerelease }}
+            - Triggered by: ${{ github.actor }}
+          base: main
+          branch: ${{ steps.commit-and-push.outputs.branchName }}
+          labels: |
+            dependencies
+            automated-update
+          reviewers: |
+            your-github-username
