@@ -87,8 +87,9 @@ jobs:
         run: |
           echo $env:GITHUB_TOKEN | gh auth login --with-token
 
-          # Get current package summary
-          $currentSummary = "${{ steps.read-summary.outputs.summary }}"
+          # Get current package summary from file
+          $summaryPath = "${{ github.workspace }}\.artifacts\package-summary.txt"
+          $currentSummary = Get-Content $summaryPath -Raw
 
           # List all open PRs with branches matching our pattern
           $existingPRs = gh pr list --state open --json number,headRefName,body --limit 100 | ConvertFrom-Json
@@ -102,11 +103,11 @@ jobs:
               $prBody = $pr.body
 
               # Extract content between triple backticks (the package table)
-              if ($prBody -match '```([^`]*)```') {
+              if ($prBody -match '(?s)```(.+?)```') {
                 $prPackages = $matches[1].Trim()
 
                 # Compare with current summary (normalize whitespace for comparison)
-                $currentNormalized = $currentSummary -replace '\s+', ' '
+                $currentNormalized = $currentSummary.Trim() -replace '\s+', ' '
                 $prNormalized = $prPackages -replace '\s+', ' '
 
                 if ($currentNormalized -eq $prNormalized) {
