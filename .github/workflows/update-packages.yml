@@ -70,10 +70,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          gh auth login --with-token <<< "$GITHUB_TOKEN"
-          gh pr create \
-            --title "Update NuGet packages" \
-            --body "This PR updates NuGet packages to the latest versions.\n\n**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}\n**Triggered by:** ${{ github.actor }}" \
-            --base main \
-            --head ${{ steps.commit-and-push.outputs.branchName }} \
+          echo $env:GITHUB_TOKEN | gh auth login --with-token
+          gh pr create `
+            --title "Update NuGet packages" `
+            --body "This PR updates NuGet packages to the latest versions.`n`n**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}`n**Triggered by:** ${{ github.actor }}" `
+            --base main `
+            --head ${{ steps.commit-and-push.outputs.branchName }} `
             --label dependencies --label automated-update
