@@ -44,6 +44,8 @@ jobs:
       - name: Commit and push changes
         id: commit-and-push
         if: ${{ github.event.inputs.dryRun != 'true' }}
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           $branchName = "update-nuget-packages-$(Get-Date -Format 'yyyyMMddHHmmss')"
           echo "branchName=$branchName" >> $env:GITHUB_OUTPUT
@@ -57,7 +59,7 @@ jobs:
             exit 0
           }
           git commit -m "Update NuGet packages"
-          git push origin $branchName
+          git push https://x-access-token:$env:PAT_TOKEN@github.com/${{ github.repository }}.git $branchName
 
       - name: Create Pull Request
         if: ${{ github.event.inputs.dryRun != 'true' }}
@@ -75,4 +77,4 @@ jobs:
             dependencies
             automated-update
           reviewers: |
-            your-github-username
+            prjseal
