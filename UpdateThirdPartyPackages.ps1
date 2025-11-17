@@ -201,7 +201,15 @@ function Write-AsciiTable {
     }
 
     $top    = Border $columns
-    $header = '|' + ($columns | ForEach-Object { Cell $_.Name $_.Width 'Left' }) -join '|' + '|'
+
+    # Build header row with pipes between each column (same pattern as data rows)
+    $headerParts = @('|')
+    foreach ($c in $columns) {
+        $headerParts += (Cell $c.Name $c.Width 'Left')
+        $headerParts += '|'
+    }
+    $header = ($headerParts -join '')
+
     $sep    = Border $columns
 
     $outputLines += $top
@@ -645,7 +653,7 @@ if ($KillRunning) {
 }
 
 Write-Log "Package update script completed."
-
+Write-Host ""
 Write-Host "`n===== PACKAGE UPDATE RESULTS ====="
 $packageUpdateFile = Join-Path $artifactsRoot "package-summary.txt"
 if ($packageChanges.Count -gt 0) {
