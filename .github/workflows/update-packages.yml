@@ -59,7 +59,10 @@ jobs:
             exit 0
           }
           git commit -m "Update NuGet packages"
-          git push https://x-access-token:$env:PAT_TOKEN@github.com/${{ github.repository }}.git $branchName
+
+          # Use PAT for authentication
+          git remote set-url origin https://x-access-token:$env:PAT_TOKEN@github.com/${{ github.repository }}.git
+          git push origin $branchName
 
       - name: Create Pull Request
         if: ${{ github.event.inputs.dryRun != 'true' }}
@@ -77,4 +80,3 @@ jobs:
             dependencies
             automated-update
           reviewers: |
-            prjseal
