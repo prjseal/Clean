@@ -652,3 +652,13 @@ if ($buildSummaryRows.Count -gt 0) {
 } else {
     Write-Host "(no solutions found)" -ForegroundColor DarkGray
 }
+
+# After writing the ASCII table
+$packageSummaryFile = Join-Path $RootPath ".artifacts/package-summary.txt"
+if ($packageChanges.Count -gt 0) {
+    $packageChanges | ForEach-Object {
+        "$($_.'File Name') | $($_.'Package Name') | $($_.'Old Version') -> $($_.'New Version')"
+    } | Out-File -FilePath $packageSummaryFile -Encoding UTF8
+} else {
+    "No packages updated." | Out-File -FilePath $packageSummaryFile -Encoding UTF8
+}

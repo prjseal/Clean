@@ -39,7 +39,6 @@ jobs:
 
           Write-Host "DryRunFlag = $dryRunFlag"
           Write-Host "IncludePrereleaseFlag = $includePrereleaseFlag"
-
           ./UpdateThirdPartyPackages.ps1 `
             -RootPath "${{ github.workspace }}" `
             -DryRun:$dryRunFlag `
@@ -65,6 +64,21 @@ jobs:
           git commit -m "Update NuGet packages"
           git push https://x-access-token:$env:PAT_TOKEN@github.com/${{ github.repository }}.git $branchName
 
+      - name: Read package summary
+        id: read-summary
+        run: |
+          $summaryPath = "${{ github.workspace }}\.artifacts\package-summary.txt"
+          if (Test-Path $summaryPath) {
+            $content = Get-Content $summaryPath -Raw
+            echo "summary<<EOF" >> $env:GITHUB_OUTPUT
+            echo "$content" >> $env:GITHUB_OUTPUT
+            echo "EOF" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "summary<<EOF" >> $env:GITHUB_OUTPUT
+            echo "No package summary found." >> $env:GITHUB_OUTPUT
+            echo "EOF" >> $env:GITHUB_OUTPUT
+          }
+
       - name: Create Pull Request
         if: ${{ github.event.inputs.dryRun != 'true' }}
         env:
@@ -73,7 +87,6 @@ jobs:
           echo $env:GITHUB_TOKEN | gh auth login --with-token
           gh pr create `
             --title "Update NuGet packages" `
-            --body "This PR updates NuGet packages to the latest versions.`n`n**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}`n**Triggered by:** ${{ github.actor }}" `
+            --body "This PR updates NuGet packages to the latest versions.`n`n**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}`n**Triggered by:** ${{ github.actor }}`n`n### Updated Packages:`n${{ steps.read-summary.outputs.summary }}" `
             --base main `
-            --head ${{ steps.commit-and-push.outputs.branchName }} `
-            --label dependencies --label automated-update
+            --head ${{ steps.commit-and-push.outputs.branchName }}
