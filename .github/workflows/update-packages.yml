@@ -20,7 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Required for creating branches
+          fetch-depth: 0
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
@@ -63,8 +63,6 @@ jobs:
             exit 0
           }
           git commit -m "Update NuGet packages"
-
-          # Push using PAT explicitly
           git push https://x-access-token:$env:PAT_TOKEN@github.com/${{ github.repository }}.git $branchName
 
       - name: Create Pull Request
@@ -75,7 +73,7 @@ jobs:
           gh auth login --with-token <<< "$GITHUB_TOKEN"
           gh pr create \
             --title "Update NuGet packages" \
-            --body "This PR updates NuGet packages to the latest versions.\n\n**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}\n**Triggered by:** ${{ github.actor }}\n\nPlease review the changes." \
+            --body "This PR updates NuGet packages to the latest versions.\n\n**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}\n**Triggered by:** ${{ github.actor }}" \
             --base main \
             --head ${{ steps.commit-and-push.outputs.branchName }} \
             --label dependencies --label automated-update
