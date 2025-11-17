@@ -128,9 +128,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           echo $env:GITHUB_TOKEN | gh auth login --with-token
+
+          # Create PR body in a file to avoid escaping issues
+          $prBodyFile = "${{ github.workspace }}\.artifacts\pr-body.md"
+          $prBody = @"
+          This PR updates NuGet packages to the latest versions.
+
+          **IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}
+          **Triggered by:** ${{ github.actor }}
+
+          ### Updated Packages:
+          ```
+          ${{ steps.read-summary.outputs.summary }}
+          ```
+          "@
+
+          $prBody | Out-File -FilePath $prBodyFile -Encoding UTF8
+
           gh pr create `
             --title "Update NuGet packages" `
-            --body "This PR updates NuGet packages to the latest versions.`n`n**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}`n**Triggered by:** ${{ github.actor }}`n`n### Updated Packages:`n\`\`\`\`n${{ steps.read-summary.outputs.summary }}\`n\`\`\`" `
+            --body-file $prBodyFile `
             --base main `
             --head ${{ steps.commit-and-push.outputs.branchName }}
 
