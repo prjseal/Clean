@@ -142,18 +142,27 @@ function Write-AsciiTable {
         Ordered list of headers (strings) that map to property names in each row.
       .PARAMETER AlignRight
         Property names to right-align (e.g., versions).
+      .PARAMETER OutputFile
+        Optional file path to write the table to (in addition to console output).
     #>
     param(
         [Parameter(Mandatory)]
         [System.Collections.IEnumerable]$Rows,
         [Parameter(Mandatory)]
         [string[]]$Headers,
-        [string[]]$AlignRight = @()
+        [string[]]$AlignRight = @(),
+        [string]$OutputFile
     )
 
     $rowsArray = @($Rows)
+    $outputLines = @()
+
     if ($rowsArray.Count -eq 0) {
-        Write-Host "(no rows)" -ForegroundColor DarkGray
+        $msg = "(no rows)"
+        Write-Host $msg -ForegroundColor DarkGray
+        if ($OutputFile) {
+            $msg | Out-File -FilePath $OutputFile -Encoding UTF8
+        }
         return
     }
 
@@ -195,15 +204,15 @@ function Write-AsciiTable {
     $header = '|' + ($columns | ForEach-Object { Cell $_.Name $_.Width 'Left' }) -join '|' + '|'
     $sep    = Border $columns
 
-    Write-Host $top
-    Write-Host $header
-    Write-Host $sep
+    $outputLines += $top
+    $outputLines += $header
+    $outputLines += $sep
 
     $lastFile = ''
     foreach ($row in $rowsArray) {
         $file = $row.'File Name'
         if ($lastFile -ne '' -and $file -ne $lastFile) {
-            Write-Host $sep
+            $outputLines += $sep
         }
         $lastFile = $file
 
@@ -213,10 +222,20 @@ function Write-AsciiTable {
             $lineParts += (Cell $val $c.Width $c.Align)
             $lineParts += '|'
         }
-        Write-Host ($lineParts -join '')
+        $outputLines += ($lineParts -join '')
     }
 
-    Write-Host $top
+    $outputLines += $top
+
+    # Write to console
+    foreach ($line in $outputLines) {
+        Write-Host $line
+    }
+
+    # Write to file if specified
+    if ($OutputFile) {
+        $outputLines | Out-File -FilePath $OutputFile -Encoding UTF8
+    }
 }
 
 # ------------------------- NuGet Version Helper -----------------------
@@ -628,6 +647,7 @@ if ($KillRunning) {
 Write-Log "Package update script completed."
 
 Write-Host "`n===== PACKAGE UPDATE RESULTS ====="
+$packageUpdateFile = Join-Path $artifactsRoot "package-summary.txt"
 if ($packageChanges.Count -gt 0) {
 
 $sorted = $packageChanges |
@@ -637,28 +657,26 @@ $sorted = $packageChanges |
 
     Write-AsciiTable -Rows $sorted `
                      -Headers @('File Name','Package Name','Old Version','New Version') `
-                     -AlignRight @('Old Version','New Version')
+                     -AlignRight @('Old Version','New Version') `
+                     -OutputFile $packageUpdateFile
 } else {
-    Write-Host "No packages to update" -ForegroundColor DarkGray
+    $msg = "No packages to update"
+    Write-Host $msg -ForegroundColor DarkGray
+    $msg | Out-File -FilePath $packageUpdateFile -Encoding UTF8
 }
 Write-Host ""
 
 Write-Host "`n===== BUILD SUMMARY ====="
+$buildSummaryFile = Join-Path $artifactsRoot "build-summary.txt"
 if ($buildSummaryRows.Count -gt 0) {
     $summarySorted = $buildSummaryRows | Sort-Object 'Solution Name'
     Write-AsciiTable -Rows $summarySorted `
         -Headers @('Solution Name','Clean Result','Build Result','Errors','Warnings') `
-        -AlignRight @('Errors','Warnings')
+        -AlignRight @('Errors','Warnings') `
+        -OutputFile $buildSummaryFile
 } else {
-    Write-Host "(no solutions found)" -ForegroundColor DarkGray
+    $msg = "(no solutions found)"
+    Write-Host $msg -ForegroundColor DarkGray
+    $msg | Out-File -FilePath $buildSummaryFile -Encoding UTF8
 }
 
-# After writing the ASCII table
-$packageSummaryFile = Join-Path $RootPath ".artifacts/package-summary.txt"
-if ($packageChanges.Count -gt 0) {
-    $packageChanges | ForEach-Object {
-        "$($_.'File Name') | $($_.'Package Name') | $($_.'Old Version') -> $($_.'New Version')"
-    } | Out-File -FilePath $packageSummaryFile -Encoding UTF8
-} else {
-    "No packages updated." | Out-File -FilePath $packageSummaryFile -Encoding UTF8
-}
