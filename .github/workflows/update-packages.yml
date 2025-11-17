@@ -87,6 +87,6 @@ jobs:
           echo $env:GITHUB_TOKEN | gh auth login --with-token
           gh pr create `
             --title "Update NuGet packages" `
-            --body "This PR updates NuGet packages to the latest versions.`n`n**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}`n**Triggered by:** ${{ github.actor }}`n`n### Updated Packages:`n${{ steps.read-summary.outputs.summary }}" `
+            --body "This PR updates NuGet packages to the latest versions.`n`n**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}`n**Triggered by:** ${{ github.actor }}`n`n### Updated Packages:`n\`\`\`\`n${{ steps.read-summary.outputs.summary }}\`n\`\`\`" `
             --base main `
             --head ${{ steps.commit-and-push.outputs.branchName }}
