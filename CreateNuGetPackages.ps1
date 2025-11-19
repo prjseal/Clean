@@ -30,30 +30,11 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 }
 
 # Create and trust development certificate for HTTPS using native PowerShell
-Write-Host "Setting up development certificate for HTTPS..." -ForegroundColor Cyan
-
-try {
-    # Create a self-signed certificate using PowerShell (no interactive prompts)
-    Write-Host "Creating self-signed certificate for localhost..."
-    $cert = New-SelfSignedCertificate -DnsName "localhost" -CertStoreLocation "Cert:\CurrentUser\My" -KeyExportPolicy Exportable -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256
-
-    # Export the certificate to a PFX file
-    $certPath = Join-Path $env:TEMP "aspnetcore-localhost-cert.pfx"
-    $certPassword = ConvertTo-SecureString -String "DevCertPassword" -Force -AsPlainText
-    Write-Host "Exporting certificate..."
-    Export-PfxCertificate -Cert $cert -FilePath $certPath -Password $certPassword | Out-Null
-
-    # Import the certificate into the trusted root store
-    Write-Host "Importing certificate to trusted root store..."
-    $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root", "CurrentUser")
-    $store.Open("ReadWrite")
-    $store.Add($cert)
-    $store.Close()
-
-    Write-Host "Development certificate created and trusted successfully" -ForegroundColor Green
-} catch {
-    Write-Host "Warning: Failed to set up development certificate: $($_.Exception.Message)" -ForegroundColor Yellow
-    Write-Host "Continuing anyway - certificate skip parameters will be used for API calls" -ForegroundColor Yellow
+$setupCertScript = Join-Path $PSScriptRoot "Setup-DevCertificate.ps1"
+if (Test-Path $setupCertScript) {
+    & $setupCertScript
+} else {
+    Write-Host "Warning: Setup-DevCertificate.ps1 not found, skipping certificate setup" -ForegroundColor Yellow
 }
 
 # Enable verbose output
