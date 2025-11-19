@@ -19,24 +19,7 @@ try {
 
     Write-Host "Certificate created successfully with thumbprint: $($cert.Thumbprint)" -ForegroundColor Green
     Write-Host "Certificate is stored in: Cert:\CurrentUser\My\$($cert.Thumbprint)" -ForegroundColor Green
-
-    # Try to import to Root store (this may fail in CI/CD without admin rights)
-    try {
-        Write-Host "Attempting to add certificate to trusted root store..."
-        $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root", "CurrentUser")
-        $store.Open("ReadWrite")
-        $store.Add($cert)
-        $store.Close()
-        Write-Host "Certificate added to trusted root store successfully" -ForegroundColor Green
-    } catch {
-        Write-Host "Could not add to Root store (this is OK): $($_.Exception.Message)" -ForegroundColor Yellow
-        Write-Host "The application will use SkipCertificateCheck instead" -ForegroundColor Yellow
-    }
-
-    # Set environment variable for .NET to use this certificate
-    $env:ASPNETCORE_Kestrel__Certificates__Default__Path = ""
-    $env:ASPNETCORE_Kestrel__Certificates__Default__KeyPath = ""
-
+    Write-Host "Skipping Root store import - using SkipCertificateCheck for API calls instead" -ForegroundColor Cyan
     Write-Host "Development certificate setup complete" -ForegroundColor Green
 
 } catch {
