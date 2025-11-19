@@ -29,6 +29,38 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 }
 
+# Create and trust development certificate for HTTPS
+Write-Host "Setting up development certificate for HTTPS..." -ForegroundColor Cyan
+
+try {
+    # Clean any existing dev certs
+    Write-Host "Cleaning existing certificates..."
+    dotnet dev-certs https --clean | Out-Null
+
+    # Create a new dev certificate
+    Write-Host "Creating new development certificate..."
+    dotnet dev-certs https | Out-Null
+
+    # Export the certificate to a PFX file
+    $certPath = Join-Path $env:TEMP "aspnetcore-dev-cert.pfx"
+    $certPassword = "DevCertPassword"
+    Write-Host "Exporting certificate..."
+    dotnet dev-certs https --export-path $certPath --password $certPassword | Out-Null
+
+    # Import the certificate into the trusted root store
+    Write-Host "Importing certificate to trusted root store..."
+    $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certPath, $certPassword)
+    $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root", "CurrentUser")
+    $store.Open("ReadWrite")
+    $store.Add($cert)
+    $store.Close()
+
+    Write-Host "Development certificate created and trusted successfully" -ForegroundColor Green
+} catch {
+    Write-Host "Warning: Failed to set up development certificate: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "Continuing anyway - certificate skip parameters will be used for API calls" -ForegroundColor Yellow
+}
+
 # Enable verbose output
 $VerbosePreference = "Continue"
 
