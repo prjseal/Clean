@@ -1,0 +1,111 @@
+name: PR - Build NuGet Packages
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-packages:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Get latest NuGet version and create build version
+        id: version
+        shell: pwsh
+        run: |
+          # Query NuGet API for the latest version of the Clean package
+          $packageId = "Clean"
+          $nugetApiUrl = "https://api.nuget.org/v3-flatcontainer/$packageId/index.json"
+
+          Write-Host "Fetching latest version for package: $packageId"
+
+          try {
+            $response = Invoke-RestMethod -Uri $nugetApiUrl -ErrorAction Stop
+            $versions = $response.versions
+
+            # Filter out prerelease versions and get the latest stable version
+            $stableVersions = $versions | Where-Object { $_ -notmatch '-' }
+
+            if ($stableVersions.Count -eq 0) {
+              # If no stable versions, use the latest version (including prerelease)
+              $latestVersion = $versions[-1]
+            } else {
+              $latestVersion = $stableVersions[-1]
+            }
+
+            Write-Host "Latest version found: $latestVersion"
+
+            # Create build version: {latestVersion}.{buildNumber}
+            $buildNumber = "${{ github.run_number }}"
+            $buildVersion = "$latestVersion.$buildNumber"
+
+            Write-Host "Build version: $buildVersion"
+
+            # Output the version for use in subsequent steps
+            echo "version=$buildVersion" >> $env:GITHUB_OUTPUT
+            echo "base_version=$latestVersion" >> $env:GITHUB_OUTPUT
+          }
+          catch {
+            Write-Host "Error fetching version from NuGet: $_"
+            Write-Host "Using default version: 1.0.0.$buildNumber"
+            $buildVersion = "1.0.0.$buildNumber"
+            echo "version=$buildVersion" >> $env:GITHUB_OUTPUT
+            echo "base_version=1.0.0" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Display version info
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Build Version Information" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Base Version: ${{ steps.version.outputs.base_version }}" -ForegroundColor Green
+          Write-Host "Build Number: ${{ github.run_number }}" -ForegroundColor Green
+          Write-Host "Full Version: ${{ steps.version.outputs.version }}" -ForegroundColor Yellow
+          Write-Host "================================================" -ForegroundColor Cyan
+
+      - name: Run CreateNuGetPackages script
+        shell: pwsh
+        run: |
+          Write-Host "Running CreateNuGetPackages.ps1 with version ${{ steps.version.outputs.version }}"
+          ./CreateNuGetPackages.ps1 -Version "${{ steps.version.outputs.version }}"
+
+      - name: Upload NuGet packages as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: nuget-packages-${{ steps.version.outputs.version }}
+          path: .artifacts/nuget/*.nupkg
+          if-no-files-found: warn
+
+      - name: Build Summary
+        if: always()
+        run: |
+          Write-Host "================================================" -ForegroundColor Green
+          Write-Host "Build Summary" -ForegroundColor Green
+          Write-Host "================================================" -ForegroundColor Green
+          Write-Host "Version: ${{ steps.version.outputs.version }}" -ForegroundColor Cyan
+          Write-Host "PR Number: ${{ github.event.pull_request.number }}" -ForegroundColor Cyan
+          Write-Host "Branch: ${{ github.head_ref }}" -ForegroundColor Cyan
+          Write-Host "Triggered by: ${{ github.actor }}" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Green
+
+          # List generated packages
+          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg" -ErrorAction SilentlyContinue
+          if ($packages) {
+            Write-Host "`nGenerated Packages:" -ForegroundColor Yellow
+            foreach ($pkg in $packages) {
+              Write-Host "  - $($pkg.Name)" -ForegroundColor White
+            }
+          } else {
+            Write-Host "`nNo packages were generated." -ForegroundColor Red
+          }

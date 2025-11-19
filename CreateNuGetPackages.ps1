@@ -183,6 +183,9 @@ $templatePackPath = $null
 $cleanCsprojPath = $null
 $umbracoVersion = $null
 
+# Extract base version without suffix (e.g., "7.0.0-rc1" -> "7.0.0")
+$baseVersion = $Version -replace '-.*$', ''
+
 foreach ($file in $csprojFiles) {
     [xml]$xml = Get-Content $file.FullName
 
@@ -192,17 +195,20 @@ foreach ($file in $csprojFiles) {
 
     $packageVersionNode = $xml.SelectSingleNode("//ns:PackageVersion", $nsmgr)
     $versionNode = $xml.SelectSingleNode("//ns:Version", $nsmgr)
+    $informationalVersionNode = $xml.SelectSingleNode("//ns:InformationalVersion", $nsmgr)
+    $assemblyVersionNode = $xml.SelectSingleNode("//ns:AssemblyVersion", $nsmgr)
+    $fileModified = $false
 
     if ($packageVersionNode) {
         if ($packageVersionNode.InnerText -ne $Version) {
             $packageVersionNode.InnerText = $Version
-            $xml.Save($file.FullName)
+            $fileModified = $true
             $updatedFiles += "$($file.FullName) (PackageVersion)"
         }
     } elseif ($versionNode) {
         if ($versionNode.InnerText -ne $Version) {
             $versionNode.InnerText = $Version
-            $xml.Save($file.FullName)
+            $fileModified = $true
             $updatedFiles += "$($file.FullName) (Version)"
         }
     } else {
@@ -211,9 +217,64 @@ foreach ($file in $csprojFiles) {
             $newNode = $xml.CreateElement("Version", $ns)
             $newNode.InnerText = $Version
             $propertyGroup.AppendChild($newNode) | Out-Null
-            $xml.Save($file.FullName)
+            $fileModified = $true
             $updatedFiles += "$($file.FullName) (Version added)"
         }
+    }
+
+    # Update InformationalVersion to base version (without suffix)
+    if ($informationalVersionNode) {
+        if ($informationalVersionNode.InnerText -ne $baseVersion) {
+            $informationalVersionNode.InnerText = $baseVersion
+            $fileModified = $true
+            $updatedFiles += "$($file.FullName) (InformationalVersion)"
+        }
+    } else {
+        $propertyGroup = $xml.SelectSingleNode("//ns:PropertyGroup", $nsmgr)
+        if ($propertyGroup) {
+            $newNode = $xml.CreateElement("InformationalVersion", $ns)
+            $newNode.InnerText = $baseVersion
+            $propertyGroup.AppendChild($newNode) | Out-Null
+            $fileModified = $true
+            $updatedFiles += "$($file.FullName) (InformationalVersion added)"
+        }
+    }
+
+    # Update AssemblyVersion to base version (without suffix)
+    if ($assemblyVersionNode) {
+        if ($assemblyVersionNode.InnerText -ne $baseVersion) {
+            $assemblyVersionNode.InnerText = $baseVersion
+            $fileModified = $true
+            $updatedFiles += "$($file.FullName) (AssemblyVersion)"
+        }
+    } else {
+        $propertyGroup = $xml.SelectSingleNode("//ns:PropertyGroup", $nsmgr)
+        if ($propertyGroup) {
+            $newNode = $xml.CreateElement("AssemblyVersion", $ns)
+            $newNode.InnerText = $baseVersion
+            $propertyGroup.AppendChild($newNode) | Out-Null
+            $fileModified = $true
+            $updatedFiles += "$($file.FullName) (AssemblyVersion added)"
+        }
+    }
+
+    # Update any PackageReference elements that reference Clean.* packages
+    $cleanPackageRefs = $xml.SelectNodes("//ns:PackageReference[starts-with(@Include, 'Clean.')]", $nsmgr)
+    foreach ($packageRef in $cleanPackageRefs) {
+        if ($packageRef.HasAttribute("Version")) {
+            $currentVersion = $packageRef.GetAttribute("Version")
+            if ($currentVersion -ne $Version) {
+                $packageRef.SetAttribute("Version", $Version)
+                $fileModified = $true
+                $packageName = $packageRef.GetAttribute("Include")
+                $updatedFiles += "$($file.FullName) (PackageReference: $packageName)"
+            }
+        }
+    }
+
+    # Save the file if any modifications were made
+    if ($fileModified) {
+        $xml.Save($file.FullName)
     }
 
     if ($file.Name -eq "template-pack.csproj") {
@@ -245,19 +306,91 @@ foreach ($bin in $binFolders) {
     Remove-Item "$($bin.FullName)\*" -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-$slnFiles = Get-ChildItem -Path $PSScriptRoot -Recurse -Filter *.sln
-foreach ($sln in $slnFiles) {
-    Write-Host "`nProcessing solution: $($sln.FullName)"
-    dotnet clean $sln.FullName
-    dotnet build $sln.FullName
-    dotnet pack $sln.FullName
+# Add local NuGet source for intermediate packages
+Write-Host "`nAdding local NuGet source: $nugetDestination"
+$sourceName = "CleanLocalPackages"
+$existingSource = dotnet nuget list source | Select-String -Pattern $sourceName
+if ($existingSource) {
+    dotnet nuget remove source $sourceName
 }
+dotnet nuget add source $nugetDestination --name $sourceName
 
-if ($templatePackPath) {
-    Write-Host "`nPacking template-pack.csproj: $templatePackPath"
-    dotnet pack $templatePackPath
-} else {
-    Write-Host "`ntemplate-pack.csproj not found or excluded."
+try {
+    # Build and pack in dependency order to avoid NU1102 errors
+    # Order: Clean.Core -> Clean.Headless -> Clean
+
+    $cleanCorePath = Get-ChildItem -Path $PSScriptRoot -Recurse -Filter "Clean.Core.csproj" -File | Where-Object {
+        $_.FullName -notmatch "\\bin\\" -and $_.FullName -notmatch "\\obj\\"
+    } | Select-Object -First 1
+
+    $cleanHeadlessPath = Get-ChildItem -Path $PSScriptRoot -Recurse -Filter "Clean.Headless.csproj" -File | Where-Object {
+        $_.FullName -notmatch "\\bin\\" -and $_.FullName -notmatch "\\obj\\"
+    } | Select-Object -First 1
+
+    $cleanPath = Get-ChildItem -Path $PSScriptRoot -Recurse -Filter "Clean.csproj" -File | Where-Object {
+        $_.FullName -notmatch "\\bin\\" -and $_.FullName -notmatch "\\obj\\" -and $_.Name -eq "Clean.csproj"
+    } | Select-Object -First 1
+
+    # Step 1: Build and pack Clean.Core
+    if ($cleanCorePath) {
+        Write-Host "`n=== Building Clean.Core ==="
+        dotnet build $cleanCorePath.FullName --configuration Release
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Packing Clean.Core..."
+            dotnet pack $cleanCorePath.FullName --configuration Release --no-build
+
+            # Copy to nuget destination immediately
+            $corePackage = Get-ChildItem -Path (Split-Path $cleanCorePath.FullName) -Recurse -Filter "Clean.Core.$Version.nupkg" | Where-Object {
+                $_.FullName -match "\\Release\\"
+            } | Select-Object -First 1
+
+            if ($corePackage) {
+                Copy-Item $corePackage.FullName -Destination $nugetDestination -Force
+                Write-Host "Copied Clean.Core package to local source" -ForegroundColor Green
+            }
+        }
+    }
+
+    # Step 2: Build and pack Clean.Headless
+    if ($cleanHeadlessPath) {
+        Write-Host "`n=== Building Clean.Headless ==="
+        dotnet build $cleanHeadlessPath.FullName --configuration Release
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Packing Clean.Headless..."
+            dotnet pack $cleanHeadlessPath.FullName --configuration Release --no-build
+
+            # Copy to nuget destination immediately
+            $headlessPackage = Get-ChildItem -Path (Split-Path $cleanHeadlessPath.FullName) -Recurse -Filter "Clean.Headless.$Version.nupkg" | Where-Object {
+                $_.FullName -match "\\Release\\"
+            } | Select-Object -First 1
+
+            if ($headlessPackage) {
+                Copy-Item $headlessPackage.FullName -Destination $nugetDestination -Force
+                Write-Host "Copied Clean.Headless package to local source" -ForegroundColor Green
+            }
+        }
+    }
+
+    # Step 3: Build and pack Clean (depends on Clean.Core and Clean.Headless)
+    if ($cleanPath) {
+        Write-Host "`n=== Building Clean ==="
+        dotnet build $cleanPath.FullName --configuration Release
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Packing Clean..."
+            dotnet pack $cleanPath.FullName --configuration Release --no-build
+        }
+    }
+
+    # Step 4: Pack template-pack if it exists
+    if ($templatePackPath) {
+        Write-Host "`n=== Packing template-pack ==="
+        dotnet pack $templatePackPath --configuration Release
+    }
+}
+finally {
+    # Remove the temporary local source
+    Write-Host "`nRemoving local NuGet source: $sourceName"
+    dotnet nuget remove source $sourceName
 }
 
 $releasePackages = Get-ChildItem -Path $PSScriptRoot -Recurse -Filter *.nupkg | Where-Object {
