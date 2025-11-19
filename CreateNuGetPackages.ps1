@@ -113,8 +113,23 @@ Write-Verbose "Solution root directory: $solutionRoot"
 # run dotnet run in the current directory to start the Umbraco project
 Write-Verbose "Starting Umbraco project to ensure API is running..."
 
+# Create a process start info to pass environment variables
+$psi = New-Object System.Diagnostics.ProcessStartInfo
+$psi.FileName = "dotnet"
+$psi.Arguments = "run --project Clean.Blog.csproj --no-launch-profile --urls `"https://localhost:44340`""
+$psi.WorkingDirectory = $solutionRoot
+$psi.UseShellExecute = $false
+$psi.RedirectStandardOutput = $false
+$psi.RedirectStandardError = $false
+$psi.CreateNoWindow = $true
+
+# Set environment variables to use Development mode and configure Kestrel
+$psi.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = "Development"
+$psi.EnvironmentVariables["DOTNET_ENVIRONMENT"] = "Development"
+$psi.EnvironmentVariables["ASPNETCORE_Kestrel__Certificates__Default__AllowInvalid"] = "true"
+
 # Start the process and keep a reference
-$umbracoProcess = Start-Process -FilePath "dotnet" -ArgumentList "run --project Clean.Blog.csproj" -NoNewWindow -PassThru
+$umbracoProcess = [System.Diagnostics.Process]::Start($psi)
 
 Write-Host "Umbraco process started with ID: $($umbracoProcess.Id)"
 
