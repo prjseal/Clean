@@ -1,11 +1,5 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$PackageId,
-
-    [Parameter(Mandatory = $true)]
-    [string]$OutputFolder,
-
-    [Parameter(Mandatory = $true)]
     [string]$Version
 )
 
@@ -31,22 +25,54 @@ if (-not $Version) {
     exit 1
 }
 
-
 # Get the script's directory
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$CurrentDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+
+# Get current process ID
+$currentPid = $PID
+
+# Find processes related to the template path
+$processes = Get-Process | Where-Object {
+    $_.Path -like "*$CurrentDir*" -and $_.Id -ne $currentPid
+}
+
+foreach ($proc in $processes) {
+    Write-Host "Stopping process: $($proc.ProcessName) (PID: $($proc.Id))"
+    Stop-Process -Id $proc.Id -Force
+}
+
+# find a file within $CurrentDir or descendant directories named ImportPackageXmlMigration.cs
+function Get-PackageZipRoot {
+    $packageMigrationFiles = Get-ChildItem -Path $CurrentDir -Filter *ImportPackageXmlMigration.cs -Recurse -File
+    if ($packageMigrationFiles.Count -eq 0) {
+        throw "Could not find ImportPackageXmlMigration.cs in any parent directory."
+    }
+    
+    # return the directory of the first found csproj file
+    return $packageMigrationFiles[0].Directory.FullName
+}
+
+$OutputFolder = Get-PackageZipRoot
+
+Write-Verbose "Output folder for downloaded package: $OutputFolder"
 
 # write the script directory to verbose output
-Write-Verbose "Script directory: $scriptDir"
+Write-Verbose "Script directory: $CurrentDir"
 
-$artifactsRoot = Join-Path $RootPath ".artifacts"
+$artifactsRoot = Join-Path $CurrentDir ".artifacts"
 
-# iterate through the $releasePackages and copy them to .artifacts/nuget
+# Define NuGet destination path
 $nugetDestination = Join-Path $artifactsRoot "nuget"
+
+#check if the nuget destination exists, if not create it
+if (-not (Test-Path -Path $nugetDestination)) {
+    Write-Verbose "Creating NuGet destination directory: $nugetDestination"
+    New-Item -ItemType Directory -Path $nugetDestination | Out-Null
+}
 
 # iterate through the directory parts to find the solution root (where the Clean.Blog.csproj file is located) 
 function Get-SolutionRoot {
-    $currentDir = $scriptDir
-    $csprojFiles = Get-ChildItem -Path $currentDir -Filter *Clean.Blog.csproj -Recurse -File
+    $csprojFiles = Get-ChildItem -Path $CurrentDir -Filter *Clean.Blog.csproj -Recurse -File
     if ($csprojFiles.Count -eq 0) {
         throw "Could not find Clean.Blog.csproj in any parent directory."
     }
@@ -63,9 +89,14 @@ Set-Location -Path $solutionRoot
 # write the solution root to verbose output
 Write-Verbose "Solution root directory: $solutionRoot"
 
+
 # run dotnet run in the current directory to start the Umbraco project
 Write-Verbose "Starting Umbraco project to ensure API is running..."
-Start-Process -FilePath "dotnet" -ArgumentList "run --project Clean.Blog.csproj" -NoNewWindow -PassThru | Out-Null
+
+# Start the process and keep a reference
+$umbracoProcess = Start-Process -FilePath "dotnet" -ArgumentList "run --project Clean.Blog.csproj" -NoNewWindow -PassThru
+
+Write-Host "Umbraco process started with ID: $($umbracoProcess.Id)"
 
 # wait for the website to start, checking every 10 seconds if the umbraco path is reachable 
 $maxRetries = 12
@@ -113,8 +144,8 @@ try {
     Write-Verbose "Access token retrieved successfully."
 
     # Step 2: Call Package Info API
-    Write-Verbose "Creating package for package version: $PackageId"
-    $packageInfoUrl = "https://localhost:44340/api/v1/package/$PackageId"
+    Write-Verbose "Creating package for package version: $Version"
+    $packageInfoUrl = "https://localhost:44340/api/v1/package/$Version"
     $authHeaders = @{
         "Authorization" = "Bearer $accessToken"
     }
@@ -132,6 +163,12 @@ try {
 }
 catch {
     Write-Host "❌ An error occurred: $($_.Exception.Message)"
+}
+
+
+if ($umbracoProcess -and !$umbracoProcess.HasExited) {
+    Write-Host "Stopping Umbraco process with ID: $($umbracoProcess.Id)"
+    Stop-Process -Id $umbracoProcess.Id -Force
 }
 
 # update the Version and PackageVersion in all .csproj files except Clean.Blog.csproj and Clean.Models.csproj
