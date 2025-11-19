@@ -82,10 +82,13 @@ jobs:
           # Clean any existing dev certs
           dotnet dev-certs https --clean
 
-          # Create a new dev certificate (without --trust to avoid interactive prompt)
+          # Create a new dev certificate (this creates it in the user's certificate store)
+          dotnet dev-certs https
+
+          # Export the certificate to a PFX file
           dotnet dev-certs https --export-path $env:TEMP\aspnetcore-dev-cert.pfx --password "DevCertPassword"
 
-          # Import the certificate into the trusted root store
+          # Import the certificate into the trusted root store (so it's trusted)
           $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2("$env:TEMP\aspnetcore-dev-cert.pfx", "DevCertPassword")
           $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root", "CurrentUser")
           $store.Open("ReadWrite")
@@ -93,14 +96,6 @@ jobs:
           $store.Close()
 
           Write-Host "Development certificate created and added to trusted root store" -ForegroundColor Green
-
-          # Verify the certificate exists (without --trust to avoid interactive prompt)
-          dotnet dev-certs https --check
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "Certificate verification successful" -ForegroundColor Green
-          } else {
-            Write-Host "Certificate check failed, but continuing..." -ForegroundColor Yellow
-          }
 
       - name: Run CreateNuGetPackages script
         shell: pwsh
