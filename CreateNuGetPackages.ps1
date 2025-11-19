@@ -29,27 +29,22 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 }
 
-# Create and trust development certificate for HTTPS
+# Create and trust development certificate for HTTPS using native PowerShell
 Write-Host "Setting up development certificate for HTTPS..." -ForegroundColor Cyan
 
 try {
-    # Clean any existing dev certs
-    Write-Host "Cleaning existing certificates..."
-    dotnet dev-certs https --clean | Out-Null
-
-    # Create a new dev certificate
-    Write-Host "Creating new development certificate..."
-    dotnet dev-certs https | Out-Null
+    # Create a self-signed certificate using PowerShell (no interactive prompts)
+    Write-Host "Creating self-signed certificate for localhost..."
+    $cert = New-SelfSignedCertificate -DnsName "localhost" -CertStoreLocation "Cert:\CurrentUser\My" -KeyExportPolicy Exportable -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256
 
     # Export the certificate to a PFX file
-    $certPath = Join-Path $env:TEMP "aspnetcore-dev-cert.pfx"
-    $certPassword = "DevCertPassword"
+    $certPath = Join-Path $env:TEMP "aspnetcore-localhost-cert.pfx"
+    $certPassword = ConvertTo-SecureString -String "DevCertPassword" -Force -AsPlainText
     Write-Host "Exporting certificate..."
-    dotnet dev-certs https --export-path $certPath --password $certPassword | Out-Null
+    Export-PfxCertificate -Cert $cert -FilePath $certPath -Password $certPassword | Out-Null
 
     # Import the certificate into the trusted root store
     Write-Host "Importing certificate to trusted root store..."
-    $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certPath, $certPassword)
     $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root", "CurrentUser")
     $store.Open("ReadWrite")
     $store.Add($cert)
