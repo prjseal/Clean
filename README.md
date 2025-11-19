@@ -1,10 +1,6 @@
-# Clean Starter Kit for Umbraco 13, 15, 16 and 17
+# Clean Starter Kit for Umbraco 13 and 17
 
-## version 4.1.0 is for Umbraco 13 (Long Term Support)
-
-## version 5.0.0 is for Umbraco 15 (Standard Term Support)
-
-## version 6.0.0 is for Umbraco 16 (Standard Term Support)
+## version 4.2.2 is for Umbraco 13 (Long Term Support)
 
 ## version 7.0.0 is for Umbraco 17 (Long Term Support)
 
@@ -36,90 +32,6 @@ dotnet add "MyProject" package Clean --version 4.2.2
 
 dotnet run --project "MyProject"
 #Running
-```
-
-## Umbraco 15
-
-### NuGet Package
-
-```ps
-# Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::15.4.1 --force
-
-# Create solution/project
-dotnet new sln --name "MySolution"
-dotnet new umbraco --force -n "MyProject"  --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
-dotnet sln add "MyProject"
-
-
-#Add Packages
-dotnet add "MyProject" package Clean --version 5.2.2
-
-dotnet run --project "MyProject"
-#Running
-```
-
-### dotnet template
-
-```ps
-#Install the template for Clean Starter Kit
-dotnet new install Umbraco.Community.Templates.Clean::5.2.0 --force
-
-#Create a new project using the umbraco-starter-clean template
-dotnet new umbraco-starter-clean -n MyProject
-
-#Go to the folder of the project that we created
-cd MyProject
-
-#Run the new website we created
-dotnet run --project "MyProject.Blog"
-
-# Login with admin@example.com and 1234567890.
-# Save and publish the home page and do a save on one of the dictionary items in the translation section.
-# The site should be running and visible on the front end now
-```
-
-## Umbraco 16
-
-### NuGet Package
-
-```ps
-# Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::16.0.0-rc4 --force
-
-# Create solution/project
-dotnet new sln --name "MySolution"
-dotnet new umbraco --force -n "MyProject"  --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
-dotnet sln add "MyProject"
-
-
-#Add Packages
-dotnet add "MyProject" package Clean --version 6.0.0-rc3
-
-dotnet run --project "MyProject"
-# Login with admin@example.com and 1234567890.
-# Save and publish the home page and do a save on one of the dictionary items in the translation section.
-# The site should be running and visible on the front end now
-```
-
-### dotnet template
-
-```ps
-#Install the template for Clean Starter Kit
-dotnet new install Umbraco.Community.Templates.Clean::6.0.0-rc3 --force
-
-#Create a new project using the umbraco-starter-clean template
-dotnet new umbraco-starter-clean -n MyProject
-
-#Go to the folder of the project that we created
-cd MyProject
-
-#Run the new website we created
-dotnet run --project "MyProject.Blog"
-
-# Login with admin@example.com and 1234567890.
-# Save and publish the home page and do a save on one of the dictionary items in the translation section.
-# The site should be running and visible on the front end now
 ```
 
 ## Umbraco 17
