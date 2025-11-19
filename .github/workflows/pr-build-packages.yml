@@ -74,29 +74,6 @@ jobs:
           Write-Host "Full Version: ${{ steps.version.outputs.version }}" -ForegroundColor Yellow
           Write-Host "================================================" -ForegroundColor Cyan
 
-      - name: Create and trust development certificate
-        shell: pwsh
-        run: |
-          Write-Host "Creating development certificate for HTTPS..."
-
-          # Clean any existing dev certs
-          dotnet dev-certs https --clean
-
-          # Create a new dev certificate (this creates it in the user's certificate store)
-          dotnet dev-certs https
-
-          # Export the certificate to a PFX file
-          dotnet dev-certs https --export-path $env:TEMP\aspnetcore-dev-cert.pfx --password "DevCertPassword"
-
-          # Import the certificate into the trusted root store (so it's trusted)
-          $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2("$env:TEMP\aspnetcore-dev-cert.pfx", "DevCertPassword")
-          $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root", "CurrentUser")
-          $store.Open("ReadWrite")
-          $store.Add($cert)
-          $store.Close()
-
-          Write-Host "Development certificate created and added to trusted root store" -ForegroundColor Green
-
       - name: Run CreateNuGetPackages script
         shell: pwsh
         run: |
