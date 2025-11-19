@@ -3,9 +3,20 @@ param(
     [string]$Version
 )
 
+# Detect PowerShell version and configure SSL certificate handling
+$psVersion = $PSVersionTable.PSVersion.Major
+Write-Host "PowerShell Version: $psVersion"
 
-# Ignore SSL certificate errors (use only in dev environments!)
-Add-Type @"
+# Create a hashtable for certificate skip parameter based on PS version
+$certSkipParam = @{}
+if ($psVersion -ge 7) {
+    Write-Host "Using PowerShell 7+ SkipCertificateCheck parameter"
+    $certSkipParam = @{ SkipCertificateCheck = $true }
+} else {
+    Write-Host "Using PowerShell 5.1 ICertificatePolicy approach"
+    # For PowerShell 5.1 with .NET Framework, use ICertificatePolicy
+    # This doesn't exist in .NET Core, but works perfectly in .NET Framework
+    Add-Type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -14,8 +25,9 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     }
 }
 "@
-[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-
+    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+}
 
 # Enable verbose output
 $VerbosePreference = "Continue"
@@ -98,22 +110,35 @@ $umbracoProcess = Start-Process -FilePath "dotnet" -ArgumentList "run --project 
 
 Write-Host "Umbraco process started with ID: $($umbracoProcess.Id)"
 
-# wait for the website to start, checking every 10 seconds if the umbraco path is reachable 
+# wait for the website to start, checking every 10 seconds if the umbraco path is reachable
 $maxRetries = 12
 $retryCount = 0
+$umbracoStarted = $false
+
 while ($retryCount -lt $maxRetries) {
     try {
-        $response = Invoke-WebRequest -Uri "https://localhost:44340/umbraco" -UseBasicParsing -ErrorAction Stop
+        $response = Invoke-WebRequest -Uri "https://localhost:44340/umbraco" -UseBasicParsing @certSkipParam -ErrorAction Stop
         if ($response.StatusCode -eq 200) {
-            Write-Verbose "Umbraco project is running."
+            Write-Host "Umbraco project is running and responding." -ForegroundColor Green
+            $umbracoStarted = $true
             break
         }
     }
     catch {
-        Write-Verbose "Waiting for Umbraco project to start... (Attempt $($retryCount + 1) of $maxRetries)"
+        Write-Verbose "Waiting for Umbraco project to start... (Attempt $($retryCount + 1) of $maxRetries): $($_.Exception.Message)"
         Start-Sleep -Seconds 10
         $retryCount++
     }
+}
+
+# Check if Umbraco started successfully
+if (-not $umbracoStarted) {
+    Write-Host "ERROR: Umbraco failed to start after $maxRetries attempts." -ForegroundColor Red
+    if ($umbracoProcess -and !$umbracoProcess.HasExited) {
+        Write-Host "Stopping Umbraco process with ID: $($umbracoProcess.Id)"
+        Stop-Process -Id $umbracoProcess.Id -Force
+    }
+    exit 1
 }
 
 try {
@@ -135,7 +160,7 @@ try {
         "Content-Type" = "application/x-www-form-urlencoded"
     }
 
-    $response = Invoke-RestMethod -Method Post -Uri $tokenUrl -Body $tokenBody -Headers $tokenHeaders -ErrorAction Stop
+    $response = Invoke-RestMethod -Method Post -Uri $tokenUrl -Body $tokenBody -Headers $tokenHeaders @certSkipParam -ErrorAction Stop
     $accessToken = $response.access_token
 
     if (-not $accessToken) {
@@ -150,7 +175,7 @@ try {
         "Authorization" = "Bearer $accessToken"
     }
 
-    $packageInfo = Invoke-RestMethod -Method Get -Uri $packageInfoUrl -Headers $authHeaders -ErrorAction Stop
+    $packageInfo = Invoke-RestMethod -Method Get -Uri $packageInfoUrl -Headers $authHeaders @certSkipParam -ErrorAction Stop
     Write-Verbose "Package info retrieved successfully."
 
     # Step 3: Download Package
@@ -158,11 +183,18 @@ try {
     $downloadUrl = "https://localhost:44340/umbraco/management/api/v1/package/created/$packageInfo/download/"
     $outputFile = Join-Path $OutputFolder "package.zip"
 
-    Invoke-RestMethod -Method Get -Uri $downloadUrl -Headers $authHeaders -OutFile $outputFile -ErrorAction Stop
-    Write-Host "✅ Package downloaded successfully to $outputFile"
+    Invoke-RestMethod -Method Get -Uri $downloadUrl -Headers $authHeaders -OutFile $outputFile @certSkipParam -ErrorAction Stop
+    Write-Host "✅ Package downloaded successfully to $outputFile" -ForegroundColor Green
 }
 catch {
-    Write-Host "❌ An error occurred: $($_.Exception.Message)"
+    Write-Host "An error occurred during package download: $($_.Exception.Message)" -ForegroundColor Red
+
+    if ($umbracoProcess -and !$umbracoProcess.HasExited) {
+        Write-Host "Stopping Umbraco process with ID: $($umbracoProcess.Id)"
+        Stop-Process -Id $umbracoProcess.Id -Force
+    }
+
+    exit 1
 }
 
 
