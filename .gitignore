@@ -22,3 +22,4 @@
 /template/Clean.Headless/bin
 /template/Clean.Headless/obj
 .artifacts/
+template/Clean.Blog/wwwroot/media/created-packages/Clean/package.zip

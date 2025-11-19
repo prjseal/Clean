@@ -4,18 +4,28 @@ param(
 )
 
 
-# Ignore SSL certificate errors (use only in dev environments!)
-Add-Type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+# Run in an elevated PowerShell session
+Write-Host "Cleaning existing .NET dev HTTPS certificates..."
+dotnet dev-certs https --clean
 
+Write-Host "Generating and exporting new dev certificate..."
+$certPath = "C:\temp\aspnetcore-dev-cert.pfx"
+$password = "password123"
+dotnet dev-certs https --export-path $certPath --password $password
+
+Write-Host "Importing certificate into LocalMachine Root store silently..."
+$mypwd = ConvertTo-SecureString -String $password -Force -AsPlainText
+
+# Use X509Store directly for better control
+$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+$cert.Import($certPath, $password, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::MachineKeySet)
+
+$store = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root","LocalMachine")
+$store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+$store.Add($cert)
+$store.Close()
+
+Write-Host "✅ Certificate trusted successfully without modal."
 
 # Enable verbose output
 $VerbosePreference = "Continue"
@@ -152,6 +162,9 @@ try {
 
     $packageInfo = Invoke-RestMethod -Method Get -Uri $packageInfoUrl -Headers $authHeaders -ErrorAction Stop
     Write-Verbose "Package info retrieved successfully."
+
+    # Wait for 30 seconds to ensure package is ready
+    Write-Verbose "Waiting for 30 seconds to ensure package is ready..."
 
     # Step 3: Download Package
     Write-Verbose "Downloading package..."
