@@ -11,6 +11,28 @@ if (-not $Version) {
     exit 1
 }
 
+# Skip SSL certificate validation for localhost calls (needed for CI/CD with self-signed certs)
+if ($PSVersionTable.PSVersion.Major -ge 6) {
+    # PowerShell Core 6+ approach
+    Write-Verbose "Configuring certificate validation bypass for PowerShell Core"
+} else {
+    # Windows PowerShell 5.x approach
+    Write-Verbose "Configuring certificate validation bypass for Windows PowerShell"
+    add-type @"
+    using System.Net;
+    using System.Security.Cryptography.X509Certificates;
+    public class TrustAllCertsPolicy : ICertificatePolicy {
+        public bool CheckValidationResult(
+            ServicePoint svcPoint, X509Certificate certificate,
+            WebRequest request, int certificateProblem) {
+            return true;
+        }
+    }
+"@
+    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+}
+
 # Get the script's directory
 $CurrentDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
@@ -91,7 +113,16 @@ $umbracoStarted = $false
 
 while ($retryCount -lt $maxRetries) {
     try {
-        $response = Invoke-WebRequest -Uri "https://localhost:44340/umbraco" -UseBasicParsing -ErrorAction Stop
+        $webRequestParams = @{
+            Uri = "https://localhost:44340/umbraco"
+            UseBasicParsing = $true
+            ErrorAction = "Stop"
+        }
+        # Add SkipCertificateCheck for PowerShell Core
+        if ($PSVersionTable.PSVersion.Major -ge 6) {
+            $webRequestParams['SkipCertificateCheck'] = $true
+        }
+        $response = Invoke-WebRequest @webRequestParams
         if ($response.StatusCode -eq 200) {
             Write-Host "Umbraco project is running and responding." -ForegroundColor Green
             $umbracoStarted = $true
@@ -134,7 +165,18 @@ try {
         "Content-Type" = "application/x-www-form-urlencoded"
     }
 
-    $response = Invoke-RestMethod -Method Post -Uri $tokenUrl -Body $tokenBody -Headers $tokenHeaders -ErrorAction Stop
+    $tokenParams = @{
+        Method = "Post"
+        Uri = $tokenUrl
+        Body = $tokenBody
+        Headers = $tokenHeaders
+        ErrorAction = "Stop"
+    }
+    # Add SkipCertificateCheck for PowerShell Core
+    if ($PSVersionTable.PSVersion.Major -ge 6) {
+        $tokenParams['SkipCertificateCheck'] = $true
+    }
+    $response = Invoke-RestMethod @tokenParams
     $accessToken = $response.access_token
 
     if (-not $accessToken) {
@@ -149,7 +191,17 @@ try {
         "Authorization" = "Bearer $accessToken"
     }
 
-    $packageInfo = Invoke-RestMethod -Method Get -Uri $packageInfoUrl -Headers $authHeaders -ErrorAction Stop
+    $packageInfoParams = @{
+        Method = "Get"
+        Uri = $packageInfoUrl
+        Headers = $authHeaders
+        ErrorAction = "Stop"
+    }
+    # Add SkipCertificateCheck for PowerShell Core
+    if ($PSVersionTable.PSVersion.Major -ge 6) {
+        $packageInfoParams['SkipCertificateCheck'] = $true
+    }
+    $packageInfo = Invoke-RestMethod @packageInfoParams
     Write-Verbose "Package info retrieved successfully."
 
     # Wait for 30 seconds to ensure package is ready
@@ -160,7 +212,18 @@ try {
     $downloadUrl = "https://localhost:44340/umbraco/management/api/v1/package/created/$packageInfo/download/"
     $outputFile = Join-Path $OutputFolder "package.zip"
 
-    Invoke-RestMethod -Method Get -Uri $downloadUrl -Headers $authHeaders -OutFile $outputFile -ErrorAction Stop
+    $downloadParams = @{
+        Method = "Get"
+        Uri = $downloadUrl
+        Headers = $authHeaders
+        OutFile = $outputFile
+        ErrorAction = "Stop"
+    }
+    # Add SkipCertificateCheck for PowerShell Core
+    if ($PSVersionTable.PSVersion.Major -ge 6) {
+        $downloadParams['SkipCertificateCheck'] = $true
+    }
+    Invoke-RestMethod @downloadParams
     Write-Host "✅ Package downloaded successfully to $outputFile" -ForegroundColor Green
 }
 catch {
