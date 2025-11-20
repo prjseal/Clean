@@ -3,30 +3,6 @@ param(
     [string]$Version
 )
 
-
-# Run in an elevated PowerShell session
-Write-Host "Cleaning existing .NET dev HTTPS certificates..."
-dotnet dev-certs https --clean
-
-Write-Host "Generating and exporting new dev certificate..."
-$certPath = "C:\temp\aspnetcore-dev-cert.pfx"
-$password = "password123"
-dotnet dev-certs https --export-path $certPath --password $password
-
-Write-Host "Importing certificate into LocalMachine Root store silently..."
-$mypwd = ConvertTo-SecureString -String $password -Force -AsPlainText
-
-# Use X509Store directly for better control
-$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
-$cert.Import($certPath, $password, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::MachineKeySet)
-
-$store = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root","LocalMachine")
-$store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
-$store.Add($cert)
-$store.Close()
-
-Write-Host "✅ Certificate trusted successfully without modal."
-
 # Enable verbose output
 $VerbosePreference = "Continue"
 
@@ -115,7 +91,7 @@ $umbracoStarted = $false
 
 while ($retryCount -lt $maxRetries) {
     try {
-        $response = Invoke-WebRequest -Uri "https://localhost:44340/umbraco" -UseBasicParsing @certSkipParam -ErrorAction Stop
+        $response = Invoke-WebRequest -Uri "https://localhost:44340/umbraco" -UseBasicParsing -ErrorAction Stop
         if ($response.StatusCode -eq 200) {
             Write-Host "Umbraco project is running and responding." -ForegroundColor Green
             $umbracoStarted = $true
@@ -158,7 +134,7 @@ try {
         "Content-Type" = "application/x-www-form-urlencoded"
     }
 
-    $response = Invoke-RestMethod -Method Post -Uri $tokenUrl -Body $tokenBody -Headers $tokenHeaders @certSkipParam -ErrorAction Stop
+    $response = Invoke-RestMethod -Method Post -Uri $tokenUrl -Body $tokenBody -Headers $tokenHeaders -ErrorAction Stop
     $accessToken = $response.access_token
 
     if (-not $accessToken) {
@@ -173,7 +149,7 @@ try {
         "Authorization" = "Bearer $accessToken"
     }
 
-    $packageInfo = Invoke-RestMethod -Method Get -Uri $packageInfoUrl -Headers $authHeaders @certSkipParam -ErrorAction Stop
+    $packageInfo = Invoke-RestMethod -Method Get -Uri $packageInfoUrl -Headers $authHeaders -ErrorAction Stop
     Write-Verbose "Package info retrieved successfully."
 
     # Wait for 30 seconds to ensure package is ready
@@ -184,7 +160,7 @@ try {
     $downloadUrl = "https://localhost:44340/umbraco/management/api/v1/package/created/$packageInfo/download/"
     $outputFile = Join-Path $OutputFolder "package.zip"
 
-    Invoke-RestMethod -Method Get -Uri $downloadUrl -Headers $authHeaders -OutFile $outputFile @certSkipParam -ErrorAction Stop
+    Invoke-RestMethod -Method Get -Uri $downloadUrl -Headers $authHeaders -OutFile $outputFile -ErrorAction Stop
     Write-Host "✅ Package downloaded successfully to $outputFile" -ForegroundColor Green
 }
 catch {
