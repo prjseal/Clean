@@ -20,6 +20,12 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Trust dev certificate
+        shell: pwsh
+        run: |
+          dotnet dev-certs https --clean
+          dotnet dev-certs https --trust
+
       - name: Get latest NuGet version and create build version
         id: version
         shell: pwsh
