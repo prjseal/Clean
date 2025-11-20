@@ -158,8 +158,8 @@ try {
     $tokenUrl = "https://localhost:44340/umbraco/management/api/v1/security/back-office/token"
     $tokenBody = @{
         grant_type    = "client_credentials"
-        client_id     = "umbraco-back-office-test"
-        client_secret = "test"
+        client_id     = "umbraco-back-office-clean-api-user"
+        client_secret = "c9DK0CxvRWklbjR"
     }
     $tokenHeaders = @{
         "Content-Type" = "application/x-www-form-urlencoded"
