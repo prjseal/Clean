@@ -191,65 +191,31 @@ jobs:
           $umbracoMajor = $umbracoMajorMap[$cleanMajor]
           Write-Host "Mapped Clean $cleanMajor.x -> Umbraco $umbracoMajor.x" -ForegroundColor Cyan
 
-          # Query NuGet for latest Umbraco.Templates version for this major
-          $packageId = "Umbraco.Templates"
-          $nugetApiUrl = "https://api.nuget.org/v3-flatcontainer/$packageId/index.json"
-
-          Write-Host "`nQuerying NuGet for $packageId versions..." -ForegroundColor Yellow
+          # Read Umbraco version from Clean.csproj
+          $cleanCsprojPath = "template/Clean/Clean.csproj"
+          Write-Host "`nReading Umbraco version from $cleanCsprojPath..." -ForegroundColor Yellow
 
           try {
-            $response = Invoke-RestMethod -Uri $nugetApiUrl -ErrorAction Stop
-            $versions = $response.versions
-
-            # Filter versions for the target major version
-            $matchingVersions = $versions | Where-Object { $_ -match "^$umbracoMajor\." }
-
-            if (-not $matchingVersions) {
-              Write-Host "⚠️  No Umbraco.Templates versions found for major version $umbracoMajor" -ForegroundColor Yellow
+            if (-not (Test-Path $cleanCsprojPath)) {
+              Write-Host "⚠️  File not found: $cleanCsprojPath" -ForegroundColor Yellow
               exit 0
             }
 
-            Write-Host "Found $($matchingVersions.Count) versions for Umbraco $umbracoMajor.x" -ForegroundColor Cyan
+            [xml]$cleanCsproj = Get-Content $cleanCsprojPath
+            $umbracoPackageRef = $cleanCsproj.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Umbraco.Cms.Web.Website" }
 
-            # Parse and separate stable vs prerelease
-            $parsedVersions = $matchingVersions | ForEach-Object {
-              $versionString = $_
-              $isPrerelease = $versionString -match '-'
-
-              # Extract base version for sorting
-              if ($versionString -match '^(\d+\.\d+\.\d+)') {
-                $baseVersion = $matches[1]
-              } else {
-                $baseVersion = $versionString
-              }
-
-              [PSCustomObject]@{
-                Original = $versionString
-                BaseVersion = [Version]$baseVersion
-                IsPrerelease = $isPrerelease
-              }
-            }
-
-            # Try to get latest stable version first
-            $stableVersions = $parsedVersions | Where-Object { -not $_.IsPrerelease } | Sort-Object -Property BaseVersion -Descending
-            $latestUmbracoVersion = $null
-
-            if ($stableVersions.Count -gt 0) {
-              $latestUmbracoVersion = $stableVersions[0].Original
-              Write-Host "Latest stable Umbraco version: $latestUmbracoVersion" -ForegroundColor Green
-            } else {
-              # No stable versions, use latest prerelease
-              $prereleaseVersions = $parsedVersions | Sort-Object -Property BaseVersion -Descending
-              if ($prereleaseVersions.Count -gt 0) {
-                $latestUmbracoVersion = $prereleaseVersions[0].Original
-                Write-Host "No stable versions available, using latest prerelease: $latestUmbracoVersion" -ForegroundColor Yellow
-              }
-            }
-
-            if (-not $latestUmbracoVersion) {
-              Write-Host "⚠️  Could not determine latest Umbraco version" -ForegroundColor Yellow
+            if (-not $umbracoPackageRef) {
+              Write-Host "⚠️  Could not find Umbraco.Cms.Web.Website PackageReference in $cleanCsprojPath" -ForegroundColor Yellow
               exit 0
             }
+
+            $umbracoVersion = $umbracoPackageRef.Version
+            if ([string]::IsNullOrWhiteSpace($umbracoVersion)) {
+              Write-Host "⚠️  Umbraco.Cms.Web.Website version is empty" -ForegroundColor Yellow
+              exit 0
+            }
+
+            Write-Host "Found Umbraco version: $umbracoVersion" -ForegroundColor Green
 
             # Update README files
             $readmeFiles = @(
@@ -274,7 +240,7 @@ jobs:
                 $updatedSection = $section
 
                 # Update Umbraco.Templates version
-                $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Templates::\S+", "dotnet new install Umbraco.Templates::$latestUmbracoVersion"
+                $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Templates::\S+", "dotnet new install Umbraco.Templates::$umbracoVersion"
 
                 # Update Clean package version
                 $updatedSection = $updatedSection -replace "(dotnet add .* package Clean --version )\S+", "`${1}$cleanVersion"
@@ -289,7 +255,7 @@ jobs:
                 Set-Content -Path $readmeFile -Value $content -NoNewline
 
                 Write-Host "✅ Updated $readmeFile" -ForegroundColor Green
-                Write-Host "   - Umbraco.Templates: $latestUmbracoVersion" -ForegroundColor White
+                Write-Host "   - Umbraco.Templates: $umbracoVersion" -ForegroundColor White
                 Write-Host "   - Clean: $cleanVersion" -ForegroundColor White
                 Write-Host "   - Umbraco.Community.Templates.Clean: $cleanVersion" -ForegroundColor White
               } else {

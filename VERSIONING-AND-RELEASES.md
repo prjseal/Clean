@@ -213,9 +213,9 @@ When you publish a release, the `release-nuget.yml` workflow:
 6. **Publishes** to NuGet.org
 7. **Uploads** `.nupkg` files to GitHub Release assets
 8. **Updates** README.md files with latest versions:
-   - Queries NuGet for latest Umbraco.Templates version for the corresponding Umbraco major
+   - Reads Umbraco version from `template/Clean/Clean.csproj` (Umbraco.Cms.Web.Website package reference)
    - Updates installation commands with new Clean version
-   - Updates Umbraco.Templates version (prefers stable, falls back to prerelease if no stable exists)
+   - Updates Umbraco.Templates version to match the Umbraco version used in the project
    - Updates both `README.md` and `template/README.md`
 9. **Commits** version updates to `main` branch (automatically, without triggering other workflows)
 10. **Reports** success or failure
@@ -319,8 +319,8 @@ The Clean packages maintain version alignment with Umbraco CMS:
 - Version changes are automatically committed directly to `main` after successful release
 - The commit includes:
   - Updated `.csproj` files with new Clean package version
-  - Updated `README.md` and `template/README.md` with latest versions
-  - Latest Umbraco.Templates version for the corresponding Umbraco major
+  - Updated `README.md` and `template/README.md` with versions from the csproj files
+  - Umbraco.Templates version matches the Umbraco.Cms version used in the project
 - The commit message includes `[skip ci]` to prevent triggering other workflows
 - Uses `github-actions[bot]` as the commit author
 - This ensures developers cloning the repo see the latest released versions with correct installation commands
