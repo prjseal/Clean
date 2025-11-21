@@ -7,6 +7,8 @@ on:
 jobs:
   publish-release:
     runs-on: windows-latest
+    permissions:
+      contents: write  # Allow pushing to main branch
 
     steps:
       - name: Checkout repository
@@ -154,6 +156,59 @@ jobs:
               Write-Host "⚠️  Failed to upload $($pkg.Name)" -ForegroundColor Yellow
             }
           }
+
+      - name: Commit version updates to main branch
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Committing Version Updates to Main Branch" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          # Configure git with bot user
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Fetch and switch to main branch
+          Write-Host "Fetching main branch..." -ForegroundColor Yellow
+          git fetch origin main
+
+          Write-Host "Switching to main branch..." -ForegroundColor Yellow
+          git switch main
+
+          # Check if there are any changes to commit
+          $gitStatus = git status --porcelain
+          if ([string]::IsNullOrWhiteSpace($gitStatus)) {
+            Write-Host "No changes to commit - versions are already up to date" -ForegroundColor Yellow
+            exit 0
+          }
+
+          # Show what files will be committed
+          Write-Host "`nModified files:" -ForegroundColor Cyan
+          git status --short
+
+          # Stage all .csproj files
+          Write-Host "`nStaging .csproj files..." -ForegroundColor Yellow
+          git add "**/*.csproj"
+
+          # Commit with skip ci flag to prevent triggering other workflows
+          $commitMessage = "chore: Update versions to ${{ steps.version.outputs.version }} [skip ci]"
+          Write-Host "`nCommitting changes with message: $commitMessage" -ForegroundColor Yellow
+          git commit -m $commitMessage
+
+          # Push to main
+          Write-Host "`nPushing to main branch..." -ForegroundColor Yellow
+          git push origin main
+
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "✅ Successfully pushed version updates to main branch" -ForegroundColor Green
+          } else {
+            Write-Host "❌ Failed to push to main branch (exit code: $LASTEXITCODE)" -ForegroundColor Red
+            exit 1
+          }
+
+          Write-Host "================================================" -ForegroundColor Cyan
 
       - name: Release Summary
         if: always()
