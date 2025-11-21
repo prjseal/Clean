@@ -402,6 +402,224 @@ jobs:
           path: test-installation/screenshots/*.png
           if-no-files-found: warn
 
+      - name: Test Template Installation and Site
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Testing Template Installation from GitHub Packages" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          # Create test directory for template
+          $testDir = "${{ github.workspace }}\test-template"
+          if (Test-Path $testDir) {
+            Remove-Item $testDir -Recurse -Force
+          }
+          New-Item -ItemType Directory -Path $testDir | Out-Null
+          Set-Location $testDir
+
+          # Configure GitHub Packages as NuGet source
+          Write-Host "`nConfiguring GitHub Packages as NuGet source..." -ForegroundColor Yellow
+          $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+
+          # Check if source already exists
+          $existingSources = dotnet nuget list source
+          if ($existingSources -match "GitHubPackages") {
+            Write-Host "GitHubPackages source already exists, removing it first..." -ForegroundColor Yellow
+            dotnet nuget remove source "GitHubPackages"
+          }
+
+          dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
+
+          # Install the Clean template from GitHub Packages
+          Write-Host "`nInstalling Clean template version ${{ steps.version.outputs.version }} from GitHub Packages..." -ForegroundColor Yellow
+          dotnet new install Umbraco.Community.Templates.Clean::${{ steps.version.outputs.version }} --nuget-source $sourceUrl --force
+
+          # Create a new project using the template
+          Write-Host "`nCreating test project using template..." -ForegroundColor Yellow
+          dotnet new umbraco-starter-clean -n TestTemplateProject
+
+          # Navigate to project directory
+          Set-Location TestTemplateProject
+
+          # Start the site in background
+          Write-Host "`nStarting Umbraco site from template..." -ForegroundColor Yellow
+          $logFile = "$testDir\TestTemplateProject\site.log"
+          $errFile = "$testDir\TestTemplateProject\site.err"
+
+          $process = Start-Process -FilePath "dotnet" `
+            -ArgumentList "run --project TestTemplateProject.Blog" `
+            -RedirectStandardOutput $logFile `
+            -RedirectStandardError $errFile `
+            -NoNewWindow `
+            -PassThru
+
+          Write-Host "Site process started with PID: $($process.Id)" -ForegroundColor Green
+
+          # Wait for site to start and extract URL
+          $startTime = Get-Date
+          $timeoutSeconds = 180
+          $siteStarted = $false
+          $siteUrl = $null
+
+          Write-Host "Waiting for site to start (timeout: ${timeoutSeconds}s)..." -ForegroundColor Yellow
+
+          while (-not $siteStarted) {
+            if ((Get-Date) - $startTime -gt (New-TimeSpan -Seconds $timeoutSeconds)) {
+              Write-Host "Timeout reached! Site failed to start." -ForegroundColor Red
+              if (-not $process.HasExited) {
+                Stop-Process -Id $process.Id -Force
+              }
+              exit 1
+            }
+
+            if (Test-Path $logFile) {
+              $logContent = Get-Content $logFile -Raw
+
+              # Check if site is listening on HTTPS
+              if ($logContent -match "Now listening on:\s*(https://[^\s]+)") {
+                $siteUrl = $matches[1]
+                $siteStarted = $true
+                Write-Host "Site is running at: $siteUrl" -ForegroundColor Green
+                break
+              }
+            }
+
+            Start-Sleep -Seconds 2
+          }
+
+          # Install Node.js dependencies for Playwright
+          Write-Host "`nInstalling Playwright..." -ForegroundColor Yellow
+          npm init -y
+          npm install --save-dev playwright
+
+          # Install Playwright browsers
+          Write-Host "Installing Playwright browsers..." -ForegroundColor Yellow
+          npx playwright install chromium
+
+          # Create Playwright test script
+          Write-Host "`nCreating Playwright test script..." -ForegroundColor Yellow
+          $testScript = @'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          const path = require('path');
+
+          (async () => {
+            const browser = await chromium.launch();
+            const context = await browser.newContext({
+              ignoreHTTPSErrors: true
+            });
+            const page = await context.newPage();
+
+            const screenshotsDir = path.join(__dirname, 'screenshots');
+            if (!fs.existsSync(screenshotsDir)) {
+              fs.mkdirSync(screenshotsDir, { recursive: true });
+            }
+
+            const baseUrl = process.env.SITE_URL;
+            console.log('Testing site at:', baseUrl);
+
+            // Navigate to home page first to discover links
+            try {
+              console.log('Navigating to home page...');
+              await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
+
+              // Take screenshot of home page
+              await page.screenshot({
+                path: path.join(screenshotsDir, '01-home.png'),
+                fullPage: true
+              });
+              console.log('Screenshot saved: 01-home.png');
+
+              // Find all internal links on the page
+              const links = await page.evaluate((baseUrl) => {
+                const anchors = Array.from(document.querySelectorAll('a[href]'));
+                return anchors
+                  .map(a => a.href)
+                  .filter(href => {
+                    try {
+                      const url = new URL(href);
+                      const baseUrlObj = new URL(baseUrl);
+                      return url.hostname === baseUrlObj.hostname &&
+                             !href.includes('/umbraco') &&
+                             !href.includes('#') &&
+                             !href.includes('javascript:');
+                    } catch {
+                      return false;
+                    }
+                  })
+                  .filter((value, index, self) => self.indexOf(value) === index);
+              }, baseUrl);
+
+              console.log('Found ' + links.length + ' internal links to test');
+
+              // Visit each discovered link
+              let counter = 2;
+              for (const link of links.slice(0, 10)) {
+                try {
+                  console.log('Navigating to:', link);
+                  await page.goto(link, { waitUntil: 'networkidle', timeout: 30000 });
+
+                  const screenshotName = counter.toString().padStart(2, '0') + '-' +
+                    link.replace(baseUrl, '').replace(/[^a-z0-9]/gi, '-').substring(0, 50) + '.png';
+
+                  await page.screenshot({
+                    path: path.join(screenshotsDir, screenshotName),
+                    fullPage: true
+                  });
+                  console.log('Screenshot saved:', screenshotName);
+                  counter++;
+                } catch (error) {
+                  console.error('Error visiting', link, ':', error.message);
+                }
+              }
+
+              // Test Umbraco login page
+              console.log('Navigating to Umbraco login...');
+              await page.goto(baseUrl + '/umbraco', { waitUntil: 'networkidle', timeout: 30000 });
+              await page.screenshot({
+                path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-login.png'),
+                fullPage: true
+              });
+              console.log('Screenshot saved: umbraco-login.png');
+
+            } catch (error) {
+              console.error('Error during testing:', error);
+              process.exit(1);
+            }
+
+            await browser.close();
+            console.log('Testing complete!');
+          })();
+          '@
+
+          $testScript | Out-File -FilePath "$testDir\TestTemplateProject\test.js" -Encoding UTF8
+
+          # Run Playwright tests
+          Write-Host "`nRunning Playwright tests..." -ForegroundColor Yellow
+          $env:SITE_URL = "$siteUrl"
+          node test.js
+
+          # Stop the site process
+          Write-Host "`nStopping site process..." -ForegroundColor Yellow
+          if (-not $process.HasExited) {
+            Stop-Process -Id $process.Id -Force
+            Write-Host "Site process stopped" -ForegroundColor Green
+          }
+
+          Write-Host "`n================================================" -ForegroundColor Cyan
+          Write-Host "Template Testing Complete" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+      - name: Upload Template Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: template-screenshots-${{ steps.version.outputs.version }}
+          path: test-template/TestTemplateProject/screenshots/*.png
+          if-no-files-found: warn
+
       - name: Build Summary
         if: always()
         run: |
