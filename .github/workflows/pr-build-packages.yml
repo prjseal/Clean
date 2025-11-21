@@ -87,6 +87,51 @@ jobs:
           path: .artifacts/nuget/*.nupkg
           if-no-files-found: warn
 
+      - name: Publish to GitHub Packages
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Publishing NuGet Packages to GitHub Packages" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          # Get all package files
+          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg" -ErrorAction SilentlyContinue
+
+          if (-not $packages) {
+            Write-Host "No packages found to publish." -ForegroundColor Yellow
+            exit 0
+          }
+
+          Write-Host "Found $($packages.Count) package(s) to publish:" -ForegroundColor Green
+          foreach ($pkg in $packages) {
+            Write-Host "  - $($pkg.Name)" -ForegroundColor White
+          }
+          Write-Host ""
+
+          # Add GitHub Packages source
+          $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+          Write-Host "Adding GitHub Packages source: $sourceUrl" -ForegroundColor Cyan
+          dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
+
+          # Push each package
+          foreach ($pkg in $packages) {
+            Write-Host "Publishing $($pkg.Name)..." -ForegroundColor Cyan
+            dotnet nuget push $pkg.FullName --source "GitHubPackages" --api-key "$env:GITHUB_TOKEN" --skip-duplicate
+
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ Successfully published $($pkg.Name)" -ForegroundColor Green
+            } else {
+              Write-Host "⚠️  Failed to publish $($pkg.Name) (exit code: $LASTEXITCODE)" -ForegroundColor Yellow
+            }
+          }
+
+          Write-Host ""
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Package Publishing Complete" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
       - name: Build Summary
         if: always()
         run: |
@@ -106,6 +151,7 @@ jobs:
             foreach ($pkg in $packages) {
               Write-Host "  - $($pkg.Name)" -ForegroundColor White
             }
+            Write-Host "`nPublished to: https://github.com/${{ github.repository }}/packages" -ForegroundColor Cyan
           } else {
             Write-Host "`nNo packages were generated." -ForegroundColor Red
           }
