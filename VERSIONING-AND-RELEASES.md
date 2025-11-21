@@ -212,7 +212,10 @@ When you publish a release, the `release-nuget.yml` workflow:
    - Umbraco.Community.Templates.Clean
 6. **Publishes** to NuGet.org
 7. **Uploads** `.nupkg` files to GitHub Release assets
-8. **Reports** success or failure
+8. **Commits** version updates to `main` branch (automatically, without triggering other workflows)
+9. **Reports** success or failure
+
+> **Note**: The version updates are automatically committed back to the `main` branch after a successful release. This ensures that anyone cloning the repository will see the latest released versions in the `.csproj` files. This commit does not trigger any workflows, preventing circular pipeline runs.
 
 ### Post-Release Verification
 
@@ -289,7 +292,8 @@ The Clean packages maintain version alignment with Umbraco CMS:
 3. Build packages with release version
 4. Publish to NuGet.org (requires `NUGET_API_KEY`)
 5. Upload to release assets
-6. Generate summary
+6. Commit version updates to `main` branch (with `[skip ci]` to prevent triggering workflows)
+7. Generate summary
 
 **Example**:
 - Release tag: `v7.0.0`
@@ -300,6 +304,12 @@ The Clean packages maintain version alignment with Umbraco CMS:
 - Official releases
 - Public distribution
 - Production deployments
+
+**Important Notes**:
+- Version changes are automatically committed directly to `main` after successful release
+- The commit message includes `[skip ci]` to prevent triggering other workflows
+- Uses `github-actions[bot]` as the commit author
+- This ensures developers cloning the repo see the latest released versions
 
 ## Troubleshooting
 
