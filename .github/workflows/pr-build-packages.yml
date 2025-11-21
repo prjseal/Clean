@@ -66,22 +66,35 @@ jobs:
             $latestVersion = $sortedVersions[0].Original
 
             # Strip prerelease suffix (everything from - onwards) for the base version
-            $baseVersionOnly = $sortedVersions[0].Version.ToString()
+            $baseVersionOnly = $sortedVersions[0].Version
+
+            # If there's no prerelease suffix, increment the patch version
+            if (-not $sortedVersions[0].IsPrerelease) {
+              $major = $baseVersionOnly.Major
+              $minor = $baseVersionOnly.Minor
+              $patch = $baseVersionOnly.Build + 1
+              $baseVersionOnly = [Version]::new($major, $minor, $patch)
+              Write-Host "Latest is stable release, incrementing patch version"
+            } else {
+              Write-Host "Latest is prerelease, using base version without suffix"
+            }
+
+            $baseVersionString = $baseVersionOnly.ToString()
 
             Write-Host "Latest version found: $latestVersion"
             Write-Host "  Version number: $($sortedVersions[0].Version)"
             Write-Host "  Is prerelease: $($sortedVersions[0].IsPrerelease)"
-            Write-Host "  Base version (without prerelease): $baseVersionOnly"
+            Write-Host "  Base version for builds: $baseVersionString"
 
-            # Create build version: {baseVersionOnly}.{buildNumber}
+            # Create build version: {baseVersionString}.{buildNumber}
             $buildNumber = "${{ github.run_number }}"
-            $buildVersion = "$baseVersionOnly.$buildNumber"
+            $buildVersion = "$baseVersionString.$buildNumber"
 
             Write-Host "Build version: $buildVersion"
 
             # Output the version for use in subsequent steps
             echo "version=$buildVersion" >> $env:GITHUB_OUTPUT
-            echo "base_version=$baseVersionOnly" >> $env:GITHUB_OUTPUT
+            echo "base_version=$baseVersionString" >> $env:GITHUB_OUTPUT
           }
           catch {
             Write-Host "Error fetching version from NuGet: $_"
