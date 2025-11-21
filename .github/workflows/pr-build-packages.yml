@@ -65,19 +65,23 @@ jobs:
             # Get the highest version (could be stable or prerelease)
             $latestVersion = $sortedVersions[0].Original
 
+            # Strip prerelease suffix (everything from - onwards) for the base version
+            $baseVersionOnly = $sortedVersions[0].Version.ToString()
+
             Write-Host "Latest version found: $latestVersion"
             Write-Host "  Version number: $($sortedVersions[0].Version)"
             Write-Host "  Is prerelease: $($sortedVersions[0].IsPrerelease)"
+            Write-Host "  Base version (without prerelease): $baseVersionOnly"
 
-            # Create build version: {latestVersion}.{buildNumber}
+            # Create build version: {baseVersionOnly}.{buildNumber}
             $buildNumber = "${{ github.run_number }}"
-            $buildVersion = "$latestVersion.$buildNumber"
+            $buildVersion = "$baseVersionOnly.$buildNumber"
 
             Write-Host "Build version: $buildVersion"
 
             # Output the version for use in subsequent steps
             echo "version=$buildVersion" >> $env:GITHUB_OUTPUT
-            echo "base_version=$latestVersion" >> $env:GITHUB_OUTPUT
+            echo "base_version=$baseVersionOnly" >> $env:GITHUB_OUTPUT
           }
           catch {
             Write-Host "Error fetching version from NuGet: $_"
