@@ -34,17 +34,40 @@ jobs:
             $response = Invoke-RestMethod -Uri $nugetApiUrl -ErrorAction Stop
             $versions = $response.versions
 
-            # Filter out prerelease versions and get the latest stable version
-            $stableVersions = $versions | Where-Object { $_ -notmatch '-' }
+            Write-Host "Found $($versions.Count) total versions"
 
-            if ($stableVersions.Count -eq 0) {
-              # If no stable versions, use the latest version (including prerelease)
-              $latestVersion = $versions[-1]
-            } else {
-              $latestVersion = $stableVersions[-1]
+            # Parse and sort versions using semantic versioning
+            $parsedVersions = $versions | ForEach-Object {
+              $versionString = $_
+              $prerelease = ""
+
+              # Split on hyphen to separate version from prerelease tag
+              if ($versionString -match '^([0-9]+\.[0-9]+\.[0-9]+)(.*)$') {
+                $baseVersion = $matches[1]
+                $prerelease = $matches[2]
+              } else {
+                $baseVersion = $versionString
+              }
+
+              # Create object for sorting
+              [PSCustomObject]@{
+                Original = $versionString
+                Version = [Version]$baseVersion
+                Prerelease = $prerelease
+                IsPrerelease = $prerelease -ne ""
+              }
             }
 
+            # Sort by version (descending), then by prerelease status (stable first)
+            # This ensures 7.0.0 comes before 7.0.0-rc, but 7.0.0-rc comes before 6.x.x
+            $sortedVersions = $parsedVersions | Sort-Object -Property @{Expression={$_.Version}; Descending=$true}, @{Expression={$_.IsPrerelease}; Descending=$false}
+
+            # Get the highest version (could be stable or prerelease)
+            $latestVersion = $sortedVersions[0].Original
+
             Write-Host "Latest version found: $latestVersion"
+            Write-Host "  Version number: $($sortedVersions[0].Version)"
+            Write-Host "  Is prerelease: $($sortedVersions[0].IsPrerelease)"
 
             # Create build version: {latestVersion}.{buildNumber}
             $buildNumber = "${{ github.run_number }}"
@@ -59,6 +82,7 @@ jobs:
           catch {
             Write-Host "Error fetching version from NuGet: $_"
             Write-Host "Using default version: 1.0.0.$buildNumber"
+            $buildNumber = "${{ github.run_number }}"
             $buildVersion = "1.0.0.$buildNumber"
             echo "version=$buildVersion" >> $env:GITHUB_OUTPUT
             echo "base_version=1.0.0" >> $env:GITHUB_OUTPUT
