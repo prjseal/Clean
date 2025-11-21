@@ -46,9 +46,9 @@ jobs:
 
             Write-Host "Latest version found: $latestVersion"
 
-            # Create build version: {latestVersion}.{buildNumber}
+            # Create build version: {latestVersion}-ci.{buildNumber}
             $buildNumber = "${{ github.run_number }}"
-            $buildVersion = "$latestVersion.$buildNumber"
+            $buildVersion = "$latestVersion-ci.$buildNumber"
 
             Write-Host "Build version: $buildVersion"
 
@@ -58,8 +58,9 @@ jobs:
           }
           catch {
             Write-Host "Error fetching version from NuGet: $_"
-            Write-Host "Using default version: 1.0.0.$buildNumber"
-            $buildVersion = "1.0.0.$buildNumber"
+            $buildNumber = "${{ github.run_number }}"
+            $buildVersion = "1.0.0-ci.$buildNumber"
+            Write-Host "Using default version: $buildVersion"
             echo "version=$buildVersion" >> $env:GITHUB_OUTPUT
             echo "base_version=1.0.0" >> $env:GITHUB_OUTPUT
           }

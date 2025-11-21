@@ -1,0 +1,178 @@
+name: Release - Publish to NuGet.org
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Extract version from release tag
+        id: version
+        shell: pwsh
+        run: |
+          # Get the release tag (e.g., v7.0.0 or 7.0.0)
+          $tag = "${{ github.event.release.tag_name }}"
+          Write-Host "Release tag: $tag"
+
+          # Remove 'v' prefix if present
+          $version = $tag -replace '^v', ''
+
+          # Validate version format (basic SemVer check)
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[a-zA-Z0-9\.\-]+)?$') {
+            Write-Host "::error::Invalid version format: $version. Expected format: X.Y.Z or X.Y.Z-prerelease" -ForegroundColor Red
+            exit 1
+          }
+
+          Write-Host "Release version: $version" -ForegroundColor Green
+
+          # Determine if this is a prerelease
+          $isPrerelease = "${{ github.event.release.prerelease }}"
+          Write-Host "Is prerelease: $isPrerelease"
+
+          # Output the version for use in subsequent steps
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "is_prerelease=$isPrerelease" >> $env:GITHUB_OUTPUT
+
+      - name: Display version info
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Release Version Information" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Release Tag: ${{ github.event.release.tag_name }}" -ForegroundColor Green
+          Write-Host "Version: ${{ steps.version.outputs.version }}" -ForegroundColor Yellow
+          Write-Host "Prerelease: ${{ steps.version.outputs.is_prerelease }}" -ForegroundColor Yellow
+          Write-Host "Release Name: ${{ github.event.release.name }}" -ForegroundColor Green
+          Write-Host "================================================" -ForegroundColor Cyan
+
+      - name: Run CreateNuGetPackages script
+        shell: pwsh
+        run: |
+          Write-Host "Running CreateNuGetPackages.ps1 with version ${{ steps.version.outputs.version }}"
+          ./CreateNuGetPackages.ps1 -Version "${{ steps.version.outputs.version }}"
+
+      - name: Upload NuGet packages as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages-${{ steps.version.outputs.version }}
+          path: .artifacts/nuget/*.nupkg
+          if-no-files-found: error
+
+      - name: Publish to NuGet.org
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Publishing NuGet Packages to NuGet.org" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          # Verify API key is set
+          if ([string]::IsNullOrWhiteSpace($env:NUGET_API_KEY)) {
+            Write-Host "::error::NUGET_API_KEY secret is not set. Please add it to your repository secrets." -ForegroundColor Red
+            Write-Host "To add the secret:" -ForegroundColor Yellow
+            Write-Host "1. Go to https://www.nuget.org/account/apikeys to create an API key" -ForegroundColor Yellow
+            Write-Host "2. Add it to GitHub: Settings -> Secrets and variables -> Actions -> New repository secret" -ForegroundColor Yellow
+            Write-Host "3. Name it 'NUGET_API_KEY' and paste your NuGet API key" -ForegroundColor Yellow
+            exit 1
+          }
+
+          # Get all package files
+          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg" -ErrorAction SilentlyContinue
+
+          if (-not $packages) {
+            Write-Host "::error::No packages found to publish." -ForegroundColor Red
+            exit 1
+          }
+
+          Write-Host "Found $($packages.Count) package(s) to publish:" -ForegroundColor Green
+          foreach ($pkg in $packages) {
+            Write-Host "  - $($pkg.Name)" -ForegroundColor White
+          }
+          Write-Host ""
+
+          # Push each package to NuGet.org
+          $failedPackages = @()
+          foreach ($pkg in $packages) {
+            Write-Host "Publishing $($pkg.Name) to NuGet.org..." -ForegroundColor Cyan
+            dotnet nuget push $pkg.FullName --source https://api.nuget.org/v3/index.json --api-key $env:NUGET_API_KEY --skip-duplicate
+
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ Successfully published $($pkg.Name)" -ForegroundColor Green
+            } else {
+              Write-Host "❌ Failed to publish $($pkg.Name) (exit code: $LASTEXITCODE)" -ForegroundColor Red
+              $failedPackages += $pkg.Name
+            }
+          }
+
+          Write-Host ""
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Package Publishing Complete" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          # Check if any packages failed
+          if ($failedPackages.Count -gt 0) {
+            Write-Host "::error::Failed to publish the following packages:" -ForegroundColor Red
+            foreach ($failedPkg in $failedPackages) {
+              Write-Host "  - $failedPkg" -ForegroundColor Red
+            }
+            exit 1
+          }
+
+          Write-Host "✅ All packages published successfully!" -ForegroundColor Green
+
+      - name: Add packages to release assets
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Uploading packages to GitHub Release" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg"
+
+          foreach ($pkg in $packages) {
+            Write-Host "Uploading $($pkg.Name)..." -ForegroundColor Cyan
+            gh release upload "${{ github.event.release.tag_name }}" $pkg.FullName --clobber
+
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ Uploaded $($pkg.Name)" -ForegroundColor Green
+            } else {
+              Write-Host "⚠️  Failed to upload $($pkg.Name)" -ForegroundColor Yellow
+            }
+          }
+
+      - name: Release Summary
+        if: always()
+        run: |
+          Write-Host "================================================" -ForegroundColor Green
+          Write-Host "Release Summary" -ForegroundColor Green
+          Write-Host "================================================" -ForegroundColor Green
+          Write-Host "Version: ${{ steps.version.outputs.version }}" -ForegroundColor Cyan
+          Write-Host "Release Tag: ${{ github.event.release.tag_name }}" -ForegroundColor Cyan
+          Write-Host "Prerelease: ${{ steps.version.outputs.is_prerelease }}" -ForegroundColor Cyan
+          Write-Host "Release URL: ${{ github.event.release.html_url }}" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Green
+
+          # List generated packages
+          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg" -ErrorAction SilentlyContinue
+          if ($packages) {
+            Write-Host "`nPublished Packages:" -ForegroundColor Yellow
+            foreach ($pkg in $packages) {
+              Write-Host "  - $($pkg.Name)" -ForegroundColor White
+              Write-Host "    https://www.nuget.org/packages/$($pkg.BaseName.Split('.')[0])/${{ steps.version.outputs.version }}" -ForegroundColor Gray
+            }
+          }
