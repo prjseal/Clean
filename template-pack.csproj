@@ -25,6 +25,6 @@
     <Content Include="template\**\*" Exclude="template\**\bin\**;template\**\obj\**,template\.vs\**,template\**\created-packages\**" />
     <Compile Remove="**\*" />
     <None Include="README.md" Pack="true" PackagePath="\" />
-    <None Include="images\logo.png" Pack="true" PackagePath="\" />
+    <None Include="template\images\logo.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>
