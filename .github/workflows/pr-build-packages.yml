@@ -190,10 +190,16 @@ jobs:
           New-Item -ItemType Directory -Path $testDir | Out-Null
           Set-Location $testDir
 
-          # Configure GitHub Packages as NuGet source
+          # Configure GitHub Packages as NuGet source (check if it already exists)
           Write-Host "`nConfiguring GitHub Packages as NuGet source..." -ForegroundColor Yellow
           $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-          dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
+          $existingSources = dotnet nuget list source
+          if ($existingSources -notmatch "GitHubPackages") {
+            Write-Host "Adding GitHubPackages source..." -ForegroundColor Yellow
+            dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
+          } else {
+            Write-Host "GitHubPackages source already exists, skipping..." -ForegroundColor Green
+          }
 
           # Read Umbraco version from Clean.csproj to determine which template version to use
           Write-Host "`nDetermining Umbraco version from Clean package..." -ForegroundColor Yellow
@@ -206,6 +212,23 @@ jobs:
           # Install Umbraco templates for the detected version
           Write-Host "`nInstalling Umbraco templates version $umbracoVersion..." -ForegroundColor Yellow
           dotnet new install Umbraco.Templates::$umbracoVersion --force
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Failed to install Umbraco templates!" -ForegroundColor Red
+            exit 1
+          }
+
+          # Verify template installation
+          Write-Host "`nVerifying Umbraco template installation..." -ForegroundColor Yellow
+          $templates = dotnet new list umbraco
+          Write-Host "Available Umbraco templates:" -ForegroundColor Cyan
+          Write-Host $templates
+
+          if ($templates -notmatch "umbraco") {
+            Write-Host "Umbraco template not found after installation!" -ForegroundColor Red
+            exit 1
+          }
+          Write-Host "Umbraco templates successfully installed and verified" -ForegroundColor Green
 
           # Create Umbraco project
           Write-Host "`nCreating test Umbraco project..." -ForegroundColor Yellow
