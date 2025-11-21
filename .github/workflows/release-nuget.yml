@@ -157,6 +157,155 @@ jobs:
             }
           }
 
+      - name: Update README files with latest versions
+        shell: pwsh
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Updating README Files with Latest Versions" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          $cleanVersion = "${{ steps.version.outputs.version }}"
+          Write-Host "Clean version: $cleanVersion" -ForegroundColor Green
+
+          # Extract Clean major version (e.g., "7.0.0-rc1" -> 7)
+          if ($cleanVersion -match '^(\d+)\.') {
+            $cleanMajor = [int]$matches[1]
+          } else {
+            Write-Host "⚠️  Could not extract major version from $cleanVersion" -ForegroundColor Yellow
+            exit 0
+          }
+
+          # Map Clean major version to Umbraco major version
+          $umbracoMajorMap = @{
+            4 = 13
+            5 = 15
+            6 = 16
+            7 = 17
+          }
+
+          if (-not $umbracoMajorMap.ContainsKey($cleanMajor)) {
+            Write-Host "⚠️  No Umbraco version mapping found for Clean $cleanMajor.x" -ForegroundColor Yellow
+            exit 0
+          }
+
+          $umbracoMajor = $umbracoMajorMap[$cleanMajor]
+          Write-Host "Mapped Clean $cleanMajor.x -> Umbraco $umbracoMajor.x" -ForegroundColor Cyan
+
+          # Query NuGet for latest Umbraco.Templates version for this major
+          $packageId = "Umbraco.Templates"
+          $nugetApiUrl = "https://api.nuget.org/v3-flatcontainer/$packageId/index.json"
+
+          Write-Host "`nQuerying NuGet for $packageId versions..." -ForegroundColor Yellow
+
+          try {
+            $response = Invoke-RestMethod -Uri $nugetApiUrl -ErrorAction Stop
+            $versions = $response.versions
+
+            # Filter versions for the target major version
+            $matchingVersions = $versions | Where-Object { $_ -match "^$umbracoMajor\." }
+
+            if (-not $matchingVersions) {
+              Write-Host "⚠️  No Umbraco.Templates versions found for major version $umbracoMajor" -ForegroundColor Yellow
+              exit 0
+            }
+
+            Write-Host "Found $($matchingVersions.Count) versions for Umbraco $umbracoMajor.x" -ForegroundColor Cyan
+
+            # Parse and separate stable vs prerelease
+            $parsedVersions = $matchingVersions | ForEach-Object {
+              $versionString = $_
+              $isPrerelease = $versionString -match '-'
+
+              # Extract base version for sorting
+              if ($versionString -match '^(\d+\.\d+\.\d+)') {
+                $baseVersion = $matches[1]
+              } else {
+                $baseVersion = $versionString
+              }
+
+              [PSCustomObject]@{
+                Original = $versionString
+                BaseVersion = [Version]$baseVersion
+                IsPrerelease = $isPrerelease
+              }
+            }
+
+            # Try to get latest stable version first
+            $stableVersions = $parsedVersions | Where-Object { -not $_.IsPrerelease } | Sort-Object -Property BaseVersion -Descending
+            $latestUmbracoVersion = $null
+
+            if ($stableVersions.Count -gt 0) {
+              $latestUmbracoVersion = $stableVersions[0].Original
+              Write-Host "Latest stable Umbraco version: $latestUmbracoVersion" -ForegroundColor Green
+            } else {
+              # No stable versions, use latest prerelease
+              $prereleaseVersions = $parsedVersions | Sort-Object -Property BaseVersion -Descending
+              if ($prereleaseVersions.Count -gt 0) {
+                $latestUmbracoVersion = $prereleaseVersions[0].Original
+                Write-Host "No stable versions available, using latest prerelease: $latestUmbracoVersion" -ForegroundColor Yellow
+              }
+            }
+
+            if (-not $latestUmbracoVersion) {
+              Write-Host "⚠️  Could not determine latest Umbraco version" -ForegroundColor Yellow
+              exit 0
+            }
+
+            # Update README files
+            $readmeFiles = @(
+              "README.md",
+              "template/README.md"
+            )
+
+            $umbracoSectionHeader = "## Umbraco $umbracoMajor"
+
+            foreach ($readmeFile in $readmeFiles) {
+              if (-not (Test-Path $readmeFile)) {
+                Write-Host "⚠️  File not found: $readmeFile" -ForegroundColor Yellow
+                continue
+              }
+
+              Write-Host "`nUpdating $readmeFile..." -ForegroundColor Cyan
+              $content = Get-Content $readmeFile -Raw
+
+              # Find the section for this Umbraco version
+              if ($content -match "(?s)$umbracoSectionHeader.*?(?=(##|\z))") {
+                $section = $matches[0]
+                $updatedSection = $section
+
+                # Update Umbraco.Templates version
+                $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Templates::\S+", "dotnet new install Umbraco.Templates::$latestUmbracoVersion"
+
+                # Update Clean package version
+                $updatedSection = $updatedSection -replace "(dotnet add .* package Clean --version )\S+", "`${1}$cleanVersion"
+
+                # Update Clean template package version
+                $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Community\.Templates\.Clean::\S+", "dotnet new install Umbraco.Community.Templates.Clean::$cleanVersion"
+
+                # Replace the section in the content
+                $content = $content -replace [regex]::Escape($section), $updatedSection
+
+                # Write back to file
+                Set-Content -Path $readmeFile -Value $content -NoNewline
+
+                Write-Host "✅ Updated $readmeFile" -ForegroundColor Green
+                Write-Host "   - Umbraco.Templates: $latestUmbracoVersion" -ForegroundColor White
+                Write-Host "   - Clean: $cleanVersion" -ForegroundColor White
+                Write-Host "   - Umbraco.Community.Templates.Clean: $cleanVersion" -ForegroundColor White
+              } else {
+                Write-Host "⚠️  Could not find section '$umbracoSectionHeader' in $readmeFile" -ForegroundColor Yellow
+              }
+            }
+
+            Write-Host "`n================================================" -ForegroundColor Cyan
+            Write-Host "README files updated successfully" -ForegroundColor Green
+            Write-Host "================================================" -ForegroundColor Cyan
+
+          } catch {
+            Write-Host "⚠️  Error querying NuGet or updating READMEs: $_" -ForegroundColor Yellow
+            Write-Host "Continuing with release process..." -ForegroundColor Yellow
+          }
+
       - name: Commit version updates to main branch
         shell: pwsh
         env:
@@ -188,9 +337,12 @@ jobs:
           Write-Host "`nModified files:" -ForegroundColor Cyan
           git status --short
 
-          # Stage all .csproj files
+          # Stage all .csproj and README.md files
           Write-Host "`nStaging .csproj files..." -ForegroundColor Yellow
           git add "**/*.csproj"
+
+          Write-Host "Staging README.md files..." -ForegroundColor Yellow
+          git add "README.md" "template/README.md"
 
           # Commit with skip ci flag to prevent triggering other workflows
           $commitMessage = "chore: Update versions to ${{ steps.version.outputs.version }} [skip ci]"
