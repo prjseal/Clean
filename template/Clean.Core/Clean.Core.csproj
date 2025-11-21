@@ -13,7 +13,6 @@
     <PackageTags>umbraco plugin package starter kit Clean core library</PackageTags>
     <PackageProjectUrl>https://github.com/prjseal/Clean</PackageProjectUrl>
     <PackageIcon>logo.png</PackageIcon>
-    <PackageIconUrl>https://github.com/prjseal/Clean/blob/master/images/logo.png?raw=true</PackageIconUrl>
     <RepositoryUrl>https://github.com/prjseal/Clean</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
