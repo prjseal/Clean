@@ -223,7 +223,7 @@ jobs:
 
           # Install Clean package from GitHub Packages
           Write-Host "`nInstalling Clean package version ${{ steps.version.outputs.version }} from GitHub Packages..." -ForegroundColor Yellow
-          dotnet add "TestProject" package Clean --version "${{ steps.version.outputs.version }}" --source "GitHubPackages"
+          dotnet add "TestProject" package Clean --version "${{ steps.version.outputs.version }}" --source $sourceUrl
 
           # Start the site in background
           Write-Host "`nStarting Umbraco site..." -ForegroundColor Yellow
