@@ -193,6 +193,14 @@ jobs:
           # Configure GitHub Packages as NuGet source
           Write-Host "`nConfiguring GitHub Packages as NuGet source..." -ForegroundColor Yellow
           $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+
+          # Check if source already exists
+          $existingSources = dotnet nuget list source
+          if ($existingSources -match "GitHubPackages") {
+            Write-Host "GitHubPackages source already exists, removing it first..." -ForegroundColor Yellow
+            dotnet nuget remove source "GitHubPackages"
+          }
+
           dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
 
           # Read Umbraco version from Clean.csproj to determine which template version to use
