@@ -18,9 +18,9 @@ namespace Clean.Headless.Controllers;
 [ApiExplorerSettings(GroupName = "Translation")]
 [ApiController]
 public class DictionaryApiV1Controller(
-	ILocalizationService localizationService,
+	IDictionaryItemService dictionaryItemService,
 	ILogger<DictionaryApiV1Controller> logger)
-	: UmbracoApiController()
+	: ControllerBase()
 {
 	
 	///<summary>
@@ -31,12 +31,20 @@ public class DictionaryApiV1Controller(
 	[Route("getdictionarytranslations")]
 	[ProducesResponseType(typeof(IEnumerable<TranslationModel>), StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status500InternalServerError)]
-	public IActionResult GetDictionaryTranslations()
+	public async Task<IActionResult> GetDictionaryTranslations()
 	{
 		try
 		{
 			var culture = "en-US";
-			var dictionaryItems = localizationService.GetDictionaryItemDescendants(null);
+			var rootItems = await dictionaryItemService.GetAtRootAsync();
+			var dictionaryItems = new List<IDictionaryItem>();
+
+			foreach (var rootItem in rootItems)
+			{
+				dictionaryItems.Add(rootItem);
+				var descendants = await dictionaryItemService.GetDescendantsAsync(rootItem.Key);
+				dictionaryItems.AddRange(descendants);
+			}
 
 			var translationModels = dictionaryItems.Select(dictionaryItem => GetTranslationForDictionaryItem(dictionaryItem, culture));
 

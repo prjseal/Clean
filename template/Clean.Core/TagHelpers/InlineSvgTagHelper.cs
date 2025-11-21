@@ -11,6 +11,8 @@ using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Routing;
 using Umbraco.Extensions;
 
+#nullable enable
+
 namespace Clean.Core.TagHelpers
 {
     /// <summary>

@@ -30,7 +30,7 @@ public class TestController : CreatedPackageControllerBase
     public async Task<IActionResult> GetPackage(
         CancellationToken cancellationToken)
     {
-        IDataType? dataType = _dataTypeService.GetDataType("[BlockList] Main Content");
+        IDataType? dataType = await _dataTypeService.GetAsync("[BlockList] Main Content");
         if (dataType == null)
         {
             return NotFound("Unable to locate data type");
