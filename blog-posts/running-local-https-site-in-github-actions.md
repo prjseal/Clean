@@ -6,10 +6,8 @@ I recently needed to run an Umbraco CMS site locally within a GitHub Actions wor
 
 1. Start the Umbraco site with HTTPS on `https://localhost:44340`
 2. Make API calls to the Umbraco Management API
-3. Generate and download a package
-4. Build NuGet packages from the result
 
-Sounds straightforward, right? Well, it turned into a two-week odyssey through the depths of Windows certificate management, PowerShell scripting, and GitHub Actions limitations.
+Sounds straightforward, right? Well, it turned out to be a painful journey through the depths of Windows certificate management, PowerShell scripting, and GitHub Actions limitations.
 
 The core issue: **ASP.NET Core development sites use self-signed HTTPS certificates, and Windows won't trust them without user interaction - something you can't get in a CI/CD environment.**
 
@@ -79,7 +77,9 @@ After finding a blog post about SSL certificates in .NET GitHub workflows, I tri
 
 ## The Breakthrough: Skip Certificate Validation for Localhost
 
-After all these attempts at making Windows trust the certificate, I had an epiphany: **Why try to trust the certificate at all?**
+After all these attempts at making Windows trust the certificate, I aksed my friends if they had ever done anything like this. 
+My friend and former colleague [Matt Hart](https://mattou07.net/) gave me some pointers and shared a GitHub action with me that was doing something along the lines of what I needed.
+After reading that I realised : **Why try to trust the certificate at all?**
 
 The site and the PowerShell script making API calls are both running on the same machine in a controlled build environment. There's no security risk in bypassing certificate validation for these specific localhost HTTPS calls.
 
@@ -195,10 +195,6 @@ After updating the script with the correct credentials, everything worked perfec
    - You're in a temporary build environment
    - You're only calling localhost
 
-4. **Check your configuration files** - Make sure OAuth credentials, connection strings, and other config match what your scripts expect.
-
-5. **Git history is valuable** - Going through two weeks of failed attempts taught me more about Windows certificate management than I ever wanted to know, but the journey was worth documenting.
-
 ## Final Workflow
 
 Here's what the final GitHub Actions workflow looks like:
@@ -244,7 +240,7 @@ Clean, simple, and it works. No certificate gymnastics required.
 
 Sometimes the best solution isn't fighting to make something work the "right" way, but finding an alternative approach that achieves the same goal more simply. In this case, bypassing certificate validation for controlled localhost calls was far easier than trying to programmatically trust certificates on Windows.
 
-If you're facing a similar issue with HTTPS development certificates in GitHub Actions or other CI/CD environments, I hope this saves you the two weeks I spent figuring it out!
+If you're facing a similar issue with HTTPS development certificates in GitHub Actions or other CI/CD environments, I hope this saves you the days I spent figuring it out.
 
 ---
 
