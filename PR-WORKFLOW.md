@@ -107,7 +107,7 @@ The workflow uploads the following artifacts for every PR:
 | Artifact | Description | Naming Pattern |
 |----------|-------------|----------------|
 | NuGet Packages | All four `.nupkg` files | `nuget-packages-{version}` |
-| Package Test Screenshots | Screenshots from package installation test | `playwright-screenshots-{version}` |
+| Package Test Screenshots | Screenshots from package installation test | `package-test-screenshots-{version}` |
 | Template Test Screenshots | Screenshots from template installation test | `template-screenshots-{version}` |
 
 **Access**: Available in the "Actions" tab of the PR for download and review.
@@ -285,7 +285,7 @@ When reviewing a PR, check:
 4. Scroll to "Artifacts" section
 5. Download:
    - `nuget-packages-{version}` - The actual .nupkg files
-   - `playwright-screenshots-{version}` - Package test screenshots
+   - `package-test-screenshots-{version}` - Package test screenshots
    - `template-screenshots-{version}` - Template test screenshots
 
 ## Troubleshooting

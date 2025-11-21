@@ -398,7 +398,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-screenshots-${{ steps.version.outputs.version }}
+          name: package-test-screenshots-${{ steps.version.outputs.version }}
           path: test-installation/screenshots/*.png
           if-no-files-found: warn
 
