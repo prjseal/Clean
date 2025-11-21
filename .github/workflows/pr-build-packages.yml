@@ -205,7 +205,7 @@ jobs:
 
           # Install Umbraco templates for the detected version
           Write-Host "`nInstalling Umbraco templates version $umbracoVersion..." -ForegroundColor Yellow
-          dotnet new install Umbraco.Templates::$umbracoVersion --force
+          dotnet new install Umbraco.Templates@$umbracoVersion --force
 
           # Create Umbraco project
           Write-Host "`nCreating test Umbraco project..." -ForegroundColor Yellow
