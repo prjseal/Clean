@@ -1,6 +1,8 @@
 name: Update NuGet Packages
 
 on:
+  schedule:
+    - cron: '0 8 * * *'  # Run daily at 8am UTC (8am UK time in winter, 9am in summer)
   workflow_dispatch:
     inputs:
       dryRun:
