@@ -272,25 +272,22 @@ jobs:
             Write-Host "Continuing with release process..." -ForegroundColor Yellow
           }
 
-      - name: Commit version updates to main branch
+      - name: Create PR with version updates
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Committing Version Updates to Main Branch" -ForegroundColor Cyan
+          Write-Host "Creating PR with Version Updates" -ForegroundColor Cyan
           Write-Host "================================================" -ForegroundColor Cyan
 
           # Configure git with bot user
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Fetch and switch to main branch
+          # Fetch main branch
           Write-Host "Fetching main branch..." -ForegroundColor Yellow
           git fetch origin main
-
-          Write-Host "Switching to main branch..." -ForegroundColor Yellow
-          git switch main
 
           # Check if there are any changes to commit
           $gitStatus = git status --porcelain
@@ -302,6 +299,11 @@ jobs:
           # Show what files will be committed
           Write-Host "`nModified files:" -ForegroundColor Cyan
           git status --short
+
+          # Create a new branch for the version update
+          $branchName = "release/update-versions-${{ steps.version.outputs.version }}"
+          Write-Host "`nCreating branch: $branchName" -ForegroundColor Yellow
+          git checkout -b $branchName
 
           # Stage all .csproj and README.md files
           Write-Host "`nStaging .csproj files..." -ForegroundColor Yellow
@@ -315,14 +317,42 @@ jobs:
           Write-Host "`nCommitting changes with message: $commitMessage" -ForegroundColor Yellow
           git commit -m $commitMessage
 
-          # Push to main
-          Write-Host "`nPushing to main branch..." -ForegroundColor Yellow
-          git push origin main
+          # Push the branch
+          Write-Host "`nPushing branch to origin..." -ForegroundColor Yellow
+          git push -u origin $branchName
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Failed to push branch (exit code: $LASTEXITCODE)" -ForegroundColor Red
+            exit 1
+          }
+
+          Write-Host "✅ Successfully pushed branch $branchName" -ForegroundColor Green
+
+          # Create pull request
+          Write-Host "`nCreating pull request..." -ForegroundColor Yellow
+          $prTitle = "chore: Update versions to ${{ steps.version.outputs.version }}"
+          $prBody = @"
+          ## Summary
+          This PR updates version references in the codebase following the release of version ${{ steps.version.outputs.version }}.
+
+          ## Changes
+          - Updated version references in .csproj files
+          - Updated README.md files with the latest version information
+
+          ## Additional Info
+          - Release: [${{ github.event.release.tag_name }}](${{ github.event.release.html_url }})
+          - Prerelease: ${{ steps.version.outputs.is_prerelease }}
+
+          ---
+          *This PR was automatically created by the release workflow.*
+          "@
+
+          gh pr create --title $prTitle --body $prBody --base main --head $branchName
 
           if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ Successfully pushed version updates to main branch" -ForegroundColor Green
+            Write-Host "✅ Successfully created pull request" -ForegroundColor Green
           } else {
-            Write-Host "❌ Failed to push to main branch (exit code: $LASTEXITCODE)" -ForegroundColor Red
+            Write-Host "❌ Failed to create pull request (exit code: $LASTEXITCODE)" -ForegroundColor Red
             exit 1
           }
 
