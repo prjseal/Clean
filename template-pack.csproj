@@ -11,7 +11,7 @@
     <IncludeContentInPack>true</IncludeContentInPack>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <ContentTargetFolders>content</ContentTargetFolders>
-    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <NoWarn>$(NoWarn);NU5128;NU5100</NoWarn>
     <NoDefaultExcludes>true</NoDefaultExcludes>
     <Copyright>2025 © Paul Seal</Copyright>
     <PackageIcon>logo.png</PackageIcon>
