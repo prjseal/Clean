@@ -8,7 +8,8 @@ jobs:
   publish-release:
     runs-on: windows-latest
     permissions:
-      contents: write  # Allow pushing to main branch
+      contents: write       # Allow pushing branches and uploading release assets
+      pull-requests: write  # Allow creating pull requests
 
     steps:
       - name: Checkout repository
