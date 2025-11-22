@@ -267,7 +267,7 @@ if ($umbracoProcess -and !$umbracoProcess.HasExited) {
 # update the Version and PackageVersion in all .csproj files except Clean.Blog.csproj and Clean.Models.csproj
 
 $excludedFiles = @("Clean.Blog.csproj", "Clean.Models.csproj")
-$csprojFiles = Get-ChildItem -Path $PSScriptRoot -Recurse -Filter *.csproj | Where-Object {
+$csprojFiles = Get-ChildItem -Path $CurrentDir -Recurse -Filter *.csproj | Where-Object {
     $_.FullName -notmatch "\\bin\\" -and ($excludedFiles -notcontains $_.Name)
 }
 
@@ -391,7 +391,7 @@ if ($updatedFiles.Count -gt 0) {
 }
 
 Write-Host "`nCleaning all bin folders..."
-$binFolders = Get-ChildItem -Path $PSScriptRoot -Recurse -Directory | Where-Object {
+$binFolders = Get-ChildItem -Path $CurrentDir -Recurse -Directory | Where-Object {
     $_.Name -eq "bin" -and $_.FullName -notmatch "\\.vs\\"
 }
 foreach ($bin in $binFolders) {
@@ -412,15 +412,15 @@ try {
     # Build and pack in dependency order to avoid NU1102 errors
     # Order: Clean.Core -> Clean.Headless -> Clean
 
-    $cleanCorePath = Get-ChildItem -Path $PSScriptRoot -Recurse -Filter "Clean.Core.csproj" -File | Where-Object {
+    $cleanCorePath = Get-ChildItem -Path $CurrentDir -Recurse -Filter "Clean.Core.csproj" -File | Where-Object {
         $_.FullName -notmatch "\\bin\\" -and $_.FullName -notmatch "\\obj\\"
     } | Select-Object -First 1
 
-    $cleanHeadlessPath = Get-ChildItem -Path $PSScriptRoot -Recurse -Filter "Clean.Headless.csproj" -File | Where-Object {
+    $cleanHeadlessPath = Get-ChildItem -Path $CurrentDir -Recurse -Filter "Clean.Headless.csproj" -File | Where-Object {
         $_.FullName -notmatch "\\bin\\" -and $_.FullName -notmatch "\\obj\\"
     } | Select-Object -First 1
 
-    $cleanPath = Get-ChildItem -Path $PSScriptRoot -Recurse -Filter "Clean.csproj" -File | Where-Object {
+    $cleanPath = Get-ChildItem -Path $CurrentDir -Recurse -Filter "Clean.csproj" -File | Where-Object {
         $_.FullName -notmatch "\\bin\\" -and $_.FullName -notmatch "\\obj\\" -and $_.Name -eq "Clean.csproj"
     } | Select-Object -First 1
 
