@@ -486,7 +486,7 @@ finally {
     dotnet nuget remove source $sourceName
 }
 
-$releasePackages = Get-ChildItem -Path $PSScriptRoot -Recurse -Filter *.nupkg | Where-Object {
+$releasePackages = Get-ChildItem -Path $CurrentDir -Recurse -Filter *.nupkg | Where-Object {
     $_.FullName -match "\\Release\\" -and $_.Name -like "*$Version*.nupkg"
 }
 
