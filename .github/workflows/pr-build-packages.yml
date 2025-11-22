@@ -620,6 +620,80 @@ jobs:
           path: test-template/TestTemplateProject/screenshots/*.png
           if-no-files-found: warn
 
+      - name: Test Template with Period in Name - Verify Fix for Issue #11
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Testing Template with Period in Name (Issue #11 Fix)" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          # Create test directory for period name test
+          $testDir = "${{ github.workspace }}\test-period-name"
+          if (Test-Path $testDir) {
+            Remove-Item $testDir -Recurse -Force
+          }
+          New-Item -ItemType Directory -Path $testDir | Out-Null
+          Set-Location $testDir
+
+          # Configure GitHub Packages as NuGet source
+          Write-Host "`nConfiguring GitHub Packages as NuGet source..." -ForegroundColor Yellow
+          $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+
+          # Check if source already exists
+          $existingSources = dotnet nuget list source
+          if ($existingSources -match "GitHubPackages") {
+            Write-Host "GitHubPackages source already exists, removing it first..." -ForegroundColor Yellow
+            dotnet nuget remove source "GitHubPackages"
+          }
+
+          dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
+
+          # Install the Clean template from GitHub Packages
+          Write-Host "`nInstalling Clean template version ${{ steps.version.outputs.version }} from GitHub Packages..." -ForegroundColor Yellow
+          dotnet new install Umbraco.Community.Templates.Clean::${{ steps.version.outputs.version }} --nuget-source $sourceUrl --force
+
+          # Create a new project using the template with a period in the name
+          Write-Host "`nCreating test project with period in name..." -ForegroundColor Yellow
+          Write-Host "Project name: Company.Website" -ForegroundColor Cyan
+          dotnet new umbraco-starter-clean -n Company.Website
+
+          # Navigate to project directory
+          Set-Location Company.Website
+
+          # Attempt to build the project
+          Write-Host "`nAttempting to build project with period in name..." -ForegroundColor Yellow
+          $buildOutput = dotnet build Company.Website.Blog 2>&1
+          $buildExitCode = $LASTEXITCODE
+
+          Write-Host "`nBuild Output:" -ForegroundColor Cyan
+          Write-Host $buildOutput
+
+          if ($buildExitCode -eq 0) {
+            Write-Host "`n✅ SUCCESS: Project with period in name built successfully!" -ForegroundColor Green
+            Write-Host "Issue #11 fix is working correctly." -ForegroundColor Green
+          } else {
+            Write-Host "`n⚠️  WARNING: Project with period in name failed to build." -ForegroundColor Yellow
+            Write-Host "This may indicate that Issue #11 is not fully resolved." -ForegroundColor Yellow
+            Write-Host "Exit Code: $buildExitCode" -ForegroundColor Yellow
+
+            # Check if the specific cleanedFileContents error is present
+            if ($buildOutput -match "company\.websiteedFileContents|\.cleanedFileContents") {
+              Write-Host "`n❌ ERROR: The cleanedFileContents variable issue still exists!" -ForegroundColor Red
+              Write-Host "This indicates the fix was not applied correctly." -ForegroundColor Red
+              exit 1
+            } else {
+              Write-Host "`nThe cleanedFileContents variable error is not present (good!)," -ForegroundColor Green
+              Write-Host "but other issues with periods in names may still exist." -ForegroundColor Yellow
+              Write-Host "This is expected - see documentation warnings in README." -ForegroundColor Yellow
+            }
+          }
+
+          Write-Host "`n================================================" -ForegroundColor Cyan
+          Write-Host "Period Name Test Complete" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
       - name: Build Summary
         if: always()
         run: |

@@ -110,6 +110,8 @@ dotnet run --project "MyProject.Blog"
 # The site should now be running and visible on the front end
 ```
 
+> **⚠️ Important Note**: When using the template method with `dotnet new umbraco-starter-clean -n`, **do not use periods (.) in the project name**. Periods in the name parameter can cause compilation errors due to C# naming restrictions. Use alphanumeric characters, hyphens, or underscores instead (e.g., `MyProject`, `My-Project`, or `My_Project`).
+
 ---
 
 ## Umbraco 15 (STS)
@@ -155,6 +157,8 @@ dotnet run --project "MyProject.Blog"
 # Save and publish the home page and save one of the dictionary items in the translation section
 # The site should now be running and visible on the front end
 ```
+
+> **⚠️ Important Note**: When using the template method with `dotnet new umbraco-starter-clean -n`, **do not use periods (.) in the project name**. Periods in the name parameter can cause compilation errors due to C# naming restrictions. Use alphanumeric characters, hyphens, or underscores instead (e.g., `MyProject`, `My-Project`, or `My_Project`).
 
 ---
 
@@ -202,6 +206,8 @@ dotnet run --project "MyProject.Blog"
 # The site should now be running and visible on the front end
 ```
 
+> **⚠️ Important Note**: When using the template method with `dotnet new umbraco-starter-clean -n`, **do not use periods (.) in the project name**. Periods in the name parameter can cause compilation errors due to C# naming restrictions. Use alphanumeric characters, hyphens, or underscores instead (e.g., `MyProject`, `My-Project`, or `My_Project`).
+
 ---
 
 ## Umbraco 17 (LTS)
@@ -247,6 +253,8 @@ dotnet run --project "MyProject.Blog"
 # Save and publish the home page and save one of the dictionary items in the translation section
 # The site should now be running and visible on the front end
 ```
+
+> **⚠️ Important Note**: When using the template method with `dotnet new umbraco-starter-clean -n`, **do not use periods (.) in the project name**. Periods in the name parameter can cause compilation errors due to C# naming restrictions. Use alphanumeric characters, hyphens, or underscores instead (e.g., `MyProject`, `My-Project`, or `My_Project`).
 
 ---
 
