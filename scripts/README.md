@@ -1,8 +1,10 @@
 # Package Fix Scripts
 
-This directory contains scripts to automate workarounds for known Umbraco issues.
+This directory contains documentation for the Umbraco BlockList label workaround.
 
-## fix-package-blocklist-labels.py
+## BlockList Label Fix (PowerShell)
+
+**The fix is now implemented directly in PowerShell** within `.github/workflows/powershell/CreateNuGetPackages.ps1`. No external dependencies or manual steps required!
 
 Automates the workaround for the Umbraco BlockList label export bug tracked at [umbraco/Umbraco-CMS#20801](https://github.com/umbraco/Umbraco-CMS/issues/20801).
 
@@ -12,35 +14,25 @@ When creating and downloading packages from the Umbraco backoffice, the `package
 
 ### Solution
 
-This script automatically:
-1. Extracts the downloaded package.zip
-2. Reads the correct label data from the uSync configuration file
-3. Adds the missing labels to the package.xml
-4. Repacks the package.zip
-5. Copies it to the migrations folder for deployment
+The PowerShell build script (`CreateNuGetPackages.ps1`) automatically:
+1. Downloads package.zip from Umbraco API
+2. Extracts the package
+3. Reads label data from `template/Clean.Blog/uSync/v17/DataTypes/BlockListMainContent.config`
+4. Adds missing labels to the `[BlockList] Main Content` DataType in package.xml
+5. Repacks the package.zip
+6. Continues with the normal build process
 
-### Usage
+### How It Works
 
-1. Download the package.zip from Umbraco backoffice
-2. Place it in the repository root directory
-3. Run the script:
+The fix runs automatically during:
+- ✅ **PR builds** (before publishing to GitHub Packages)
+- ✅ **Release builds** (before publishing to NuGet.org)
 
-```bash
-python3 scripts/fix-package-blocklist-labels.py
-```
+No manual intervention needed - just run the build script as normal!
 
-Or specify a custom path:
+### What Gets Fixed
 
-```bash
-python3 scripts/fix-package-blocklist-labels.py /path/to/package.zip
-```
-
-### What It Does
-
-The script reads label templates from:
-- `template/Clean.Blog/uSync/v17/DataTypes/BlockListMainContent.config`
-
-And updates the `[BlockList] Main Content` DataType in package.xml to include labels for:
+Adds labels to the `[BlockList] Main Content` DataType for:
 - Rich Text blocks
 - Image blocks
 - Video blocks
@@ -48,34 +40,14 @@ And updates the `[BlockList] Main Content` DataType in package.xml to include la
 - Image Carousel blocks
 - Article List blocks
 
-### Output
+### Implementation Details
 
-The script will:
-- Modify the package.zip in place with the corrected labels
-- Copy the fixed package.zip to `template/Clean/Migrations/package.zip`
-- The migrations package is then ready for the dotnet pack process
-
-### Example
-
-```bash
-$ python3 scripts/fix-package-blocklist-labels.py
-Extracting /home/user/Clean/package.zip...
-Reading labels from template/Clean.Blog/uSync/v17/DataTypes/BlockListMainContent.config...
-Found 6 block labels
-Modifying package.xml...
-✓ Added 6 labels to [BlockList] Main Content
-Repacking package.zip...
-Replacing original package.zip...
-Copying to template/Clean/Migrations/package.zip...
-
-✓ Package processing complete!
-  - Modified package.zip with labels
-  - Copied to template/Clean/Migrations/package.zip
-```
-
-### Requirements
-
-- Python 3.6 or higher (uses standard library only)
+The fix is implemented as a PowerShell function `Fix-BlockListLabels` in `CreateNuGetPackages.ps1`:
+- Parses XML and JSON natively in PowerShell
+- Strips markdown formatting from labels
+- Unicode-escapes single quotes to match Umbraco format
+- HTML-encodes for XML attributes
+- No external dependencies required
 
 ## Disabling or Removing the Fix
 
@@ -94,4 +66,9 @@ When Umbraco fixes the bug, see [REMOVAL-GUIDE.md](REMOVAL-GUIDE.md) for complet
 
 This is a workaround for a known Umbraco bug: [umbraco/Umbraco-CMS#20801](https://github.com/umbraco/Umbraco-CMS/issues/20801)
 
-Once Umbraco releases a fix, this entire workaround can be removed. All code sections are clearly marked with comments indicating they are temporary.
+Once Umbraco releases a fix, this entire workaround can be removed. All code sections are clearly marked with comments:
+- `TEMPORARY WORKAROUND - Remove when Umbraco fixes issue #20801`
+
+## Legacy Python Scripts
+
+The `fix-package-blocklist-labels.py` and `test_fix_script.py` files are kept for reference but are no longer used. The fix is now fully implemented in PowerShell for better integration with the existing build process.

@@ -12,6 +12,90 @@ param(
 # ============================================================================
 $FixBlockListLabels = $true
 
+function Fix-BlockListLabels {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PackageXmlPath,
+        [Parameter(Mandatory = $true)]
+        [string]$USyncConfigPath
+    )
+
+    try {
+        Write-Host "Fixing BlockList labels in package.xml..." -ForegroundColor Yellow
+
+        # Read and parse uSync config to get label mappings
+        [xml]$usyncXml = Get-Content $USyncConfigPath -Encoding UTF8
+        $configCData = $usyncXml.DataType.Config.'#cdata-section'
+        $usyncConfig = $configCData | ConvertFrom-Json
+
+        # Create label mapping
+        $labelMap = @{}
+        foreach ($block in $usyncConfig.blocks) {
+            if ($block.contentElementTypeKey -and $block.label) {
+                # Strip markdown bold markers
+                $label = $block.label -replace '\*\*', ''
+                $labelMap[$block.contentElementTypeKey] = $label
+            }
+        }
+
+        Write-Verbose "Found $($labelMap.Count) block labels in uSync config"
+
+        # Read package.xml
+        $packageXmlContent = Get-Content $PackageXmlPath -Raw -Encoding UTF8
+
+        # Find and extract the [BlockList] Main Content DataType Configuration
+        $pattern = '(<DataType Name="\[BlockList\] Main Content"[^>]*Configuration=")([^"]+)(")'
+        $match = [regex]::Match($packageXmlContent, $pattern)
+
+        if (-not $match.Success) {
+            Write-Host "Warning: Could not find [BlockList] Main Content DataType in package.xml" -ForegroundColor Yellow
+            return $false
+        }
+
+        # Decode HTML entities and parse JSON
+        $configEncoded = $match.Groups[2].Value
+        $configJson = [System.Web.HttpUtility]::HtmlDecode($configEncoded)
+        $config = $configJson | ConvertFrom-Json
+
+        # Add labels to each block
+        $labelsAdded = 0
+        foreach ($block in $config.blocks) {
+            if ($block.contentElementTypeKey -and $labelMap.ContainsKey($block.contentElementTypeKey)) {
+                # Add the label property
+                $block | Add-Member -MemberType NoteProperty -Name "label" -Value $labelMap[$block.contentElementTypeKey] -Force
+                $labelsAdded++
+            }
+        }
+
+        # Convert back to JSON (compact format)
+        $modifiedJson = $config | ConvertTo-Json -Depth 10 -Compress
+
+        # Unicode-escape single quotes to match Umbraco format
+        $modifiedJson = $modifiedJson -replace "'", '\u0027'
+
+        # HTML-encode for XML attribute
+        $modifiedEncoded = $modifiedJson -replace '"', '&quot;'
+
+        # Replace in the original XML content
+        $prefix = $match.Groups[1].Value
+        $suffix = $match.Groups[3].Value
+        $replacement = $prefix + $modifiedEncoded + $suffix
+        $packageXmlContent = $packageXmlContent -replace [regex]::Escape($match.Value), $replacement
+
+        # Write back to file
+        $packageXmlContent | Set-Content $PackageXmlPath -Encoding UTF8 -NoNewline
+
+        Write-Host "Successfully added $labelsAdded labels to [BlockList] Main Content" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "Error fixing BlockList labels: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Verbose $_.ScriptStackTrace
+        return $false
+    }
+}
+# ============================================================================
+
 # Enable verbose output
 $VerbosePreference = "Continue"
 
@@ -261,44 +345,46 @@ try {
     # Remove this entire block when Umbraco fixes BlockList label export
     # ========================================================================
     if ($FixBlockListLabels) {
-        Write-Host "`nFixing BlockList labels in package.xml..." -ForegroundColor Yellow
-        $pythonScriptPath = Join-Path $CurrentDir "scripts\fix-package-blocklist-labels.py"
+        Write-Host ""
 
-        if (Test-Path $pythonScriptPath) {
-            try {
-                # Check if Python 3 is available
-                $pythonCmd = $null
-                if (Get-Command "python3" -ErrorAction SilentlyContinue) {
-                    $pythonCmd = "python3"
-                } elseif (Get-Command "python" -ErrorAction SilentlyContinue) {
-                    # Verify it's Python 3
-                    $pythonVersion = python --version 2>&1
-                    if ($pythonVersion -match "Python 3") {
-                        $pythonCmd = "python"
-                    }
+        # Extract package.zip to temp location
+        $tempExtractPath = Join-Path $OutputFolder "temp_package_extract"
+        if (Test-Path $tempExtractPath) {
+            Remove-Item $tempExtractPath -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $tempExtractPath | Out-Null
+
+        # Extract the package
+        Expand-Archive -Path $outputFile -DestinationPath $tempExtractPath -Force
+
+        # Paths
+        $packageXmlPath = Join-Path $tempExtractPath "package.xml"
+        $usyncConfigPath = Join-Path $CurrentDir "template\Clean.Blog\uSync\v17\DataTypes\BlockListMainContent.config"
+
+        if ((Test-Path $packageXmlPath) -and (Test-Path $usyncConfigPath)) {
+            # Call the PowerShell function to fix labels
+            $success = Fix-BlockListLabels -PackageXmlPath $packageXmlPath -USyncConfigPath $usyncConfigPath
+
+            if ($success) {
+                # Repack the package.zip
+                if (Test-Path $outputFile) {
+                    Remove-Item $outputFile -Force
                 }
-
-                if ($pythonCmd) {
-                    Write-Verbose "Running Python script to fix BlockList labels..."
-                    & $pythonCmd $pythonScriptPath $outputFile
-
-                    if ($LASTEXITCODE -eq 0) {
-                        Write-Host "✅ BlockList labels fixed successfully" -ForegroundColor Green
-                    } else {
-                        Write-Host "⚠️  Warning: Python script exited with code $LASTEXITCODE" -ForegroundColor Yellow
-                        Write-Host "   Continuing with package creation..." -ForegroundColor Yellow
-                    }
-                } else {
-                    Write-Host "⚠️  Warning: Python 3 not found. Skipping BlockList label fix." -ForegroundColor Yellow
-                    Write-Host "   Package will be created without label corrections." -ForegroundColor Yellow
-                }
-            }
-            catch {
-                Write-Host "⚠️  Warning: Error running Python script: $($_.Exception.Message)" -ForegroundColor Yellow
-                Write-Host "   Continuing with package creation..." -ForegroundColor Yellow
+                Compress-Archive -Path "$tempExtractPath\*" -DestinationPath $outputFile -CompressionLevel Optimal
+                Write-Host "Package repacked successfully" -ForegroundColor Green
             }
         } else {
-            Write-Verbose "Python fix script not found at $pythonScriptPath, skipping label fix."
+            if (-not (Test-Path $packageXmlPath)) {
+                Write-Host "Warning: package.xml not found in extracted package" -ForegroundColor Yellow
+            }
+            if (-not (Test-Path $usyncConfigPath)) {
+                Write-Host "Warning: uSync config not found at $usyncConfigPath" -ForegroundColor Yellow
+            }
+        }
+
+        # Clean up temp directory
+        if (Test-Path $tempExtractPath) {
+            Remove-Item $tempExtractPath -Recurse -Force
         }
     }
     # ========================================================================

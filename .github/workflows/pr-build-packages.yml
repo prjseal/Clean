@@ -20,16 +20,6 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # ======================================================================
-      # TEMPORARY WORKAROUND - Remove when Umbraco fixes issue #20801
-      # https://github.com/umbraco/Umbraco-CMS/issues/20801
-      # ======================================================================
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      # ======================================================================
-
       - name: Get latest NuGet version and create build version
         id: version
         shell: pwsh

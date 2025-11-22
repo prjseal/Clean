@@ -22,7 +22,7 @@ To quickly test without the fix:
 
 **File:** `.github/workflows/powershell/CreateNuGetPackages.ps1`
 
-**Delete lines 6-13** (feature flag):
+**Delete lines 6-97** (feature flag and function):
 ```powershell
 # ============================================================================
 # TEMPORARY WORKAROUND - Remove when Umbraco fixes issue #20801
@@ -32,9 +32,14 @@ To quickly test without the fix:
 # Delete this entire section when Umbraco releases a fix
 # ============================================================================
 $FixBlockListLabels = $true
+
+function Fix-BlockListLabels {
+    # ... [entire function] ...
+}
+# ============================================================================
 ```
 
-**Delete lines 259-306** (the actual fix logic):
+**Delete the workaround block** (search for "BEGIN TEMPORARY WORKAROUND"):
 ```powershell
 # ========================================================================
 # BEGIN TEMPORARY WORKAROUND - Umbraco issue #20801
@@ -48,60 +53,29 @@ if ($FixBlockListLabels) {
 # ========================================================================
 ```
 
-### Step 2: Remove Python from GitHub Actions Workflows
-
-**File:** `.github/workflows/pr-build-packages.yml`
-
-**Delete lines 23-31** (Python setup):
-```yaml
-# ======================================================================
-# TEMPORARY WORKAROUND - Remove when Umbraco fixes issue #20801
-# https://github.com/umbraco/Umbraco-CMS/issues/20801
-# ======================================================================
-- name: Setup Python
-  uses: actions/setup-python@v5
-  with:
-    python-version: '3.11'
-# ======================================================================
-```
-
-**File:** `.github/workflows/release-nuget.yml`
-
-**Delete lines 25-33** (Python setup):
-```yaml
-# ======================================================================
-# TEMPORARY WORKAROUND - Remove when Umbraco fixes issue #20801
-# https://github.com/umbraco/Umbraco-CMS/issues/20801
-# ======================================================================
-- name: Setup Python
-  uses: actions/setup-python@v5
-  with:
-    python-version: '3.11'
-# ======================================================================
-```
-
-### Step 3: Optional - Remove Scripts Directory
+### Step 2: Optional - Remove Scripts Directory
 
 If you want to completely clean up:
 
 ```bash
-# Remove the scripts directory (optional)
+# Remove the entire scripts directory (optional)
 rm -rf scripts/
 ```
 
-Or keep `scripts/` for future automation needs and just remove the fix script:
+Or keep the directory for future use and just remove the workaround files:
 ```bash
 rm scripts/fix-package-blocklist-labels.py
 rm scripts/test_fix_script.py
 rm scripts/REMOVAL-GUIDE.md
+rm scripts/README.md
 ```
 
 ## Verification
 
 After removal, test that packages still build correctly:
 
-1. Run the package build locally:
-   ```bash
+1. Run the package build:
+   ```powershell
    ./.github/workflows/powershell/CreateNuGetPackages.ps1 -Version "7.0.0-test.1"
    ```
 
@@ -125,3 +99,11 @@ If you're unsure whether Umbraco has fixed the issue:
 4. Check if the `blocks` array contains `"label"` properties
 
 If labels are present, the bug is fixed and you can safely remove this workaround!
+
+## What Changed from Python to PowerShell
+
+This removal guide has been updated. The original implementation used Python, but was rewritten in PowerShell for better integration with the existing build process. The removal steps are now simpler:
+
+- ✅ No Python setup to remove from GitHub Actions workflows
+- ✅ Everything is self-contained in one PowerShell script
+- ✅ Easier to maintain and remove
