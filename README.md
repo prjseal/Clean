@@ -110,7 +110,7 @@ dotnet run --project "MyProject.Blog"
 # The site should now be running and visible on the front end
 ```
 
-> **⚠️ Important Note**: When using the template method with `dotnet new umbraco-starter-clean -n`, **do not use periods (.) in the project name**. Periods in the name parameter can cause compilation errors due to C# naming restrictions. Use alphanumeric characters, hyphens, or underscores instead (e.g., `MyProject`, `My-Project`, or `My_Project`).
+> **✨ Note**: As of version 4.2.3+, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
 
 ---
 
@@ -158,7 +158,7 @@ dotnet run --project "MyProject.Blog"
 # The site should now be running and visible on the front end
 ```
 
-> **⚠️ Important Note**: When using the template method with `dotnet new umbraco-starter-clean -n`, **do not use periods (.) in the project name**. Periods in the name parameter can cause compilation errors due to C# naming restrictions. Use alphanumeric characters, hyphens, or underscores instead (e.g., `MyProject`, `My-Project`, or `My_Project`).
+> **✨ Note**: As of version 5.2.3+, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
 
 ---
 
@@ -206,7 +206,7 @@ dotnet run --project "MyProject.Blog"
 # The site should now be running and visible on the front end
 ```
 
-> **⚠️ Important Note**: When using the template method with `dotnet new umbraco-starter-clean -n`, **do not use periods (.) in the project name**. Periods in the name parameter can cause compilation errors due to C# naming restrictions. Use alphanumeric characters, hyphens, or underscores instead (e.g., `MyProject`, `My-Project`, or `My_Project`).
+> **✨ Note**: As of version 6.0.0-rc4+, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
 
 ---
 
@@ -254,7 +254,7 @@ dotnet run --project "MyProject.Blog"
 # The site should now be running and visible on the front end
 ```
 
-> **⚠️ Important Note**: When using the template method with `dotnet new umbraco-starter-clean -n`, **do not use periods (.) in the project name**. Periods in the name parameter can cause compilation errors due to C# naming restrictions. Use alphanumeric characters, hyphens, or underscores instead (e.g., `MyProject`, `My-Project`, or `My_Project`).
+> **✨ Note**: As of version 7.0.0-rc2+, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
 
 ---
 
