@@ -34,7 +34,28 @@ if ($PSVersionTable.PSVersion.Major -ge 6) {
 }
 
 # Get the script's directory
-$CurrentDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+
+# Find repository root by looking for .git directory
+function Get-RepositoryRoot {
+    param([string]$StartPath)
+
+    $currentPath = $StartPath
+    while ($currentPath) {
+        if (Test-Path (Join-Path $currentPath ".git")) {
+            return $currentPath
+        }
+        $parent = Split-Path -Parent $currentPath
+        if ($parent -eq $currentPath) {
+            break
+        }
+        $currentPath = $parent
+    }
+    throw "Could not find repository root (no .git directory found)"
+}
+
+# Get the repository root directory
+$CurrentDir = Get-RepositoryRoot -StartPath $ScriptDir
 
 # Get current process ID
 $currentPid = $PID
