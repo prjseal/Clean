@@ -751,116 +751,116 @@ jobs:
               Write-Host "Installing Playwright browsers..." -ForegroundColor Yellow
               npx playwright install chromium
 
-              # Create Playwright test script
-              Write-Host "`nCreating Playwright test script..." -ForegroundColor Yellow
-              $testScript = @'
-              const { chromium } = require('playwright');
-              const fs = require('fs');
-              const path = require('path');
+            # Create Playwright test script
+            Write-Host "`nCreating Playwright test script..." -ForegroundColor Yellow
+            $testScript = @'
+            const { chromium } = require('playwright');
+            const fs = require('fs');
+            const path = require('path');
 
-              (async () => {
-                const browser = await chromium.launch();
-                const context = await browser.newContext({
-                  ignoreHTTPSErrors: true
-                });
-                const page = await context.newPage();
+            (async () => {
+              const browser = await chromium.launch();
+              const context = await browser.newContext({
+                ignoreHTTPSErrors: true
+              });
+              const page = await context.newPage();
 
-                const screenshotsDir = path.join(__dirname, 'screenshots');
-                if (!fs.existsSync(screenshotsDir)) {
-                  fs.mkdirSync(screenshotsDir, { recursive: true });
-                }
-
-                const baseUrl = process.env.SITE_URL;
-                console.log('Testing site at:', baseUrl);
-
-                // Navigate to home page first to discover links
-                try {
-                  console.log('Navigating to home page...');
-                  await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
-
-                  // Take screenshot of home page
-                  await page.screenshot({
-                    path: path.join(screenshotsDir, '01-home.png'),
-                    fullPage: true
-                  });
-                  console.log('Screenshot saved: 01-home.png');
-
-                  // Find all internal links on the page
-                  const links = await page.evaluate((baseUrl) => {
-                    const anchors = Array.from(document.querySelectorAll('a[href]'));
-                    return anchors
-                      .map(a => a.href)
-                      .filter(href => {
-                        try {
-                          const url = new URL(href);
-                          const baseUrlObj = new URL(baseUrl);
-                          return url.hostname === baseUrlObj.hostname &&
-                                 !href.includes('/umbraco') &&
-                                 !href.includes('#') &&
-                                 !href.includes('javascript:');
-                        } catch {
-                          return false;
-                        }
-                      })
-                      .filter((value, index, self) => self.indexOf(value) === index);
-                  }, baseUrl);
-
-                  console.log('Found ' + links.length + ' internal links to test');
-
-                  // Visit each discovered link
-                  let counter = 2;
-                  for (const link of links.slice(0, 10)) {
-                    try {
-                      console.log('Navigating to:', link);
-                      await page.goto(link, { waitUntil: 'networkidle', timeout: 30000 });
-
-                      const screenshotName = counter.toString().padStart(2, '0') + '-' +
-                        link.replace(baseUrl, '').replace(/[^a-z0-9]/gi, '-').substring(0, 50) + '.png';
-
-                      await page.screenshot({
-                        path: path.join(screenshotsDir, screenshotName),
-                        fullPage: true
-                      });
-                      console.log('Screenshot saved:', screenshotName);
-                      counter++;
-                    } catch (error) {
-                      console.error('Error visiting', link, ':', error.message);
-                    }
-                  }
-
-                  // Test Umbraco login page
-                  console.log('Navigating to Umbraco login...');
-                  await page.goto(baseUrl + '/umbraco', { waitUntil: 'networkidle', timeout: 30000 });
-                  await page.screenshot({
-                    path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-login.png'),
-                    fullPage: true
-                  });
-                  console.log('Screenshot saved: umbraco-login.png');
-
-                } catch (error) {
-                  console.error('Error during testing:', error);
-                  process.exit(1);
-                }
-
-                await browser.close();
-                console.log('Testing complete!');
-              })();
-              '@
-
-              $testScript | Out-File -FilePath "$testDir\Company.Website\test.js" -Encoding UTF8
-
-              # Run Playwright tests
-              Write-Host "`nRunning Playwright tests..." -ForegroundColor Yellow
-              $env:SITE_URL = "$siteUrl"
-              node test.js
-
-              # Stop the site process
-              Write-Host "`nStopping site process..." -ForegroundColor Yellow
-              if (-not $process.HasExited) {
-                Stop-Process -Id $process.Id -Force
-                Write-Host "Site process stopped" -ForegroundColor Green
+              const screenshotsDir = path.join(__dirname, 'screenshots');
+              if (!fs.existsSync(screenshotsDir)) {
+                fs.mkdirSync(screenshotsDir, { recursive: true });
               }
+
+              const baseUrl = process.env.SITE_URL;
+              console.log('Testing site at:', baseUrl);
+
+              // Navigate to home page first to discover links
+              try {
+                console.log('Navigating to home page...');
+                await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
+
+                // Take screenshot of home page
+                await page.screenshot({
+                  path: path.join(screenshotsDir, '01-home.png'),
+                  fullPage: true
+                });
+                console.log('Screenshot saved: 01-home.png');
+
+                // Find all internal links on the page
+                const links = await page.evaluate((baseUrl) => {
+                  const anchors = Array.from(document.querySelectorAll('a[href]'));
+                  return anchors
+                    .map(a => a.href)
+                    .filter(href => {
+                      try {
+                        const url = new URL(href);
+                        const baseUrlObj = new URL(baseUrl);
+                        return url.hostname === baseUrlObj.hostname &&
+                               !href.includes('/umbraco') &&
+                               !href.includes('#') &&
+                               !href.includes('javascript:');
+                      } catch {
+                        return false;
+                      }
+                    })
+                    .filter((value, index, self) => self.indexOf(value) === index);
+                }, baseUrl);
+
+                console.log('Found ' + links.length + ' internal links to test');
+
+                // Visit each discovered link
+                let counter = 2;
+                for (const link of links.slice(0, 10)) {
+                  try {
+                    console.log('Navigating to:', link);
+                    await page.goto(link, { waitUntil: 'networkidle', timeout: 30000 });
+
+                    const screenshotName = counter.toString().padStart(2, '0') + '-' +
+                      link.replace(baseUrl, '').replace(/[^a-z0-9]/gi, '-').substring(0, 50) + '.png';
+
+                    await page.screenshot({
+                      path: path.join(screenshotsDir, screenshotName),
+                      fullPage: true
+                    });
+                    console.log('Screenshot saved:', screenshotName);
+                    counter++;
+                  } catch (error) {
+                    console.error('Error visiting', link, ':', error.message);
+                  }
+                }
+
+                // Test Umbraco login page
+                console.log('Navigating to Umbraco login...');
+                await page.goto(baseUrl + '/umbraco', { waitUntil: 'networkidle', timeout: 30000 });
+                await page.screenshot({
+                  path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-login.png'),
+                  fullPage: true
+                });
+                console.log('Screenshot saved: umbraco-login.png');
+
+              } catch (error) {
+                console.error('Error during testing:', error);
+                process.exit(1);
+              }
+
+              await browser.close();
+              console.log('Testing complete!');
+            })();
+            '@
+
+            $testScript | Out-File -FilePath "$testDir\Company.Website\test.js" -Encoding UTF8
+
+            # Run Playwright tests
+            Write-Host "`nRunning Playwright tests..." -ForegroundColor Yellow
+            $env:SITE_URL = "$siteUrl"
+            node test.js
+
+            # Stop the site process
+            Write-Host "`nStopping site process..." -ForegroundColor Yellow
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force
+              Write-Host "Site process stopped" -ForegroundColor Green
             }
+          }
           } else {
             Write-Host "`n❌ BUILD FAILED with exit code: $buildExitCode" -ForegroundColor Red
 
