@@ -97,7 +97,7 @@ namespace Clean.Core.TagHelpers
                 return;
             }
 
-            string? cleanedFileContents = null;
+            string? sanitizedFileContents = null;
 
             if (Cache)
             {
@@ -113,17 +113,17 @@ namespace Clean.Core.TagHelpers
                     cacheName = string.Concat("File-SvgContents (", FileSource, ")");
                 }
 
-                cleanedFileContents = _appCaches.RuntimeCache.GetCacheItem(cacheName, () =>
+                sanitizedFileContents = _appCaches.RuntimeCache.GetCacheItem(cacheName, () =>
                 {
                     return GetFileContents();
                 }, TimeSpan.FromMinutes(cacheMins));
             }
             else
             {
-                cleanedFileContents = GetFileContents();
+                sanitizedFileContents = GetFileContents();
             }
 
-            if (string.IsNullOrEmpty(cleanedFileContents))
+            if (string.IsNullOrEmpty(sanitizedFileContents))
             {
                 output.SuppressOutput();
                 return;
@@ -134,7 +134,7 @@ namespace Clean.Core.TagHelpers
             output.Attributes.RemoveAll("media-item");
 
             output.TagName = null; // Remove <our-svg>
-            output.Content.SetHtmlContent(cleanedFileContents);
+            output.Content.SetHtmlContent(sanitizedFileContents);
         }
 
         private string? GetFileContents()
@@ -190,12 +190,12 @@ namespace Clean.Core.TagHelpers
 
             // Sanitize SVG (Is there anything in Umbraco to reuse)
             // https://stackoverflow.com/questions/65247336/is-there-anyway-to-sanitize-svg-file-in-c-any-libraries-anything/65375485#65375485
-            var cleanedFileContents = Regex.Replace(fileContents,
+            var sanitizedFileContents = Regex.Replace(fileContents,
                 @"<script.*?script>",
                 @"",
                 RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
-            cleanedFileContents = Regex.Replace(cleanedFileContents,
+            sanitizedFileContents = Regex.Replace(sanitizedFileContents,
                 @"javascript:",
                 @"syntax:error:",
                 RegexOptions.IgnoreCase | RegexOptions.Singleline);
@@ -203,7 +203,7 @@ namespace Clean.Core.TagHelpers
             if (EnsureViewBox || !string.IsNullOrEmpty(CssClass))
             {
                 HtmlDocument doc = new HtmlDocument();
-                doc.LoadHtml(cleanedFileContents);
+                doc.LoadHtml(sanitizedFileContents);
                 var svgs = doc.DocumentNode.SelectNodes("//svg");
                 foreach (var svgNode in svgs)
                 {
@@ -221,10 +221,10 @@ namespace Clean.Core.TagHelpers
                         svgNode.Attributes.Remove("height");
                     }
                 }
-                cleanedFileContents = doc.DocumentNode.OuterHtml;
+                sanitizedFileContents = doc.DocumentNode.OuterHtml;
             }
 
-            return cleanedFileContents;
+            return sanitizedFileContents;
         }
 
         internal static decimal GetDecimal(object input, decimal defaultValue = 0)
