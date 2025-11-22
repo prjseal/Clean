@@ -334,7 +334,7 @@ After installation, you'll need to:
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues or pull requests on GitHub.
+Contributions are welcome! Please see our [Contributing Guide](.github/CONTRIBUTING.md) for detailed information on how to get started, code standards, testing requirements, and the contribution workflow.
 
 ---
 
