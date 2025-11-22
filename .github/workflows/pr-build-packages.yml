@@ -845,7 +845,7 @@ jobs:
                 await browser.close();
                 console.log('Testing complete!');
               })();
-'@
+              '@
 
               $testScript | Out-File -FilePath "$testDir\Company.Website\test.js" -Encoding UTF8
 
