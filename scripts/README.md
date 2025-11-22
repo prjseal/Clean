@@ -76,3 +76,22 @@ Copying to template/Clean/Migrations/package.zip...
 ### Requirements
 
 - Python 3.6 or higher (uses standard library only)
+
+## Disabling or Removing the Fix
+
+### Quick Disable
+
+To temporarily disable the fix without removing code:
+
+1. Open `.github/workflows/powershell/CreateNuGetPackages.ps1`
+2. Change line 13 to: `$FixBlockListLabels = $false`
+
+### Complete Removal
+
+When Umbraco fixes the bug, see [REMOVAL-GUIDE.md](REMOVAL-GUIDE.md) for complete removal instructions.
+
+## Why This is Temporary
+
+This is a workaround for a known Umbraco bug: [umbraco/Umbraco-CMS#20801](https://github.com/umbraco/Umbraco-CMS/issues/20801)
+
+Once Umbraco releases a fix, this entire workaround can be removed. All code sections are clearly marked with comments indicating they are temporary.

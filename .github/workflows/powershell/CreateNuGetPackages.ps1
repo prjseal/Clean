@@ -3,6 +3,15 @@ param(
     [string]$Version
 )
 
+# ============================================================================
+# TEMPORARY WORKAROUND - Remove when Umbraco fixes issue #20801
+# https://github.com/umbraco/Umbraco-CMS/issues/20801
+#
+# Set to $false to disable the BlockList label fix
+# Delete this entire section when Umbraco releases a fix
+# ============================================================================
+$FixBlockListLabels = $true
+
 # Enable verbose output
 $VerbosePreference = "Continue"
 
@@ -247,46 +256,54 @@ try {
     Invoke-RestMethod @downloadParams
     Write-Host "✅ Package downloaded successfully to $outputFile" -ForegroundColor Green
 
-    # Step 4: Fix BlockList labels in package.xml (workaround for Umbraco issue #20801)
-    Write-Host "`nFixing BlockList labels in package.xml..." -ForegroundColor Yellow
-    $pythonScriptPath = Join-Path $CurrentDir "scripts\fix-package-blocklist-labels.py"
+    # ========================================================================
+    # BEGIN TEMPORARY WORKAROUND - Umbraco issue #20801
+    # Remove this entire block when Umbraco fixes BlockList label export
+    # ========================================================================
+    if ($FixBlockListLabels) {
+        Write-Host "`nFixing BlockList labels in package.xml..." -ForegroundColor Yellow
+        $pythonScriptPath = Join-Path $CurrentDir "scripts\fix-package-blocklist-labels.py"
 
-    if (Test-Path $pythonScriptPath) {
-        try {
-            # Check if Python 3 is available
-            $pythonCmd = $null
-            if (Get-Command "python3" -ErrorAction SilentlyContinue) {
-                $pythonCmd = "python3"
-            } elseif (Get-Command "python" -ErrorAction SilentlyContinue) {
-                # Verify it's Python 3
-                $pythonVersion = python --version 2>&1
-                if ($pythonVersion -match "Python 3") {
-                    $pythonCmd = "python"
+        if (Test-Path $pythonScriptPath) {
+            try {
+                # Check if Python 3 is available
+                $pythonCmd = $null
+                if (Get-Command "python3" -ErrorAction SilentlyContinue) {
+                    $pythonCmd = "python3"
+                } elseif (Get-Command "python" -ErrorAction SilentlyContinue) {
+                    # Verify it's Python 3
+                    $pythonVersion = python --version 2>&1
+                    if ($pythonVersion -match "Python 3") {
+                        $pythonCmd = "python"
+                    }
                 }
-            }
 
-            if ($pythonCmd) {
-                Write-Verbose "Running Python script to fix BlockList labels..."
-                & $pythonCmd $pythonScriptPath $outputFile
+                if ($pythonCmd) {
+                    Write-Verbose "Running Python script to fix BlockList labels..."
+                    & $pythonCmd $pythonScriptPath $outputFile
 
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Host "✅ BlockList labels fixed successfully" -ForegroundColor Green
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "✅ BlockList labels fixed successfully" -ForegroundColor Green
+                    } else {
+                        Write-Host "⚠️  Warning: Python script exited with code $LASTEXITCODE" -ForegroundColor Yellow
+                        Write-Host "   Continuing with package creation..." -ForegroundColor Yellow
+                    }
                 } else {
-                    Write-Host "⚠️  Warning: Python script exited with code $LASTEXITCODE" -ForegroundColor Yellow
-                    Write-Host "   Continuing with package creation..." -ForegroundColor Yellow
+                    Write-Host "⚠️  Warning: Python 3 not found. Skipping BlockList label fix." -ForegroundColor Yellow
+                    Write-Host "   Package will be created without label corrections." -ForegroundColor Yellow
                 }
-            } else {
-                Write-Host "⚠️  Warning: Python 3 not found. Skipping BlockList label fix." -ForegroundColor Yellow
-                Write-Host "   Package will be created without label corrections." -ForegroundColor Yellow
             }
+            catch {
+                Write-Host "⚠️  Warning: Error running Python script: $($_.Exception.Message)" -ForegroundColor Yellow
+                Write-Host "   Continuing with package creation..." -ForegroundColor Yellow
+            }
+        } else {
+            Write-Verbose "Python fix script not found at $pythonScriptPath, skipping label fix."
         }
-        catch {
-            Write-Host "⚠️  Warning: Error running Python script: $($_.Exception.Message)" -ForegroundColor Yellow
-            Write-Host "   Continuing with package creation..." -ForegroundColor Yellow
-        }
-    } else {
-        Write-Verbose "Python fix script not found at $pythonScriptPath, skipping label fix."
     }
+    # ========================================================================
+    # END TEMPORARY WORKAROUND
+    # ========================================================================
 }
 catch {
     Write-Host "An error occurred during package download: $($_.Exception.Message)" -ForegroundColor Red
