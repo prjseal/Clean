@@ -37,7 +37,8 @@ jobs:
         shell: pwsh
         run: |
           $dryRunFlag = if ('${{ github.event.inputs.dryRun }}' -eq 'true') { $true } else { $false }
-          $includePrereleaseFlag = if ('${{ github.event.inputs.includePrerelease }}' -eq 'true') { $true } else { $false }
+          # Default to true for scheduled runs (when input is empty), only false if explicitly set to 'false'
+          $includePrereleaseFlag = if ('${{ github.event.inputs.includePrerelease }}' -eq 'false') { $false } else { $true }
 
           Write-Host "DryRunFlag = $dryRunFlag"
           Write-Host "IncludePrereleaseFlag = $includePrereleaseFlag"
