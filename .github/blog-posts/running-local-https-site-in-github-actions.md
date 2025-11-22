@@ -215,7 +215,7 @@ jobs:
         shell: pwsh
         run: |
 
-          ./CreateNuGetPackages.ps1 -Version "1.0.0.${{ github.run_number }}"
+          ./.github/workflows/powershell/CreateNuGetPackages.ps1 -Version "1.0.0.${{ github.run_number }}"
       - name: Upload NuGet packages as artifacts
         uses: actions/upload-artifact@v4
         with:

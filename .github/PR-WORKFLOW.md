@@ -54,7 +54,7 @@ The workflow builds **four NuGet packages**:
 
 **Build Command**:
 ```powershell
-./CreateNuGetPackages.ps1 -Version "7.0.1-ci.42"
+./.github/workflows/powershell/CreateNuGetPackages.ps1 -Version "7.0.1-ci.42"
 ```
 
 ### 3. **Publishing to GitHub Packages**
