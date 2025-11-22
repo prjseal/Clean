@@ -1,5 +1,11 @@
 # Clean Starter Kit for Umbraco
 
+[![NuGet Version](https://img.shields.io/nuget/v/Clean?label=NuGet%20Version)](https://www.nuget.org/packages/Clean)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Clean?label=NuGet%20Downloads)](https://www.nuget.org/packages/Clean)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/prjseal/Clean/pr-build-packages.yml?branch=main&label=Build)](https://github.com/prjseal/Clean/actions)
+[![License](https://img.shields.io/github/license/prjseal/Clean?label=License)](https://github.com/prjseal/Clean/blob/main/LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/prjseal/Clean?label=Stars)](https://github.com/prjseal/Clean/stargazers)
+
 A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 13, 15, 16, and 17.
 
 ## Features
