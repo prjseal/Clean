@@ -330,7 +330,7 @@ Each major step displays:
 
 - [VERSIONING-AND-RELEASES.md](VERSIONING-AND-RELEASES.md) - Release process and version strategy
 - [CONSUMING-GITHUB-PACKAGES.md](CONSUMING-GITHUB-PACKAGES.md) - How to consume development packages
-- [README.md](README.md) - Project overview and installation
+- [README.md](../README.md) - Project overview and installation
 
 ## Differences from Release Workflow
 
