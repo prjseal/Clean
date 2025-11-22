@@ -27,7 +27,6 @@ public class PackageController : CreatedPackageControllerBase
     private readonly IDataTypeService _dataTypeService;
     private readonly IMediaTypeService _mediaTypeService;
     private readonly ITemplateService _templateService;
-    private readonly IFileService _fileService;
     private readonly IPartialViewService _partialViewService;
     private readonly IStylesheetService _stylesheetService;
     private readonly IDictionaryItemService _dictionaryItemService;
@@ -135,7 +134,7 @@ public class PackageController : CreatedPackageControllerBase
         _logger.LogInformation("Retrieved {Count} media types.", mediaTypes.Count);
 
         var dataTypes = await _dataTypeService.GetAllAsync();
-        package.DataTypes = dataTypes.Where(x => x.Name.StartsWith("[")).Select(dt => dt.Key.ToString()).ToList();
+        package.DataTypes = dataTypes.Where(x => x.Name != null && x.Name.StartsWith("[")).Select(dt => dt.Key.ToString()).ToList();
         _logger.LogInformation("Retrieved {Count} data types matching criteria.", package.DataTypes.Count);
 
         var templates = await _templateService.GetAllAsync();
@@ -144,15 +143,18 @@ public class PackageController : CreatedPackageControllerBase
 
         var partialViews = await _partialViewService.GetAllAsync();
         package.PartialViews = partialViews
-            .Where(x =>
-                x.VirtualPath.Contains("/Views/Partials/blocklist/") ||
-                x.VirtualPath.Count(c => c == '/') == 3)
-            .Select(pv => pv.VirtualPath.Replace("/Views/Partials", ""))
+            .Where(x => x.VirtualPath != null &&
+                (x.VirtualPath.Contains("/Views/Partials/blocklist/") ||
+                x.VirtualPath.Count(c => c == '/') == 3))
+            .Select(pv => pv.VirtualPath?.Replace("/Views/Partials", "") ?? string.Empty)
             .ToList();
         _logger.LogInformation("Retrieved {Count} partial views.", package.PartialViews.Count);
 
         var stylesheets = await _stylesheetService.GetAllAsync();
-        package.Stylesheets = stylesheets.Select(s => s.VirtualPath.Replace("/css", "")).ToList();
+        package.Stylesheets = stylesheets
+            .Where(s => s.VirtualPath != null)
+            .Select(s => s.VirtualPath?.Replace("/css", "") ?? string.Empty)
+            .ToList();
         _logger.LogInformation("Retrieved {Count} stylesheets.", package.Stylesheets.Count);
 
         var dictionaryItems = (await _dictionaryItemService.GetAtRootAsync()).Select(di => di.Key.ToString()).ToList();

@@ -17,7 +17,7 @@ namespace Clean.Headless.Controllers;
 [ApiExplorerSettings(GroupName = "Contact")]
 [MapToApi("clean-starter")]
 [ApiController]
-public class ContactApiV1Controller : UmbracoApiController
+public class ContactApiV1Controller : ControllerBase
 {
     private readonly IEmailSender _emailSender;
     private readonly ILogger<ContactApiV1Controller> _logger;

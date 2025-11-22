@@ -17,7 +17,7 @@ namespace Clean.Headless.Controllers;
 [ApiExplorerSettings(GroupName = "Search")]
 [MapToApi("clean-starter")]
 [ApiController]
-public class SearchApiV1Controller : UmbracoApiController
+public class SearchApiV1Controller : ControllerBase
 {
 	private readonly IPublishedContentQueryAccessor _publishedContentQuerAccessor;
 
