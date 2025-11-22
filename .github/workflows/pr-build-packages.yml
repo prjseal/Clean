@@ -661,268 +661,179 @@ jobs:
           # Create a new project using the template with a period in the name
           Write-Host "`nCreating test project with period in name..." -ForegroundColor Yellow
           Write-Host "Project name: Company.Website" -ForegroundColor Cyan
-          $createOutput = dotnet new umbraco-starter-clean -n Company.Website 2>&1
-          $createExitCode = $LASTEXITCODE
-
-          if ($createExitCode -ne 0) {
-            Write-Host "Template creation failed with exit code: $createExitCode" -ForegroundColor Red
-            Write-Host "Output:" -ForegroundColor Yellow
-            Write-Host $createOutput
-            exit 1
-          }
-
-          # Verify the directory was created
-          if (-not (Test-Path "Company.Website")) {
-            Write-Host "❌ ERROR: Template directory was not created!" -ForegroundColor Red
-            exit 1
-          }
+          dotnet new umbraco-starter-clean -n Company.Website
 
           # Navigate to project directory
           Set-Location Company.Website
 
-          # Attempt to build the project
-          Write-Host "`nAttempting to build project with period in name..." -ForegroundColor Yellow
-          $buildOutput = dotnet build Company.Website.Blog 2>&1
-          $buildExitCode = $LASTEXITCODE
+          # Start the site in background
+          Write-Host "`nStarting Umbraco site from template..." -ForegroundColor Yellow
+          $logFile = "$testDir\Company.Website\site.log"
+          $errFile = "$testDir\Company.Website\site.err"
 
-          Write-Host "`n================================================" -ForegroundColor Cyan
-          Write-Host "Build Output (Full Details):" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host $buildOutput
-          Write-Host "================================================" -ForegroundColor Cyan
+          $process = Start-Process -FilePath "dotnet" `
+            -ArgumentList "run --project Company.Website.Blog" `
+            -RedirectStandardOutput $logFile `
+            -RedirectStandardError $errFile `
+            -NoNewWindow `
+            -PassThru
 
-          if ($buildExitCode -eq 0) {
-            Write-Host "`n✅ SUCCESS: Project with period in name built successfully!" -ForegroundColor Green
-            Write-Host "Issue #11 fix is completely working - all naming issues resolved!" -ForegroundColor Green
+          Write-Host "Site process started with PID: $($process.Id)" -ForegroundColor Green
 
-            # Start the site in background for screenshot testing
-            Write-Host "`nStarting Umbraco site for screenshot testing..." -ForegroundColor Yellow
-            $logFile = "$testDir\Company.Website\site.log"
-            $errFile = "$testDir\Company.Website\site.err"
+          # Wait for site to start and extract URL
+          $startTime = Get-Date
+          $timeoutSeconds = 180
+          $siteStarted = $false
+          $siteUrl = $null
 
-            $process = Start-Process -FilePath "dotnet" `
-              -ArgumentList "run --project Company.Website.Blog" `
-              -RedirectStandardOutput $logFile `
-              -RedirectStandardError $errFile `
-              -NoNewWindow `
-              -PassThru
+          Write-Host "Waiting for site to start (timeout: ${timeoutSeconds}s)..." -ForegroundColor Yellow
 
-            Write-Host "Site process started with PID: $($process.Id)" -ForegroundColor Green
-
-            # Wait for site to start and extract URL
-            $startTime = Get-Date
-            $timeoutSeconds = 180
-            $siteStarted = $false
-            $siteUrl = $null
-
-            Write-Host "Waiting for site to start (timeout: ${timeoutSeconds}s)..." -ForegroundColor Yellow
-
-            while (-not $siteStarted) {
-              if ((Get-Date) - $startTime -gt (New-TimeSpan -Seconds $timeoutSeconds)) {
-                Write-Host "Timeout reached! Site failed to start." -ForegroundColor Red
-                if (-not $process.HasExited) {
-                  Stop-Process -Id $process.Id -Force
-                }
-                break
+          while (-not $siteStarted) {
+            if ((Get-Date) - $startTime -gt (New-TimeSpan -Seconds $timeoutSeconds)) {
+              Write-Host "Timeout reached! Site failed to start." -ForegroundColor Red
+              if (-not $process.HasExited) {
+                Stop-Process -Id $process.Id -Force
               }
-
-              if (Test-Path $logFile) {
-                $logContent = Get-Content $logFile -Raw
-
-                # Check if site is listening on HTTPS
-                if ($logContent -match "Now listening on:\s*(https://[^\s]+)") {
-                  $siteUrl = $matches[1]
-                  $siteStarted = $true
-                  Write-Host "Site is running at: $siteUrl" -ForegroundColor Green
-                  break
-                }
-              }
-
-              Start-Sleep -Seconds 2
-            }
-
-            if ($siteStarted) {
-              # Install Node.js dependencies for Playwright
-              Write-Host "`nInstalling Playwright..." -ForegroundColor Yellow
-              npm init -y
-              npm install --save-dev playwright
-
-              # Install Playwright browsers
-              Write-Host "Installing Playwright browsers..." -ForegroundColor Yellow
-              npx playwright install chromium
-
-            # Create Playwright test script
-            Write-Host "`nCreating Playwright test script..." -ForegroundColor Yellow
-            $testScript = @'
-            const { chromium } = require('playwright');
-            const fs = require('fs');
-            const path = require('path');
-
-            (async () => {
-              const browser = await chromium.launch();
-              const context = await browser.newContext({
-                ignoreHTTPSErrors: true
-              });
-              const page = await context.newPage();
-
-              const screenshotsDir = path.join(__dirname, 'screenshots');
-              if (!fs.existsSync(screenshotsDir)) {
-                fs.mkdirSync(screenshotsDir, { recursive: true });
-              }
-
-              const baseUrl = process.env.SITE_URL;
-              console.log('Testing site at:', baseUrl);
-
-              // Navigate to home page first to discover links
-              try {
-                console.log('Navigating to home page...');
-                await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
-
-                // Take screenshot of home page
-                await page.screenshot({
-                  path: path.join(screenshotsDir, '01-home.png'),
-                  fullPage: true
-                });
-                console.log('Screenshot saved: 01-home.png');
-
-                // Find all internal links on the page
-                const links = await page.evaluate((baseUrl) => {
-                  const anchors = Array.from(document.querySelectorAll('a[href]'));
-                  return anchors
-                    .map(a => a.href)
-                    .filter(href => {
-                      try {
-                        const url = new URL(href);
-                        const baseUrlObj = new URL(baseUrl);
-                        return url.hostname === baseUrlObj.hostname &&
-                               !href.includes('/umbraco') &&
-                               !href.includes('#') &&
-                               !href.includes('javascript:');
-                      } catch {
-                        return false;
-                      }
-                    })
-                    .filter((value, index, self) => self.indexOf(value) === index);
-                }, baseUrl);
-
-                console.log('Found ' + links.length + ' internal links to test');
-
-                // Visit each discovered link
-                let counter = 2;
-                for (const link of links.slice(0, 10)) {
-                  try {
-                    console.log('Navigating to:', link);
-                    await page.goto(link, { waitUntil: 'networkidle', timeout: 30000 });
-
-                    const screenshotName = counter.toString().padStart(2, '0') + '-' +
-                      link.replace(baseUrl, '').replace(/[^a-z0-9]/gi, '-').substring(0, 50) + '.png';
-
-                    await page.screenshot({
-                      path: path.join(screenshotsDir, screenshotName),
-                      fullPage: true
-                    });
-                    console.log('Screenshot saved:', screenshotName);
-                    counter++;
-                  } catch (error) {
-                    console.error('Error visiting', link, ':', error.message);
-                  }
-                }
-
-                // Test Umbraco login page
-                console.log('Navigating to Umbraco login...');
-                await page.goto(baseUrl + '/umbraco', { waitUntil: 'networkidle', timeout: 30000 });
-                await page.screenshot({
-                  path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-login.png'),
-                  fullPage: true
-                });
-                console.log('Screenshot saved: umbraco-login.png');
-
-              } catch (error) {
-                console.error('Error during testing:', error);
-                process.exit(1);
-              }
-
-              await browser.close();
-              console.log('Testing complete!');
-            })();
-            '@
-
-            $testScript | Out-File -FilePath "$testDir\Company.Website\test.js" -Encoding UTF8
-
-            # Run Playwright tests
-            Write-Host "`nRunning Playwright tests..." -ForegroundColor Yellow
-            $env:SITE_URL = "$siteUrl"
-            node test.js
-
-            # Stop the site process
-            Write-Host "`nStopping site process..." -ForegroundColor Yellow
-            if (-not $process.HasExited) {
-              Stop-Process -Id $process.Id -Force
-              Write-Host "Site process stopped" -ForegroundColor Green
-            }
-          }
-          } else {
-            Write-Host "`n❌ BUILD FAILED with exit code: $buildExitCode" -ForegroundColor Red
-
-            # Extract and display compilation errors
-            $errors = $buildOutput | Select-String "error CS\d+:"
-            if ($errors) {
-              Write-Host "`nCompilation Errors Found:" -ForegroundColor Yellow
-              foreach ($error in $errors) {
-                Write-Host "  $error" -ForegroundColor Red
-              }
-            }
-
-            # Check for all the naming issues we fixed
-            $namingIssuesFound = $false
-
-            # Check for cleanedFileContents variable error
-            if ($buildOutput -match "company\.websiteedFileContents|\.cleanedFileContents|websiteedFileContents") {
-              Write-Host "`n❌ NAMING ISSUE: cleanedFileContents variable error found!" -ForegroundColor Red
-              $namingIssuesFound = $true
-            }
-
-            # Check for CleanHeadlessComposer class error
-            if ($buildOutput -match "\.WebsiteHeadlessComposer|company\.websiteHeadlessComposer|WebsiteHeadlessComposer.*IComposer") {
-              Write-Host "`n❌ NAMING ISSUE: CleanHeadlessComposer class error found!" -ForegroundColor Red
-              $namingIssuesFound = $true
-            }
-
-            # Check for CleanComposer class error
-            if ($buildOutput -match "\.WebsiteComposer.*IComposer|company\.websiteComposer.*IComposer|WebsiteComposer.*IComposer") {
-              Write-Host "`n❌ NAMING ISSUE: CleanComposer class error found!" -ForegroundColor Red
-              $namingIssuesFound = $true
-            }
-
-            # Check for CleanManifestReader class error
-            if ($buildOutput -match "\.WebsiteManifestReader|company\.websiteManifestReader|WebsiteManifestReader") {
-              Write-Host "`n❌ NAMING ISSUE: CleanManifestReader class error found!" -ForegroundColor Red
-              $namingIssuesFound = $true
-            }
-
-            if ($namingIssuesFound) {
-              Write-Host "`n❌ TEST FAILED: One or more naming issues from the fix were still detected!" -ForegroundColor Red
-              Write-Host "The fixes for variable/class names were not applied correctly." -ForegroundColor Red
               exit 1
             }
 
-            # If we get here, there are other unrelated build errors
-            Write-Host "`n✅ All variable/class naming issues are resolved!" -ForegroundColor Green
-            Write-Host "The following fixes are working:" -ForegroundColor Green
-            Write-Host "  - cleanedFileContents → sanitizedFileContents" -ForegroundColor Cyan
-            Write-Host "  - CleanHeadlessComposer → HeadlessApiComposer" -ForegroundColor Cyan
-            Write-Host "  - CleanComposer → StarterKitComposer" -ForegroundColor Cyan
-            Write-Host "  - CleanManifestReader → StarterKitManifestReader" -ForegroundColor Cyan
-            Write-Host "`nNote: Build still failed due to other C# naming issues with periods," -ForegroundColor Yellow
-            Write-Host "which is expected and documented in the README." -ForegroundColor Yellow
+            if (Test-Path $logFile) {
+              $logContent = Get-Content $logFile -Raw
+
+              # Check if site is listening on HTTPS
+              if ($logContent -match "Now listening on:\s*(https://[^\s]+)") {
+                $siteUrl = $matches[1]
+                $siteStarted = $true
+                Write-Host "Site is running at: $siteUrl" -ForegroundColor Green
+                break
+              }
+            }
+
+            Start-Sleep -Seconds 2
+          }
+
+          # Install Node.js dependencies for Playwright
+          Write-Host "`nInstalling Playwright..." -ForegroundColor Yellow
+          npm init -y
+          npm install --save-dev playwright
+
+          # Install Playwright browsers
+          Write-Host "Installing Playwright browsers..." -ForegroundColor Yellow
+          npx playwright install chromium
+
+          # Create Playwright test script
+          Write-Host "`nCreating Playwright test script..." -ForegroundColor Yellow
+          $testScript = @'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          const path = require('path');
+
+          (async () => {
+            const browser = await chromium.launch();
+            const context = await browser.newContext({
+              ignoreHTTPSErrors: true
+            });
+            const page = await context.newPage();
+
+            const screenshotsDir = path.join(__dirname, 'screenshots');
+            if (!fs.existsSync(screenshotsDir)) {
+              fs.mkdirSync(screenshotsDir, { recursive: true });
+            }
+
+            const baseUrl = process.env.SITE_URL;
+            console.log('Testing site at:', baseUrl);
+
+            // Navigate to home page first to discover links
+            try {
+              console.log('Navigating to home page...');
+              await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
+
+              // Take screenshot of home page
+              await page.screenshot({
+                path: path.join(screenshotsDir, '01-home.png'),
+                fullPage: true
+              });
+              console.log('Screenshot saved: 01-home.png');
+
+              // Find all internal links on the page
+              const links = await page.evaluate((baseUrl) => {
+                const anchors = Array.from(document.querySelectorAll('a[href]'));
+                return anchors
+                  .map(a => a.href)
+                  .filter(href => {
+                    try {
+                      const url = new URL(href);
+                      const baseUrlObj = new URL(baseUrl);
+                      return url.hostname === baseUrlObj.hostname &&
+                             !href.includes('/umbraco') &&
+                             !href.includes('#') &&
+                             !href.includes('javascript:');
+                    } catch {
+                      return false;
+                    }
+                  })
+                  .filter((value, index, self) => self.indexOf(value) === index);
+              }, baseUrl);
+
+              console.log('Found ' + links.length + ' internal links to test');
+
+              // Visit each discovered link
+              let counter = 2;
+              for (const link of links.slice(0, 10)) {
+                try {
+                  console.log('Navigating to:', link);
+                  await page.goto(link, { waitUntil: 'networkidle', timeout: 30000 });
+
+                  const screenshotName = counter.toString().padStart(2, '0') + '-' +
+                    link.replace(baseUrl, '').replace(/[^a-z0-9]/gi, '-').substring(0, 50) + '.png';
+
+                  await page.screenshot({
+                    path: path.join(screenshotsDir, screenshotName),
+                    fullPage: true
+                  });
+                  console.log('Screenshot saved:', screenshotName);
+                  counter++;
+                } catch (error) {
+                  console.error('Error visiting', link, ':', error.message);
+                }
+              }
+
+              // Test Umbraco login page
+              console.log('Navigating to Umbraco login...');
+              await page.goto(baseUrl + '/umbraco', { waitUntil: 'networkidle', timeout: 30000 });
+              await page.screenshot({
+                path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-login.png'),
+                fullPage: true
+              });
+              console.log('Screenshot saved: umbraco-login.png');
+
+            } catch (error) {
+              console.error('Error during testing:', error);
+              process.exit(1);
+            }
+
+            await browser.close();
+            console.log('Testing complete!');
+          })();
+          '@
+
+          $testScript | Out-File -FilePath "$testDir\Company.Website\test.js" -Encoding UTF8
+
+          # Run Playwright tests
+          Write-Host "`nRunning Playwright tests..." -ForegroundColor Yellow
+          $env:SITE_URL = "$siteUrl"
+          node test.js
+
+          # Stop the site process
+          Write-Host "`nStopping site process..." -ForegroundColor Yellow
+          if (-not $process.HasExited) {
+            Stop-Process -Id $process.Id -Force
+            Write-Host "Site process stopped" -ForegroundColor Green
           }
 
           Write-Host "`n================================================" -ForegroundColor Cyan
-          Write-Host "Period Name Test Complete - PASSED" -ForegroundColor Cyan
+          Write-Host "Period Name Template Testing Complete" -ForegroundColor Cyan
           Write-Host "================================================" -ForegroundColor Cyan
-
-          # Exit with success - the test passed (cleanedFileContents error not found)
-          exit 0
 
       - name: Upload Period Name Test Screenshots
         if: always()
