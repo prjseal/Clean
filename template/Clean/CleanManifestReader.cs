@@ -7,11 +7,11 @@ using Umbraco.Cms.Infrastructure.Manifest;
 
 namespace Clean
 {
-    internal class CleanManifestReader : IPackageManifestReader
+    internal class StarterKitManifestReader : IPackageManifestReader
     {
         public Task<IEnumerable<PackageManifest>> ReadPackageManifestsAsync()
         {
-            var assembly = typeof(CleanManifestReader).Assembly;
+            var assembly = typeof(StarterKitManifestReader).Assembly;
             List<PackageManifest> manifest = [
                 new PackageManifest
             {

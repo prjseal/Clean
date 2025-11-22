@@ -4,7 +4,7 @@ using Umbraco.Cms.Core.DependencyInjection;
 
 namespace Clean.Headless.Startup;
 
-public class CleanHeadlessComposer : IComposer
+public class HeadlessApiComposer : IComposer
 {
     public void Compose(IUmbracoBuilder builder)
     {
