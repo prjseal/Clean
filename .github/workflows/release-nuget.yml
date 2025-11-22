@@ -308,7 +308,7 @@ jobs:
 
           # Stage all .csproj and README.md files
           Write-Host "`nStaging .csproj files..." -ForegroundColor Yellow
-          git add "**/*.csproj"
+          git add "*.csproj" "**/*.csproj"
 
           Write-Host "Staging README.md files..." -ForegroundColor Yellow
           git add "README.md" "template/README.md"
