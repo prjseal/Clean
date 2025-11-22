@@ -57,6 +57,14 @@ function Fix-BlockListLabels {
         $configJson = [System.Web.HttpUtility]::HtmlDecode($configEncoded)
         $config = $configJson | ConvertFrom-Json
 
+        # Display BEFORE
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "BEFORE - DataType Configuration:" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host $match.Value -ForegroundColor Gray
+        Write-Host "`nDecoded Configuration JSON:" -ForegroundColor Cyan
+        Write-Host ($configJson | ConvertFrom-Json | ConvertTo-Json -Depth 10) -ForegroundColor Gray
+
         # Add labels to each block
         $labelsAdded = 0
         foreach ($block in $config.blocks) {
@@ -81,6 +89,15 @@ function Fix-BlockListLabels {
         $suffix = $match.Groups[3].Value
         $replacement = $prefix + $modifiedEncoded + $suffix
         $packageXmlContent = $packageXmlContent -replace [regex]::Escape($match.Value), $replacement
+
+        # Display AFTER
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "AFTER - DataType Configuration:" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host $replacement -ForegroundColor Green
+        Write-Host "`nDecoded Configuration JSON:" -ForegroundColor Cyan
+        Write-Host ($modifiedJson | ConvertFrom-Json | ConvertTo-Json -Depth 10) -ForegroundColor Green
+        Write-Host "========================================`n" -ForegroundColor Cyan
 
         # Write back to file
         $packageXmlContent | Set-Content $PackageXmlPath -Encoding UTF8 -NoNewline
