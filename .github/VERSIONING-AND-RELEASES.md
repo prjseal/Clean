@@ -277,7 +277,7 @@ The Clean packages maintain version alignment with Umbraco CMS:
 **Process**:
 1. Query NuGet.org for latest stable version
 2. Append `-ci.{build-number}` to create build version
-3. Run `CreateNuGetPackages.ps1` with version
+3. Run `.github/workflows/powershell/CreateNuGetPackages.ps1` with version
 4. Publish to GitHub Packages
 5. Upload artifacts
 
@@ -406,7 +406,7 @@ gh run view --log
 **Cause**: Packages built separately with different versions.
 
 **Solution**:
-The `CreateNuGetPackages.ps1` script handles this by:
+The `.github/workflows/powershell/CreateNuGetPackages.ps1` script handles this by:
 1. Building packages in dependency order
 2. Updating all internal package references to match version
 3. Using local NuGet source during build
@@ -417,7 +417,7 @@ If issues persist:
 dotnet nuget locals all --clear
 
 # Re-run package creation
-./CreateNuGetPackages.ps1 -Version "7.0.0"
+./.github/workflows/powershell/CreateNuGetPackages.ps1 -Version "7.0.0"
 ```
 
 ### Pre-release Not Showing in NuGet Package Manager
@@ -509,7 +509,7 @@ gh run list --workflow=release-nuget.yml
 gh run watch
 
 # Test package locally
-./CreateNuGetPackages.ps1 -Version "7.0.0-test.1"
+./.github/workflows/powershell/CreateNuGetPackages.ps1 -Version "7.0.0-test.1"
 ```
 
 ### Version Examples

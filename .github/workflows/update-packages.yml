@@ -41,7 +41,7 @@ jobs:
 
           Write-Host "DryRunFlag = $dryRunFlag"
           Write-Host "IncludePrereleaseFlag = $includePrereleaseFlag"
-          ./UpdateThirdPartyPackages.ps1 `
+          ./.github/workflows/powershell/UpdateThirdPartyPackages.ps1 `
             -RootPath "${{ github.workspace }}" `
             -DryRun:$dryRunFlag `
             -IncludePrerelease:$includePrereleaseFlag
