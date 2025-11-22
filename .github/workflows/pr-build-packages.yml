@@ -650,6 +650,10 @@ jobs:
 
           dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
 
+          # Uninstall any existing Clean templates to avoid conflicts
+          Write-Host "`nUninstalling any existing Clean templates..." -ForegroundColor Yellow
+          dotnet new uninstall Umbraco.Community.Templates.Clean 2>&1 | Out-Null
+
           # Install the Clean template from GitHub Packages
           Write-Host "`nInstalling Clean template version ${{ steps.version.outputs.version }} from GitHub Packages..." -ForegroundColor Yellow
           dotnet new install Umbraco.Community.Templates.Clean::${{ steps.version.outputs.version }} --nuget-source $sourceUrl --force
@@ -657,7 +661,21 @@ jobs:
           # Create a new project using the template with a period in the name
           Write-Host "`nCreating test project with period in name..." -ForegroundColor Yellow
           Write-Host "Project name: Company.Website" -ForegroundColor Cyan
-          dotnet new umbraco-starter-clean -n Company.Website
+          $createOutput = dotnet new umbraco-starter-clean -n Company.Website 2>&1
+          $createExitCode = $LASTEXITCODE
+
+          if ($createExitCode -ne 0) {
+            Write-Host "Template creation failed with exit code: $createExitCode" -ForegroundColor Red
+            Write-Host "Output:" -ForegroundColor Yellow
+            Write-Host $createOutput
+            exit 1
+          }
+
+          # Verify the directory was created
+          if (-not (Test-Path "Company.Website")) {
+            Write-Host "❌ ERROR: Template directory was not created!" -ForegroundColor Red
+            exit 1
+          }
 
           # Navigate to project directory
           Set-Location Company.Website
