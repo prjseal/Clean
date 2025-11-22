@@ -367,9 +367,9 @@ Clean/
 │   ├── Clean.Headless/      # Headless/API features
 │   └── Clean.Models/        # Generated models
 ├── .github/                 # GitHub workflows and configs
+│   └── CONTRIBUTING.md     # This file
 ├── LICENSE                  # MIT License
-├── README.md               # Project documentation
-└── CONTRIBUTING.md         # This file
+└── README.md               # Project documentation
 ```
 
 ## Version Support
