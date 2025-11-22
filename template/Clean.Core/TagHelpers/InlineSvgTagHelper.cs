@@ -230,7 +230,7 @@ namespace Clean.Core.TagHelpers
         internal static decimal GetDecimal(object input, decimal defaultValue = 0)
         {
             decimal value = decimal.MinValue;
-            decimal.TryParse(input != null ? input.ToString().Replace("£", "") : "", out value);
+            decimal.TryParse(input?.ToString()?.Replace("£", "") ?? "", out value);
 
             if (value > decimal.MinValue)
             {
