@@ -551,6 +551,33 @@ if ($updatedFiles.Count -gt 0) {
     Write-Host "`nNo .csproj files were updated. All already had the correct version or were excluded."
 }
 
+# Update README.md with the new version for Umbraco 17 examples
+$readmePath = Join-Path $CurrentDir "README.md"
+if (Test-Path $readmePath) {
+    Write-Host "`nUpdating README.md with version $Version for Umbraco 17 examples..."
+
+    $readmeContent = Get-Content $readmePath -Raw
+    $originalContent = $readmeContent
+
+    # Pattern 1: Update dotnet add Clean package version
+    $readmeContent = $readmeContent -replace '(dotnet add "MyProject" package Clean --version )[\d\.]+-?[\w\d]*(?=\s*$)', "`${1}$Version"
+
+    # Pattern 2: Update dotnet add Clean.Core package version
+    $readmeContent = $readmeContent -replace '(dotnet add "MyProject" package Clean\.Core --version )[\d\.]+-?[\w\d]*(?=\s*$)', "`${1}$Version"
+
+    # Pattern 3: Update dotnet new install template version
+    $readmeContent = $readmeContent -replace '(dotnet new install Umbraco\.Community\.Templates\.Clean::)[\d\.]+-?[\w\d]*( --force)', "`${1}$Version`${2}"
+
+    if ($readmeContent -ne $originalContent) {
+        Set-Content -Path $readmePath -Value $readmeContent -NoNewline
+        Write-Host "README.md updated successfully with version $Version" -ForegroundColor Green
+    } else {
+        Write-Host "README.md already has the correct version or no changes were needed" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "Warning: README.md not found at $readmePath" -ForegroundColor Yellow
+}
+
 Write-Host "`nCleaning all bin folders..."
 $binFolders = Get-ChildItem -Path $CurrentDir -Recurse -Directory | Where-Object {
     $_.Name -eq "bin" -and $_.FullName -notmatch "\\.vs\\"
