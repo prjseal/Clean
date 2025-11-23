@@ -279,6 +279,33 @@ After installation, you'll need to:
 
 ---
 
+## Documentation
+
+This project includes comprehensive documentation to help you work with the Clean starter kit:
+
+### For Contributors and Developers
+
+- **[Contributing Guide](.github/CONTRIBUTING.md)** - How to contribute to the project, code standards, and testing requirements
+- **[PR Workflow](.github/PR-WORKFLOW.md)** - Guidelines for creating and reviewing pull requests
+- **[Versioning and Releases](.github/VERSIONING-AND-RELEASES.md)** - Understanding version numbers and release processes
+
+### Package Management
+
+- **[Update NuGet Packages](.github/UPDATE-NUGET-PACKAGES.md)** - How to update project NuGet package dependencies
+- **[Consuming GitHub Packages](.github/CONSUMING-GITHUB-PACKAGES.md)** - Using packages from GitHub Package Registry
+- **[CreateNuGetPackages Script Documentation](.github/CreateNuGetPackages-Documentation.md)** - Detailed guide for building and publishing NuGet packages
+
+### Scripts and Tools
+
+- **[Scripts Overview](scripts/README.md)** - Information about available PowerShell scripts and utilities
+- **[Removal Guide](scripts/REMOVAL-GUIDE.md)** - How to safely remove Clean from your project
+
+### Blog Posts and Tutorials
+
+- **[Running Local HTTPS Site in GitHub Actions](.github/blog-posts/running-local-https-site-in-github-actions.md)** - Setting up HTTPS for local testing in CI/CD
+
+---
+
 ## Support and Resources
 
 - **GitHub Repository**: [https://github.com/prjseal/Clean](https://github.com/prjseal/Clean)
