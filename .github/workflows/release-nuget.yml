@@ -122,8 +122,7 @@ jobs:
 
             # Update README files
             $readmeFiles = @(
-              "README.md",
-              "template/README.md"
+              "README.md"
             )
 
             $umbracoSectionHeader = "## Umbraco $umbracoMajor"
