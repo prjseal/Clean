@@ -560,19 +560,52 @@ if (Test-Path $readmePath) {
     $originalContent = $readmeContent
 
     # Pattern 1: Update dotnet add Clean package version
-    $readmeContent = $readmeContent -replace '(dotnet add "MyProject" package Clean --version )[\d\.]+-?[\w\d]*(?=\s*$)', "`${1}$Version"
+    $pattern1 = '(dotnet add "MyProject" package Clean --version )[\d\.]+-?[\w\d]*'
+    if ($readmeContent -match $pattern1) {
+        $oldLine1 = $matches[0]
+        $readmeContent = $readmeContent -replace $pattern1, "`${1}$Version"
+        if ($readmeContent -match '(dotnet add "MyProject" package Clean --version )[\d\.]+-?[\w\d]*') {
+            $newLine1 = $matches[0]
+            if ($oldLine1 -ne $newLine1) {
+                Write-Host "  BEFORE: $oldLine1" -ForegroundColor Yellow
+                Write-Host "  AFTER:  $newLine1" -ForegroundColor Green
+            }
+        }
+    }
 
     # Pattern 2: Update dotnet add Clean.Core package version
-    $readmeContent = $readmeContent -replace '(dotnet add "MyProject" package Clean\.Core --version )[\d\.]+-?[\w\d]*(?=\s*$)', "`${1}$Version"
+    $pattern2 = '(dotnet add "MyProject" package Clean\.Core --version )[\d\.]+-?[\w\d]*'
+    if ($readmeContent -match $pattern2) {
+        $oldLine2 = $matches[0]
+        $readmeContent = $readmeContent -replace $pattern2, "`${1}$Version"
+        if ($readmeContent -match '(dotnet add "MyProject" package Clean\.Core --version )[\d\.]+-?[\w\d]*') {
+            $newLine2 = $matches[0]
+            if ($oldLine2 -ne $newLine2) {
+                Write-Host "  BEFORE: $oldLine2" -ForegroundColor Yellow
+                Write-Host "  AFTER:  $newLine2" -ForegroundColor Green
+            }
+        }
+    }
 
     # Pattern 3: Update dotnet new install template version
-    $readmeContent = $readmeContent -replace '(dotnet new install Umbraco\.Community\.Templates\.Clean::)[\d\.]+-?[\w\d]*( --force)', "`${1}$Version`${2}"
+    $pattern3 = '(dotnet new install Umbraco\.Community\.Templates\.Clean::)[\d\.]+-?[\w\d]*( --force)'
+    if ($readmeContent -match $pattern3) {
+        $oldLine3 = $matches[0]
+        $readmeContent = $readmeContent -replace $pattern3, "`${1}$Version`${2}"
+        if ($readmeContent -match '(dotnet new install Umbraco\.Community\.Templates\.Clean::)[\d\.]+-?[\w\d]*( --force)') {
+            $newLine3 = $matches[0]
+            if ($oldLine3 -ne $newLine3) {
+                Write-Host "  BEFORE: $oldLine3" -ForegroundColor Yellow
+                Write-Host "  AFTER:  $newLine3" -ForegroundColor Green
+            }
+        }
+    }
 
     if ($readmeContent -ne $originalContent) {
         Set-Content -Path $readmePath -Value $readmeContent -NoNewline
-        Write-Host "README.md updated successfully with version $Version" -ForegroundColor Green
+        Write-Host "`nREADME.md updated successfully with version $Version" -ForegroundColor Green
     } else {
-        Write-Host "README.md already has the correct version or no changes were needed" -ForegroundColor Yellow
+        Write-Host "`nREADME.md already has the correct version or no changes were needed" -ForegroundColor Yellow
     }
 } else {
     Write-Host "Warning: README.md not found at $readmePath" -ForegroundColor Yellow
