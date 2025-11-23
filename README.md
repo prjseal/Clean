@@ -8,25 +8,6 @@
 
 A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 13 and 17.
 
-## Development and Source Code
-
-**Staying up to date**: The main branch will always be for the latest Long Term Support (LTS) version of Umbraco. 
-
-We do not maintain old versions as those versions of Umbraco are no longer supported. 
-
-You can still install the older versions from NuGet though. 
-
-Here is a table which shows you which version of Clean was for which version of Umbraco.
-
-the idea is that we target the latest Lobg Term Support (LTS)
-
-| Clean Version | Umbraco Version | .NET Version | Umbraco Support Type |
-|--------------|-----------------|--------------|--------------|
-| 4.x          | 13              | .NET 8       | LTS (Long Term Support) |
-| 5.x          |  15            | .NET 9       | LTS (Standard Term Support) |
-| 6.x          | 16             | .NET 9       | LTS (Standard Term Support) |
-| 7.x          | 17              | .NET 10       | LTS (Long Term Support) |
-
 ## Features
 
 - **Modern Blog Theme**: Clean, responsive design built with Bootstrap
@@ -105,61 +86,7 @@ dotnet CLI template for creating new Umbraco projects with Clean pre-installed.
 
 ### Prerequisites
 
-Download and install the latest [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) or higher for your operating system (Windows, Mac, or Linux).
-
----
-
-## Umbraco 13 (LTS)
-
-### NuGet Package Method
-
-```powershell
-# Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::13.8.1 --force
-
-# Create solution/project
-dotnet new sln --name "MySolution"
-dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
-dotnet sln add "MyProject"
-
-# Add Clean package
-dotnet add "MyProject" package Clean --version 4.2.2
-
-# Run the project
-dotnet run --project "MyProject"
-
-# Login with admin@example.com and 1234567890
-# Save and publish the home page and save one of the dictionary items in the translation section
-# The site should now be running and visible on the front end
-```
-
-**⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
-```powershell
-dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 4.2.2
-```
-
-### dotnet Template Method
-
-```powershell
-# Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::4.2.2 --force
-
-# Create a new project using the template
-dotnet new umbraco-starter-clean -n MyProject
-
-# Navigate to the project folder
-cd MyProject
-
-# Run the new website
-dotnet run --project "MyProject.Blog"
-
-# Login with admin@example.com and 1234567890
-# Save and publish the home page and save one of the dictionary items in the translation section
-# The site should now be running and visible on the front end
-```
-
-> **✨ Note**: As of version 4.2.3+, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
+Download and install the latest [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) or higher for your operating system (Windows, Mac, or Linux).
 
 ---
 
@@ -213,9 +140,78 @@ dotnet run --project "MyProject.Blog"
 # The site should now be running and visible on the front end
 ```
 
+## Umbraco 13 (LTS)
+
+### NuGet Package Method
+
+```powershell
+# Ensure we have the version specific Umbraco templates
+dotnet new install Umbraco.Templates::13.12.0 --force
+
+# Create solution/project
+dotnet new sln --name "MySolution"
+dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
+dotnet sln add "MyProject"
+
+# Add Clean package
+dotnet add "MyProject" package Clean --version 4.2.2
+
+# Run the project
+dotnet run --project "MyProject"
+
+# Login with admin@example.com and 1234567890
+# Save and publish the home page and save one of the dictionary items in the translation section
+# The site should now be running and visible on the front end
+```
+
+**⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
+```powershell
+dotnet remove "MyProject" package Clean
+dotnet add "MyProject" package Clean.Core --version 4.2.2
+```
+
+### dotnet Template Method
+
+```powershell
+# Install the Clean Starter Kit template
+dotnet new install Umbraco.Community.Templates.Clean::4.2.2 --force
+
+# Create a new project using the template
+dotnet new umbraco-starter-clean -n MyProject
+
+# Navigate to the project folder
+cd MyProject
+
+# Run the new website
+dotnet run --project "MyProject.Blog"
+
+# Login with admin@example.com and 1234567890
+# Save and publish the home page and save one of the dictionary items in the translation section
+# The site should now be running and visible on the front end
+```
+
 > **✨ Note**: As of version 7.0.0-rc2+, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
 
 ---
+
+## Development and Source Code
+
+**Staying up to date**: The main branch will always be for the latest Long Term Support (LTS) version of Umbraco. 
+
+We do not maintain old versions as those versions of Umbraco are no longer supported. 
+
+You can still install the older versions from NuGet though. 
+
+Here is a table which shows you which version of Clean was for which version of Umbraco.
+
+the idea is that we target the latest Lobg Term Support (LTS)
+
+| Clean Version | Umbraco Version | .NET Version | Umbraco Support Type |
+|--------------|-----------------|--------------|--------------|
+| 4.x          | 13              | .NET 8       | LTS (Long Term Support) |
+| 5.x          |  15            | .NET 9       | LTS (Standard Term Support) |
+| 6.x          | 16             | .NET 9       | LTS (Standard Term Support) |
+| 7.x          | 17              | .NET 10       | LTS (Long Term Support) |
 
 ## Headless/API Implementation
 
