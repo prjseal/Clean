@@ -260,62 +260,76 @@ if (Test-Path $readmePath) {
     $readmeContent = Get-Content $readmePath -Raw
     $originalContent = $readmeContent
 
-    # Pattern 1: Update Umbraco.Templates version (only if $umbracoVersion is set)
-    if ($umbracoVersion) {
-        $pattern0 = '(dotnet new install Umbraco\.Templates::)[\d\.]+-?[\w\d]*( --force)'
-        if ($readmeContent -match $pattern0) {
-            $oldLine0 = $matches[0]
-            $readmeContent = $readmeContent -replace $pattern0, "`${1}$umbracoVersion`${2}"
-            if ($readmeContent -match '(dotnet new install Umbraco\.Templates::)[\d\.]+-?[\w\d]*( --force)') {
-                $newLine0 = $matches[0]
-                if ($oldLine0 -ne $newLine0) {
-                    Write-Host "  BEFORE: $oldLine0" -ForegroundColor Yellow
-                    Write-Host "  AFTER:  $newLine0" -ForegroundColor Green
+    # Extract the Umbraco 17 section only (between "## Umbraco 17" and the next "---")
+    $umbraco17Pattern = '(?s)(## Umbraco 17.*?)(---)'
+    if ($readmeContent -match $umbraco17Pattern) {
+        $umbraco17Section = $matches[1]
+        $originalUmbraco17Section = $umbraco17Section
+
+        # Pattern 1: Update Umbraco.Templates version (only if $umbracoVersion is set)
+        if ($umbracoVersion) {
+            $pattern0 = '(dotnet new install Umbraco\.Templates::)[\d\.]+-?[\w\d]*( --force)'
+            if ($umbraco17Section -match $pattern0) {
+                $oldLine0 = $matches[0]
+                $umbraco17Section = $umbraco17Section -replace $pattern0, "`${1}$umbracoVersion`${2}"
+                if ($umbraco17Section -match $pattern0) {
+                    $newLine0 = $matches[0]
+                    if ($oldLine0 -ne $newLine0) {
+                        Write-Host "  BEFORE: $oldLine0" -ForegroundColor Yellow
+                        Write-Host "  AFTER:  $newLine0" -ForegroundColor Green
+                    }
                 }
             }
         }
-    }
 
-    # Pattern 2: Update dotnet add Clean package version
-    $pattern1 = '(dotnet add "MyProject" package Clean --version )[\d\.]+-?[\w\d]*'
-    if ($readmeContent -match $pattern1) {
-        $oldLine1 = $matches[0]
-        $readmeContent = $readmeContent -replace $pattern1, "`${1}$Version"
-        if ($readmeContent -match '(dotnet add "MyProject" package Clean --version )[\d\.]+-?[\w\d]*') {
-            $newLine1 = $matches[0]
-            if ($oldLine1 -ne $newLine1) {
-                Write-Host "  BEFORE: $oldLine1" -ForegroundColor Yellow
-                Write-Host "  AFTER:  $newLine1" -ForegroundColor Green
+        # Pattern 2: Update dotnet add Clean package version
+        $pattern1 = '(dotnet add "MyProject" package Clean --version )[\d\.]+-?[\w\d]*'
+        if ($umbraco17Section -match $pattern1) {
+            $oldLine1 = $matches[0]
+            $umbraco17Section = $umbraco17Section -replace $pattern1, "`${1}$Version"
+            if ($umbraco17Section -match $pattern1) {
+                $newLine1 = $matches[0]
+                if ($oldLine1 -ne $newLine1) {
+                    Write-Host "  BEFORE: $oldLine1" -ForegroundColor Yellow
+                    Write-Host "  AFTER:  $newLine1" -ForegroundColor Green
+                }
             }
         }
-    }
 
-    # Pattern 3: Update dotnet add Clean.Core package version
-    $pattern2 = '(dotnet add "MyProject" package Clean\.Core --version )[\d\.]+-?[\w\d]*'
-    if ($readmeContent -match $pattern2) {
-        $oldLine2 = $matches[0]
-        $readmeContent = $readmeContent -replace $pattern2, "`${1}$Version"
-        if ($readmeContent -match '(dotnet add "MyProject" package Clean\.Core --version )[\d\.]+-?[\w\d]*') {
-            $newLine2 = $matches[0]
-            if ($oldLine2 -ne $newLine2) {
-                Write-Host "  BEFORE: $oldLine2" -ForegroundColor Yellow
-                Write-Host "  AFTER:  $newLine2" -ForegroundColor Green
+        # Pattern 3: Update dotnet add Clean.Core package version
+        $pattern2 = '(dotnet add "MyProject" package Clean\.Core --version )[\d\.]+-?[\w\d]*'
+        if ($umbraco17Section -match $pattern2) {
+            $oldLine2 = $matches[0]
+            $umbraco17Section = $umbraco17Section -replace $pattern2, "`${1}$Version"
+            if ($umbraco17Section -match $pattern2) {
+                $newLine2 = $matches[0]
+                if ($oldLine2 -ne $newLine2) {
+                    Write-Host "  BEFORE: $oldLine2" -ForegroundColor Yellow
+                    Write-Host "  AFTER:  $newLine2" -ForegroundColor Green
+                }
             }
         }
-    }
 
-    # Pattern 4: Update dotnet new install template version
-    $pattern3 = '(dotnet new install Umbraco\.Community\.Templates\.Clean::)[\d\.]+-?[\w\d]*( --force)'
-    if ($readmeContent -match $pattern3) {
-        $oldLine3 = $matches[0]
-        $readmeContent = $readmeContent -replace $pattern3, "`${1}$Version`${2}"
-        if ($readmeContent -match '(dotnet new install Umbraco\.Community\.Templates\.Clean::)[\d\.]+-?[\w\d]*( --force)') {
-            $newLine3 = $matches[0]
-            if ($oldLine3 -ne $newLine3) {
-                Write-Host "  BEFORE: $oldLine3" -ForegroundColor Yellow
-                Write-Host "  AFTER:  $newLine3" -ForegroundColor Green
+        # Pattern 4: Update dotnet new install template version
+        $pattern3 = '(dotnet new install Umbraco\.Community\.Templates\.Clean::)[\d\.]+-?[\w\d]*( --force)'
+        if ($umbraco17Section -match $pattern3) {
+            $oldLine3 = $matches[0]
+            $umbraco17Section = $umbraco17Section -replace $pattern3, "`${1}$Version`${2}"
+            if ($umbraco17Section -match $pattern3) {
+                $newLine3 = $matches[0]
+                if ($oldLine3 -ne $newLine3) {
+                    Write-Host "  BEFORE: $oldLine3" -ForegroundColor Yellow
+                    Write-Host "  AFTER:  $newLine3" -ForegroundColor Green
+                }
             }
         }
+
+        # Replace the Umbraco 17 section in the full content
+        if ($originalUmbraco17Section -ne $umbraco17Section) {
+            $readmeContent = $readmeContent -replace [regex]::Escape($originalUmbraco17Section), $umbraco17Section
+        }
+    } else {
+        Write-Host "Warning: Could not find Umbraco 17 section in README.md" -ForegroundColor Yellow
     }
 
     if ($readmeContent -ne $originalContent) {
