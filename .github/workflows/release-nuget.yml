@@ -60,104 +60,6 @@ jobs:
           Write-Host "Release Name: ${{ github.event.release.name }}" -ForegroundColor Green
           Write-Host "================================================" -ForegroundColor Cyan
 
-      - name: Run CreateNuGetPackages script
-        shell: pwsh
-        run: |
-          Write-Host "Running CreateNuGetPackages.ps1 with version ${{ steps.version.outputs.version }}"
-          ./.github/workflows/powershell/CreateNuGetPackages.ps1 -Version "${{ steps.version.outputs.version }}"
-
-      - name: Upload NuGet packages as artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-packages-${{ steps.version.outputs.version }}
-          path: .artifacts/nuget/*.nupkg
-          if-no-files-found: error
-
-      - name: Publish to NuGet.org
-        shell: pwsh
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        run: |
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Publishing NuGet Packages to NuGet.org" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
-          # Verify API key is set
-          if ([string]::IsNullOrWhiteSpace($env:NUGET_API_KEY)) {
-            Write-Host "::error::NUGET_API_KEY secret is not set. Please add it to your repository secrets." -ForegroundColor Red
-            Write-Host "To add the secret:" -ForegroundColor Yellow
-            Write-Host "1. Go to https://www.nuget.org/account/apikeys to create an API key" -ForegroundColor Yellow
-            Write-Host "2. Add it to GitHub: Settings -> Secrets and variables -> Actions -> New repository secret" -ForegroundColor Yellow
-            Write-Host "3. Name it 'NUGET_API_KEY' and paste your NuGet API key" -ForegroundColor Yellow
-            exit 1
-          }
-
-          # Get all package files
-          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg" -ErrorAction SilentlyContinue
-
-          if (-not $packages) {
-            Write-Host "::error::No packages found to publish." -ForegroundColor Red
-            exit 1
-          }
-
-          Write-Host "Found $($packages.Count) package(s) to publish:" -ForegroundColor Green
-          foreach ($pkg in $packages) {
-            Write-Host "  - $($pkg.Name)" -ForegroundColor White
-          }
-          Write-Host ""
-
-          # Push each package to NuGet.org
-          $failedPackages = @()
-          foreach ($pkg in $packages) {
-            Write-Host "Publishing $($pkg.Name) to NuGet.org..." -ForegroundColor Cyan
-            dotnet nuget push $pkg.FullName --source https://api.nuget.org/v3/index.json --api-key $env:NUGET_API_KEY --skip-duplicate
-
-            if ($LASTEXITCODE -eq 0) {
-              Write-Host "✅ Successfully published $($pkg.Name)" -ForegroundColor Green
-            } else {
-              Write-Host "❌ Failed to publish $($pkg.Name) (exit code: $LASTEXITCODE)" -ForegroundColor Red
-              $failedPackages += $pkg.Name
-            }
-          }
-
-          Write-Host ""
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Package Publishing Complete" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
-          # Check if any packages failed
-          if ($failedPackages.Count -gt 0) {
-            Write-Host "::error::Failed to publish the following packages:" -ForegroundColor Red
-            foreach ($failedPkg in $failedPackages) {
-              Write-Host "  - $failedPkg" -ForegroundColor Red
-            }
-            exit 1
-          }
-
-          Write-Host "✅ All packages published successfully!" -ForegroundColor Green
-
-      - name: Add packages to release assets
-        shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Uploading packages to GitHub Release" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
-          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg"
-
-          foreach ($pkg in $packages) {
-            Write-Host "Uploading $($pkg.Name)..." -ForegroundColor Cyan
-            gh release upload "${{ github.event.release.tag_name }}" $pkg.FullName --clobber
-
-            if ($LASTEXITCODE -eq 0) {
-              Write-Host "✅ Uploaded $($pkg.Name)" -ForegroundColor Green
-            } else {
-              Write-Host "⚠️  Failed to upload $($pkg.Name)" -ForegroundColor Yellow
-            }
-          }
-
       - name: Update README files with latest versions
         shell: pwsh
         run: |
@@ -275,6 +177,104 @@ jobs:
           } catch {
             Write-Host "⚠️  Error querying NuGet or updating READMEs: $_" -ForegroundColor Yellow
             Write-Host "Continuing with release process..." -ForegroundColor Yellow
+          }
+
+      - name: Run CreateNuGetPackages script
+        shell: pwsh
+        run: |
+          Write-Host "Running CreateNuGetPackages.ps1 with version ${{ steps.version.outputs.version }}"
+          ./.github/workflows/powershell/CreateNuGetPackages.ps1 -Version "${{ steps.version.outputs.version }}"
+
+      - name: Upload NuGet packages as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages-${{ steps.version.outputs.version }}
+          path: .artifacts/nuget/*.nupkg
+          if-no-files-found: error
+
+      - name: Publish to NuGet.org
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Publishing NuGet Packages to NuGet.org" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          # Verify API key is set
+          if ([string]::IsNullOrWhiteSpace($env:NUGET_API_KEY)) {
+            Write-Host "::error::NUGET_API_KEY secret is not set. Please add it to your repository secrets." -ForegroundColor Red
+            Write-Host "To add the secret:" -ForegroundColor Yellow
+            Write-Host "1. Go to https://www.nuget.org/account/apikeys to create an API key" -ForegroundColor Yellow
+            Write-Host "2. Add it to GitHub: Settings -> Secrets and variables -> Actions -> New repository secret" -ForegroundColor Yellow
+            Write-Host "3. Name it 'NUGET_API_KEY' and paste your NuGet API key" -ForegroundColor Yellow
+            exit 1
+          }
+
+          # Get all package files
+          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg" -ErrorAction SilentlyContinue
+
+          if (-not $packages) {
+            Write-Host "::error::No packages found to publish." -ForegroundColor Red
+            exit 1
+          }
+
+          Write-Host "Found $($packages.Count) package(s) to publish:" -ForegroundColor Green
+          foreach ($pkg in $packages) {
+            Write-Host "  - $($pkg.Name)" -ForegroundColor White
+          }
+          Write-Host ""
+
+          # Push each package to NuGet.org
+          $failedPackages = @()
+          foreach ($pkg in $packages) {
+            Write-Host "Publishing $($pkg.Name) to NuGet.org..." -ForegroundColor Cyan
+            dotnet nuget push $pkg.FullName --source https://api.nuget.org/v3/index.json --api-key $env:NUGET_API_KEY --skip-duplicate
+
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ Successfully published $($pkg.Name)" -ForegroundColor Green
+            } else {
+              Write-Host "❌ Failed to publish $($pkg.Name) (exit code: $LASTEXITCODE)" -ForegroundColor Red
+              $failedPackages += $pkg.Name
+            }
+          }
+
+          Write-Host ""
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Package Publishing Complete" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          # Check if any packages failed
+          if ($failedPackages.Count -gt 0) {
+            Write-Host "::error::Failed to publish the following packages:" -ForegroundColor Red
+            foreach ($failedPkg in $failedPackages) {
+              Write-Host "  - $failedPkg" -ForegroundColor Red
+            }
+            exit 1
+          }
+
+          Write-Host "✅ All packages published successfully!" -ForegroundColor Green
+
+      - name: Add packages to release assets
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Uploading packages to GitHub Release" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg"
+
+          foreach ($pkg in $packages) {
+            Write-Host "Uploading $($pkg.Name)..." -ForegroundColor Cyan
+            gh release upload "${{ github.event.release.tag_name }}" $pkg.FullName --clobber
+
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ Uploaded $($pkg.Name)" -ForegroundColor Green
+            } else {
+              Write-Host "⚠️  Failed to upload $($pkg.Name)" -ForegroundColor Yellow
+            }
           }
 
       - name: Create PR with version updates
