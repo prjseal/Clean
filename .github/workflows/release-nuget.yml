@@ -246,6 +246,9 @@ jobs:
                 # Update Clean package version
                 $updatedSection = $updatedSection -replace "(dotnet add .* package Clean --version )\S+", "`${1}$cleanVersion"
 
+                # Update Clean.Core package version (in warning sections)
+                $updatedSection = $updatedSection -replace "(dotnet add .* package Clean\.Core --version )\S+", "`${1}$cleanVersion"
+
                 # Update Clean template package version
                 $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Community\.Templates\.Clean::\S+", "dotnet new install Umbraco.Community.Templates.Clean::$cleanVersion"
 
@@ -258,6 +261,7 @@ jobs:
                 Write-Host "✅ Updated $readmeFile" -ForegroundColor Green
                 Write-Host "   - Umbraco.Templates: $umbracoVersion" -ForegroundColor White
                 Write-Host "   - Clean: $cleanVersion" -ForegroundColor White
+                Write-Host "   - Clean.Core: $cleanVersion" -ForegroundColor White
                 Write-Host "   - Umbraco.Community.Templates.Clean: $cleanVersion" -ForegroundColor White
               } else {
                 Write-Host "⚠️  Could not find section '$umbracoSectionHeader' in $readmeFile" -ForegroundColor Yellow
