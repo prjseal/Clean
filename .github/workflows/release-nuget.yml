@@ -313,8 +313,8 @@ jobs:
           Write-Host "`nStaging .csproj files..." -ForegroundColor Yellow
           git add "*.csproj" "**/*.csproj"
 
-          Write-Host "Staging README.md files..." -ForegroundColor Yellow
-          git add "README.md" "template/README.md"
+          Write-Host "Staging README.md file..." -ForegroundColor Yellow
+          git add "README.md"
 
           # Commit with skip ci flag to prevent triggering other workflows
           $commitMessage = "chore: Update versions to ${{ steps.version.outputs.version }} [skip ci]"
