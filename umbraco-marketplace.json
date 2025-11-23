@@ -71,6 +71,6 @@
             "PackageId": "Clean"
         }
     ],
-    "LookingForContributors": false,
+    "LookingForContributors": true,
     "LookingForMaintainer": false
 }
