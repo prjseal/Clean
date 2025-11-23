@@ -559,7 +559,23 @@ if (Test-Path $readmePath) {
     $readmeContent = Get-Content $readmePath -Raw
     $originalContent = $readmeContent
 
-    # Pattern 1: Update dotnet add Clean package version
+    # Pattern 1: Update Umbraco.Templates version (only if $umbracoVersion is set)
+    if ($umbracoVersion) {
+        $pattern0 = '(dotnet new install Umbraco\.Templates::)[\d\.]+-?[\w\d]*( --force)'
+        if ($readmeContent -match $pattern0) {
+            $oldLine0 = $matches[0]
+            $readmeContent = $readmeContent -replace $pattern0, "`${1}$umbracoVersion`${2}"
+            if ($readmeContent -match '(dotnet new install Umbraco\.Templates::)[\d\.]+-?[\w\d]*( --force)') {
+                $newLine0 = $matches[0]
+                if ($oldLine0 -ne $newLine0) {
+                    Write-Host "  BEFORE: $oldLine0" -ForegroundColor Yellow
+                    Write-Host "  AFTER:  $newLine0" -ForegroundColor Green
+                }
+            }
+        }
+    }
+
+    # Pattern 2: Update dotnet add Clean package version
     $pattern1 = '(dotnet add "MyProject" package Clean --version )[\d\.]+-?[\w\d]*'
     if ($readmeContent -match $pattern1) {
         $oldLine1 = $matches[0]
@@ -573,7 +589,7 @@ if (Test-Path $readmePath) {
         }
     }
 
-    # Pattern 2: Update dotnet add Clean.Core package version
+    # Pattern 3: Update dotnet add Clean.Core package version
     $pattern2 = '(dotnet add "MyProject" package Clean\.Core --version )[\d\.]+-?[\w\d]*'
     if ($readmeContent -match $pattern2) {
         $oldLine2 = $matches[0]
@@ -587,7 +603,7 @@ if (Test-Path $readmePath) {
         }
     }
 
-    # Pattern 3: Update dotnet new install template version
+    # Pattern 4: Update dotnet new install template version
     $pattern3 = '(dotnet new install Umbraco\.Community\.Templates\.Clean::)[\d\.]+-?[\w\d]*( --force)'
     if ($readmeContent -match $pattern3) {
         $oldLine3 = $matches[0]
