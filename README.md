@@ -75,13 +75,6 @@ dotnet CLI template for creating new Umbraco projects with Clean pre-installed.
 
 **Note**: Clean v5 (Umbraco 15) and v6 (Umbraco 16) are no longer maintained. For older Umbraco versions (9-12), see the [Clean Starter Kit for Umbraco v9](https://github.com/prjseal/Clean-Starter-Kit-for-Umbraco-v9) repository.
 
-## Latest Release Details (v4.0.0+)
-
-- Specifically designed for .NET 8+ and Umbraco 13+
-- Removed dependency on Contentment package
-- Enhanced API capabilities with OpenAPI documentation
-- Improved headless support with Next.js integration
-
 ## Installation
 
 ### Prerequisites
