@@ -47,6 +47,103 @@ jobs:
             -DryRun:$dryRunFlag `
             -IncludePrerelease:$includePrereleaseFlag
 
+      - name: Update README with latest Umbraco 13 version
+        shell: pwsh
+        run: |
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Updating README with Latest Umbraco 13 Version" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          try {
+            # Query NuGet API for the latest Umbraco 13.x version
+            $packageId = "Umbraco.Cms.Web.Website"
+            $nugetApiUrl = "https://api.nuget.org/v3-flatcontainer/$packageId/index.json"
+
+            Write-Host "`nQuerying NuGet for latest Umbraco 13.x version..." -ForegroundColor Yellow
+
+            $response = Invoke-RestMethod -Uri $nugetApiUrl -ErrorAction Stop
+            $versions = $response.versions
+
+            # Filter to only Umbraco 13.x versions
+            $umbraco13Versions = $versions | Where-Object { $_ -match '^13\.' }
+
+            if ($umbraco13Versions.Count -eq 0) {
+              Write-Host "⚠️  No Umbraco 13.x versions found" -ForegroundColor Yellow
+              exit 0
+            }
+
+            # Parse and sort versions to get the latest stable or prerelease
+            $parsedVersions = $umbraco13Versions | ForEach-Object {
+              $versionString = $_
+              $prerelease = ""
+
+              # Split on hyphen to separate version from prerelease tag
+              if ($versionString -match '^([0-9]+\.[0-9]+\.[0-9]+)(.*)$') {
+                $baseVersion = $matches[1]
+                $prerelease = $matches[2]
+              } else {
+                $baseVersion = $versionString
+              }
+
+              # Create object for sorting
+              [PSCustomObject]@{
+                Original = $versionString
+                Version = [Version]$baseVersion
+                Prerelease = $prerelease
+                IsPrerelease = $prerelease -ne ""
+              }
+            }
+
+            # Sort by version (descending), then by prerelease status (stable first)
+            $sortedVersions = $parsedVersions | Sort-Object -Property @{Expression={$_.Version}; Descending=$true}, @{Expression={$_.IsPrerelease}; Descending=$false}
+
+            # Get the latest version
+            $latestUmbraco13Version = $sortedVersions[0].Original
+
+            Write-Host "Latest Umbraco 13.x version: $latestUmbraco13Version" -ForegroundColor Green
+
+            # Update README.md
+            $readmeFile = "README.md"
+
+            if (-not (Test-Path $readmeFile)) {
+              Write-Host "⚠️  File not found: $readmeFile" -ForegroundColor Yellow
+              exit 0
+            }
+
+            Write-Host "`nUpdating $readmeFile..." -ForegroundColor Cyan
+            $content = Get-Content $readmeFile -Raw
+
+            # Find the Umbraco 13 section
+            $umbracoSectionHeader = "## Umbraco 13"
+
+            if ($content -match "(?s)$umbracoSectionHeader.*?(?=(##|\z))") {
+              $section = $matches[0]
+              $updatedSection = $section
+
+              # Update Umbraco.Templates version in the Umbraco 13 section
+              $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Templates::\S+", "dotnet new install Umbraco.Templates::$latestUmbraco13Version"
+
+              # Replace the section in the content
+              $content = $content -replace [regex]::Escape($section), $updatedSection
+
+              # Write back to file
+              Set-Content -Path $readmeFile -Value $content -NoNewline
+
+              Write-Host "✅ Updated $readmeFile" -ForegroundColor Green
+              Write-Host "   - Umbraco.Templates: $latestUmbraco13Version (Umbraco 13 section)" -ForegroundColor White
+            } else {
+              Write-Host "⚠️  Could not find section '$umbracoSectionHeader' in $readmeFile" -ForegroundColor Yellow
+            }
+
+            Write-Host "`n================================================" -ForegroundColor Cyan
+            Write-Host "README update complete" -ForegroundColor Green
+            Write-Host "================================================" -ForegroundColor Cyan
+
+          } catch {
+            Write-Host "⚠️  Error updating README: $_" -ForegroundColor Yellow
+            Write-Host "Continuing with workflow..." -ForegroundColor Yellow
+          }
+
       - name: Commit and push changes
         id: commit-and-push
         if: ${{ github.event.inputs.dryRun != 'true' }}
