@@ -178,6 +178,9 @@ jobs:
             Write-Host "Continuing with release process..." -ForegroundColor Yellow
           }
 
+      # Documentation: .github/CreateNuGetPackages-Documentation.md
+      # This script creates NuGet packages by starting Umbraco, downloading package via API,
+      # applying BlockList label fixes, updating .csproj versions, and building all packages.
       - name: Run CreateNuGetPackages script
         shell: pwsh
         run: |

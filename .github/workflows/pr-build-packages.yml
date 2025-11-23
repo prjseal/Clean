@@ -115,6 +115,9 @@ jobs:
           Write-Host "Full Version: ${{ steps.version.outputs.version }}" -ForegroundColor Yellow
           Write-Host "================================================" -ForegroundColor Cyan
 
+      # Documentation: .github/CreateNuGetPackages-Documentation.md
+      # This script creates NuGet packages by starting Umbraco, downloading package via API,
+      # applying BlockList label fixes, updating .csproj versions, and building all packages.
       - name: Run CreateNuGetPackages script
         shell: pwsh
         run: |
