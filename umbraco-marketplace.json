@@ -1,22 +1,76 @@
 {
     "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
-
-    "AuthorDetails": {
-        "Name": "Paul Seal",
-        "Description": "Paul is an Umbraco Master and 7 x Umbraco MVP who loves making tutorials and small Umbraco packages.",
-        "Url": "http://codeshare.co.uk",
-        "ImageUrl": "https://codeshare.co.uk/media/mkzbdrvf/paul-seal-profile-2019-square.jpg?anchor=center&mode=crop&width=500"
-    },
+    "Title": "Clean Starter Kit for Umbraco",
+    "Description": "A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 13 and 17. Features include: modern blog theme with responsive design, pre-configured content types for blog posts, categories, and tags, full Content Delivery API integration with Next.js revalidation support, built-in API endpoints for dictionary, search, and contact functionality, OpenAPI/Swagger documentation, multi-version support for Umbraco 13 and 17, SQLite by default for quick setup, and no external dependencies.",
     "Category": "Themes & Starter Kits",
-    "Description": "A simple, clean blog starter kit for Umbraco",
-    "IssueTrackerUrl": "https://github.com/prjseal/Clean/issues",
-    "LicenseTypes": ["Free"],
+    "AlternateCategory": "Developer Tools",
     "PackageType": "Package",
+    "LicenseTypes": [
+        "Free"
+    ],
     "Tags": [
         "Clean",
         "Starter",
         "Kit",
-        "StarterKit"
+        "StarterKit",
+        "Blog",
+        "Bootstrap",
+        "Headless",
+        "API",
+        "Content Delivery API",
+        "Next.js",
+        "SQLite",
+        "Swagger",
+        "OpenAPI",
+        "Umbraco 13",
+        "Umbraco 17"
     ],
-    "VideoUrl": "https://www.youtube.com/watch?v=tzcSNHg77fo"    
+    "AuthorDetails": {
+        "Name": "Paul Seal",
+        "Description": "Paul is an Umbraco Master and 7 x Umbraco MVP who loves making tutorials and small Umbraco packages.",
+        "Url": "http://codeshare.co.uk",
+        "ImageUrl": "https://codeshare.co.uk/media/mkzbdrvf/paul-seal-profile-2019-square.jpg?anchor=center&mode=crop&width=500",
+        "Contributors": [
+            {
+                "Name": "Phil Whittaker",
+                "Url": "https://github.com/hifi-phil"
+            }
+        ]
+    },
+    "DocumentationUrl": "https://github.com/prjseal/Clean",
+    "IssueTrackerUrl": "https://github.com/prjseal/Clean/issues",
+    "VideoUrl": "https://www.youtube.com/watch?v=tzcSNHg77fo",
+    "Screenshots": [
+        {
+            "VideoUrl": "https://www.youtube.com/watch?v=tzcSNHg77fo",
+            "Caption": "Clean Starter Kit Overview and Installation Guide"
+        }
+    ],
+    "RelatedPackages": [
+        {
+            "PackageId": "Clean.Core",
+            "Description": "Core library containing components, controllers, helpers, and tag helpers. Automatically installed as a dependency of the Clean package. Switch to this package after initial setup to prevent views and assets from being overridden during updates.",
+            "GroupTitle": "Clean Starter Kit Packages"
+        },
+        {
+            "PackageId": "Clean.Headless",
+            "Description": "Headless CMS functionality with API controllers and Next.js revalidation support. Automatically installed as a dependency of the Clean package."
+        },
+        {
+            "PackageId": "Umbraco.Community.Templates.Clean",
+            "Description": "dotnet CLI template for creating new Umbraco projects with Clean pre-installed. Use with 'dotnet new umbraco-starter-clean' to scaffold a complete Umbraco project."
+        }
+    ],
+    "VersionSpecificPackageIds": [
+        {
+            "UmbracoMajorVersion": 13,
+            "PackageId": "Clean"
+        },
+        {
+            "UmbracoMajorVersion": 17,
+            "PackageId": "Clean"
+        }
+    ],
+    "LookingForContributors": true,
+    "LookingForMaintainer": false
 }
