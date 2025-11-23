@@ -10,9 +10,22 @@ A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a 
 
 ## Development and Source Code
 
-**Main Branch**: The main branch is used exclusively for development of Clean v7+ which works with Umbraco 17+.
+**Staying up to date**: The main branch will always be for the latest Long Term Support (LTS) version of Umbraco. 
 
-**Older Versions**: Clean v4.x (Umbraco 13) continues to receive critical bug fixes and updates via NuGet. Clean v5 (Umbraco 15) and v6 (Umbraco 16) are no longer maintained. Source code for these versions is not available in this repository - they exist only as NuGet packages. All new features will only be added to the main branch (Clean v7+ for Umbraco 17+).
+We do not maintain old versions as those versions of Umbraco are no longer supported. 
+
+You can still install the older versions from NuGet though. 
+
+Here is a table which shows you which version of Clean was for which version of Umbraco.
+
+the idea is that we target the latest Lobg Term Support (LTS)
+
+| Clean Version | Umbraco Version | .NET Version | Umbraco Support Type |
+|--------------|-----------------|--------------|--------------|
+| 4.x          | 13              | .NET 8       | LTS (Long Term Support) |
+| 5.x          |  15            | .NET 9       | LTS (Standard Term Support) |
+| 6.x          | 16             | .NET 9       | LTS (Standard Term Support) |
+| 7.x          | 17              | .NET 10       | LTS (Long Term Support) |
 
 ## Features
 
