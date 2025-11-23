@@ -6,13 +6,13 @@
 [![License](https://img.shields.io/github/license/prjseal/Clean?label=License)](https://github.com/prjseal/Clean/blob/main/LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/prjseal/Clean?label=Stars)](https://github.com/prjseal/Clean/stargazers)
 
-A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 13, 15, 16, and 17.
+A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 13 and 17.
 
 ## Development and Source Code
 
 **Main Branch**: The main branch is used exclusively for development of Clean v7+ which works with Umbraco 17+.
 
-**Older Versions**: There is no active development for older versions (Clean v4.x-v6.x for Umbraco 13-16). These versions are maintained as NuGet packages only, and their source code is not available in this repository. They will continue to receive critical bug fixes and updates via NuGet, but new features will only be added to the main branch.
+**Older Versions**: Clean v4.x (Umbraco 13) continues to receive critical bug fixes and updates via NuGet. Clean v5 (Umbraco 15) and v6 (Umbraco 16) are no longer maintained. Source code for these versions is not available in this repository - they exist only as NuGet packages. All new features will only be added to the main branch (Clean v7+ for Umbraco 17+).
 
 ## Features
 
@@ -21,7 +21,7 @@ A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a 
 - **Headless/API Support**: Full Content Delivery API integration with Next.js revalidation support
 - **API Endpoints**: Built-in endpoints for dictionary, search, and contact functionality
 - **OpenAPI Documentation**: Swagger UI for exploring and testing API endpoints
-- **Multi-version Support**: Compatible with Umbraco 13-17 and .NET 8-10
+- **Multi-version Support**: Compatible with Umbraco 13 and 17 (.NET 8 and .NET 10)
 - **SQLite by Default**: Quick setup with SQLite database for development
 - **No External Dependencies**: Removed dependency on third-party packages like Contentment
 
@@ -77,11 +77,9 @@ dotnet CLI template for creating new Umbraco projects with Clean pre-installed.
 | Clean Version | Umbraco Version | .NET Version | Support Type |
 |--------------|-----------------|--------------|--------------|
 | 4.x          | 13              | .NET 8       | LTS (Long Term Support) |
-| 5.x          | 15              | .NET 9       | STS (Standard Term Support) |
-| 6.x          | 16              | .NET 9       | STS (Standard Term Support) |
 | 7.x          | 17              | .NET 10      | LTS (Long Term Support) |
 
-**Note**: For older Umbraco versions (9-12), see the [Clean Starter Kit for Umbraco v9](https://github.com/prjseal/Clean-Starter-Kit-for-Umbraco-v9) repository.
+**Note**: Clean v5 (Umbraco 15) and v6 (Umbraco 16) are no longer maintained. For older Umbraco versions (9-12), see the [Clean Starter Kit for Umbraco v9](https://github.com/prjseal/Clean-Starter-Kit-for-Umbraco-v9) repository.
 
 ## Latest Release Details (v4.0.0+)
 
@@ -152,121 +150,13 @@ dotnet run --project "MyProject.Blog"
 
 ---
 
-## Umbraco 15 (STS)
-
-### NuGet Package Method
-
-```powershell
-# Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::15.4.1 --force
-
-# Create solution/project
-dotnet new sln --name "MySolution"
-dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
-dotnet sln add "MyProject"
-
-# Add Clean package
-dotnet add "MyProject" package Clean --version 5.2.2
-
-# Run the project
-dotnet run --project "MyProject"
-
-# Login with admin@example.com and 1234567890
-# Save and publish the home page and save one of the dictionary items in the translation section
-# The site should now be running and visible on the front end
-```
-
-**⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
-```powershell
-dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 5.2.2
-```
-
-### dotnet Template Method
-
-```powershell
-# Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::5.2.0 --force
-
-# Create a new project using the template
-dotnet new umbraco-starter-clean -n MyProject
-
-# Navigate to the project folder
-cd MyProject
-
-# Run the new website
-dotnet run --project "MyProject.Blog"
-
-# Login with admin@example.com and 1234567890
-# Save and publish the home page and save one of the dictionary items in the translation section
-# The site should now be running and visible on the front end
-```
-
-> **✨ Note**: As of version 5.2.3+, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
-
----
-
-## Umbraco 16 (STS)
-
-### NuGet Package Method
-
-```powershell
-# Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::16.0.0-rc4 --force
-
-# Create solution/project
-dotnet new sln --name "MySolution"
-dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
-dotnet sln add "MyProject"
-
-# Add Clean package
-dotnet add "MyProject" package Clean --version 6.0.0-rc3
-
-# Run the project
-dotnet run --project "MyProject"
-
-# Login with admin@example.com and 1234567890
-# Save and publish the home page and save one of the dictionary items in the translation section
-# The site should now be running and visible on the front end
-```
-
-**⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
-```powershell
-dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 6.0.0-rc3
-```
-
-### dotnet Template Method
-
-```powershell
-# Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::6.0.0-rc3 --force
-
-# Create a new project using the template
-dotnet new umbraco-starter-clean -n MyProject
-
-# Navigate to the project folder
-cd MyProject
-
-# Run the new website
-dotnet run --project "MyProject.Blog"
-
-# Login with admin@example.com and 1234567890
-# Save and publish the home page and save one of the dictionary items in the translation section
-# The site should now be running and visible on the front end
-```
-
-> **✨ Note**: As of version 6.0.0-rc4+, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
-
----
-
 ## Umbraco 17 (LTS)
 
 ### NuGet Package Method
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::17.0.0-rc1 --force
+dotnet new install Umbraco.Templates::17.0.0-rc3 --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
