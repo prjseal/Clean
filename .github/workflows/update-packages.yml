@@ -102,35 +102,60 @@ jobs:
 
             Write-Host "Latest Umbraco 13.x version: $latestUmbraco13Version" -ForegroundColor Green
 
-            # Update README.md
-            $readmeFile = "README.md"
+            # Update README.md - use full path to avoid any working directory issues
+            $readmeFile = Join-Path "${{ github.workspace }}" "README.md"
+            Write-Host "README path: $readmeFile" -ForegroundColor Cyan
 
             if (-not (Test-Path $readmeFile)) {
               Write-Host "⚠️  File not found: $readmeFile" -ForegroundColor Yellow
+              Write-Host "Current directory: $(Get-Location)" -ForegroundColor Yellow
               exit 0
             }
 
-            Write-Host "`nUpdating $readmeFile..." -ForegroundColor Cyan
-            $content = Get-Content $readmeFile -Raw
+            Write-Host "`nReading $readmeFile..." -ForegroundColor Cyan
+            $originalContent = Get-Content $readmeFile -Raw
+            $updatedContent = $originalContent
 
             # Find the Umbraco 13 section
             $umbracoSectionHeader = "## Umbraco 13"
 
-            if ($content -match "(?s)$umbracoSectionHeader.*?(?=(##|\z))") {
+            if ($updatedContent -match "(?s)$umbracoSectionHeader.*?(?=(##|\z))") {
               $section = $matches[0]
               $updatedSection = $section
 
               # Update Umbraco.Templates version in the Umbraco 13 section
+              $beforeUpdate = $updatedSection
               $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Templates::\S+", "dotnet new install Umbraco.Templates::$latestUmbraco13Version"
 
-              # Replace the section in the content
-              $content = $content -replace [regex]::Escape($section), $updatedSection
+              # Check if the section actually changed
+              if ($beforeUpdate -ne $updatedSection) {
+                Write-Host "Section will be updated:" -ForegroundColor Yellow
+                Write-Host "  Old pattern found, replacing with new version" -ForegroundColor White
 
-              # Write back to file
-              Set-Content -Path $readmeFile -Value $content -NoNewline
+                # Replace the section in the content
+                $updatedContent = $updatedContent -replace [regex]::Escape($section), $updatedSection
 
-              Write-Host "✅ Updated $readmeFile" -ForegroundColor Green
-              Write-Host "   - Umbraco.Templates: $latestUmbraco13Version (Umbraco 13 section)" -ForegroundColor White
+                # Verify content changed
+                if ($originalContent -ne $updatedContent) {
+                  # Write back to file with UTF8 encoding, no BOM
+                  [System.IO.File]::WriteAllText($readmeFile, $updatedContent, [System.Text.UTF8Encoding]::new($false))
+
+                  Write-Host "✅ Successfully updated $readmeFile" -ForegroundColor Green
+                  Write-Host "   - Umbraco.Templates: $latestUmbraco13Version (Umbraco 13 section)" -ForegroundColor White
+
+                  # Verify the file was actually written
+                  $verifyContent = Get-Content $readmeFile -Raw
+                  if ($verifyContent -eq $updatedContent) {
+                    Write-Host "✅ File write verified" -ForegroundColor Green
+                  } else {
+                    Write-Host "⚠️  Warning: File content doesn't match expected content after write" -ForegroundColor Yellow
+                  }
+                } else {
+                  Write-Host "ℹ️  No changes needed - content is identical" -ForegroundColor Cyan
+                }
+              } else {
+                Write-Host "ℹ️  No changes needed - already at version $latestUmbraco13Version" -ForegroundColor Cyan
+              }
             } else {
               Write-Host "⚠️  Could not find section '$umbracoSectionHeader' in $readmeFile" -ForegroundColor Yellow
             }
@@ -141,6 +166,7 @@ jobs:
 
           } catch {
             Write-Host "⚠️  Error updating README: $_" -ForegroundColor Yellow
+            Write-Host "Stack trace: $($_.ScriptStackTrace)" -ForegroundColor Yellow
             Write-Host "Continuing with workflow..." -ForegroundColor Yellow
           }
 
