@@ -110,8 +110,8 @@ jobs:
               $readmeContent = Get-Content $readmePath -Raw
               $originalContent = $readmeContent
 
-              # Extract the Umbraco 13 section (between "## Umbraco 13" and either "---" or next "##")
-              $umbraco13Pattern = '(?s)(## Umbraco 13.*?)(?=(---|## ))'
+              # Extract the Umbraco 13 section (between "## Umbraco 13" and "---")
+              $umbraco13Pattern = '(?s)(## Umbraco 13.*?)(---)'
               if ($readmeContent -match $umbraco13Pattern) {
                 $umbraco13Section = $matches[1]
                 $originalUmbraco13Section = $umbraco13Section
