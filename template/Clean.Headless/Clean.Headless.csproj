@@ -28,6 +28,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />
-    <None Include="README.md" Pack="true" PackPath="\" />
+    <None Include="../../README.md" Pack="true" PackPath="\" />
   </ItemGroup>
 </Project>
