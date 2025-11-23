@@ -37,6 +37,98 @@ The `CreateNuGetPackages.ps1` script automates the process of creating NuGet pac
 .\CreateNuGetPackages.ps1 -Version "7.0.0" -Verbose
 ```
 
+## Workflow Integration
+
+This script is a critical component of the CI/CD pipeline and is used by the following GitHub Actions workflows:
+
+### 1. Pull Request Build (`pr-build-packages.yml`)
+
+**Trigger:** Automatically runs on pull requests to the `main` branch
+
+**Purpose:** Validates that package creation works correctly before merging changes
+
+**How it works:**
+- Queries NuGet.org to find the latest published Clean package version
+- Creates a CI build version: `{base_version}-ci.{build_number}`
+- Calls `CreateNuGetPackages.ps1` with the CI version
+- Publishes packages to GitHub Packages for testing
+- Runs automated installation tests using Playwright
+- Creates screenshot artifacts to verify the site renders correctly
+
+**Example version flow:**
+- Latest NuGet: `7.0.0`
+- PR build version: `7.0.1-ci.123`
+
+**Workflow file:** `.github/workflows/pr-build-packages.yml`
+
+**Key steps:**
+```yaml
+- name: Run CreateNuGetPackages script
+  shell: pwsh
+  run: |
+    ./.github/workflows/powershell/CreateNuGetPackages.ps1 -Version "${{ steps.version.outputs.version }}"
+```
+
+### 2. Release Publishing (`release-nuget.yml`)
+
+**Trigger:** Runs when a GitHub release is published
+
+**Purpose:** Creates and publishes official releases to NuGet.org
+
+**How it works:**
+- Extracts version from the release tag (e.g., `v7.0.0` → `7.0.0`)
+- Validates version format (SemVer)
+- Updates README.md with version information
+- Calls `CreateNuGetPackages.ps1` with the release version
+- Publishes packages to NuGet.org
+- Uploads packages as GitHub release assets
+- Creates a PR to update version references in the codebase
+
+**Example version flow:**
+- Release tag: `v7.0.0`
+- Package version: `7.0.0`
+
+**Workflow file:** `.github/workflows/release-nuget.yml`
+
+**Key steps:**
+```yaml
+- name: Run CreateNuGetPackages script
+  shell: pwsh
+  run: |
+    ./.github/workflows/powershell/CreateNuGetPackages.ps1 -Version "${{ steps.version.outputs.version }}"
+```
+
+### Workflow Dependency Chain
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Pull Request Workflow                        │
+│  (pr-build-packages.yml)                                        │
+├─────────────────────────────────────────────────────────────────┤
+│ 1. Get latest version from NuGet.org                            │
+│ 2. Create CI version (e.g., 7.0.1-ci.123)                       │
+│ 3. → CreateNuGetPackages.ps1 -Version "7.0.1-ci.123"            │
+│ 4. Publish to GitHub Packages                                   │
+│ 5. Test package & template installation                         │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                     Release Workflow                             │
+│  (release-nuget.yml)                                            │
+├─────────────────────────────────────────────────────────────────┤
+│ 1. Extract version from release tag                             │
+│ 2. Update README.md with versions                               │
+│ 3. → CreateNuGetPackages.ps1 -Version "7.0.0"                   │
+│ 4. Publish to NuGet.org                                         │
+│ 5. Upload to GitHub release assets                              │
+│ 6. Create PR with version updates                               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Not Used By
+
+The `update-packages.yml` workflow does NOT use this script. It uses `UpdateThirdPartyPackages.ps1` instead to update third-party NuGet dependencies.
+
 ## What the Script Does
 
 ### 1. Repository Discovery and Setup
