@@ -8,6 +8,12 @@
 
 A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 13, 15, 16, and 17.
 
+## Development and Source Code
+
+**Main Branch**: The main branch is used exclusively for development of Clean v7+ which works with Umbraco 17+.
+
+**Older Versions**: There is no active development for older versions (Clean v4.x-v6.x for Umbraco 13-16). These versions are maintained as NuGet packages only, and their source code is not available in this repository. They will continue to receive critical bug fixes and updates via NuGet, but new features will only be added to the main branch.
+
 ## Features
 
 - **Modern Blog Theme**: Clean, responsive design built with Bootstrap
@@ -28,6 +34,26 @@ The complete starter kit including views, assets, and Umbraco package content.
 - **Package ID**: `Clean`
 - **Dependencies**: Clean.Core, Clean.Headless
 - **Use Case**: Install this package to add the full Clean starter kit to your existing Umbraco project
+
+**⚠️ Important Post-Installation Step**: After installing the `Clean` package and running your project for the first time (once all content, settings, and assets have been created in your Umbraco installation), you should update your package reference from `Clean` to `Clean.Core`. This prevents the Razor views and other assets from being overridden during future updates.
+
+To make this change:
+```powershell
+# Remove the Clean package
+dotnet remove package Clean
+
+# Add Clean.Core instead
+dotnet add package Clean.Core
+```
+
+Or manually edit your `.csproj` file to change:
+```xml
+<PackageReference Include="Clean" Version="x.x.x" />
+```
+to:
+```xml
+<PackageReference Include="Clean.Core" Version="x.x.x" />
+```
 
 ### 2. Clean.Core
 Core library containing components, controllers, helpers, and tag helpers.
@@ -96,6 +122,12 @@ dotnet run --project "MyProject"
 # The site should now be running and visible on the front end
 ```
 
+**⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
+```powershell
+dotnet remove "MyProject" package Clean
+dotnet add "MyProject" package Clean.Core --version 4.2.2
+```
+
 ### dotnet Template Method
 
 ```powershell
@@ -142,6 +174,12 @@ dotnet run --project "MyProject"
 # Login with admin@example.com and 1234567890
 # Save and publish the home page and save one of the dictionary items in the translation section
 # The site should now be running and visible on the front end
+```
+
+**⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
+```powershell
+dotnet remove "MyProject" package Clean
+dotnet add "MyProject" package Clean.Core --version 5.2.2
 ```
 
 ### dotnet Template Method
@@ -192,6 +230,12 @@ dotnet run --project "MyProject"
 # The site should now be running and visible on the front end
 ```
 
+**⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
+```powershell
+dotnet remove "MyProject" package Clean
+dotnet add "MyProject" package Clean.Core --version 6.0.0-rc3
+```
+
 ### dotnet Template Method
 
 ```powershell
@@ -238,6 +282,12 @@ dotnet run --project "MyProject"
 # Login with admin@example.com and 1234567890
 # Save and publish the home page and save one of the dictionary items in the translation section
 # The site should now be running and visible on the front end
+```
+
+**⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
+```powershell
+dotnet remove "MyProject" package Clean
+dotnet add "MyProject" package Clean.Core --version 7.0.0-rc1
 ```
 
 ### dotnet Template Method
