@@ -298,16 +298,32 @@ jobs:
           # Create PR body in a file to avoid escaping issues
           $prBodyFile = "${{ github.workspace }}\.artifacts\pr-body.md"
 
+          # Determine what was updated
+          $readmeUpdated = '${{ steps.update-readme.outputs.readme_updated }}' -eq 'true'
+          $packagesUpdated = '${{ steps.read-summary.outputs.summary }}' -notmatch 'No package summary found'
+
           # Write PR body content line by line
-          "This PR updates NuGet packages to the latest versions." | Out-File -FilePath $prBodyFile -Encoding UTF8
+          "This PR updates the following:" | Out-File -FilePath $prBodyFile -Encoding UTF8
+          "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+
+          if ($readmeUpdated) {
+            "- ✅ **README.md** - Updated with latest Umbraco 13 version" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+          }
+          if ($packagesUpdated) {
+            "- ✅ **NuGet Packages** - Updated to latest versions" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+          }
+
           "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
           "**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
           "**Triggered by:** ${{ github.actor }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "### Updated Packages:" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "${{ steps.read-summary.outputs.summary }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+
+          if ($packagesUpdated) {
+            "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "### Updated Packages:" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "${{ steps.read-summary.outputs.summary }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+          }
 
           gh pr create `
             --title "Update NuGet packages" `
