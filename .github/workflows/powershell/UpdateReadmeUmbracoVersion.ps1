@@ -52,32 +52,49 @@ try {
     return $result
   }
 
-  # Parse and sort versions to get the latest stable or prerelease
+  # Parse versions and compute a priority so we pick stable > rc > beta > alpha (and respect numeric suffixes)
   $parsedVersions = $umbracoVersions | ForEach-Object {
     $versionString = $_
     $prerelease = ""
+    $prTag = ""
+    $prNum = 0
 
-    # Split on hyphen to separate version from prerelease tag
-    if ($versionString -match '^([0-9]+\.[0-9]+\.[0-9]+)(.*)$') {
+    # Split base version and prerelease (e.g. 17.0.0-rc3)
+    if ($versionString -match '^([0-9]+\.[0-9]+\.[0-9]+)(?:-([A-Za-z]+)([0-9]*))?$') {
       $baseVersion = $matches[1]
-      $prerelease = $matches[2]
+      if ($matches[2]) { $prTag = $matches[2].ToLower() }
+      if ($matches[3]) { $prNum = if ($matches[3] -ne '') { [int]$matches[3] } else { 0 } }
+      if ($prTag) { $prerelease = "-$prTag$prNum" }
     } else {
       $baseVersion = $versionString
     }
 
-    # Create object for sorting
+    # Map prerelease tags to priorities: stable=100, rc=70, beta=50, alpha=30, other=40
+    switch ($prTag) {
+      'rc'    { $prPriority = 70 }
+      'beta'  { $prPriority = 50 }
+      'alpha' { $prPriority = 30 }
+      default { if ($prTag -ne '') { $prPriority = 40 } else { $prPriority = 100 } }
+    }
+
+    # Incorporate numeric suffix into priority for ordering (higher number -> higher priority)
+    $effectivePriority = $prPriority + $prNum
+
     [PSCustomObject]@{
       Original = $versionString
       Version = [Version]$baseVersion
       Prerelease = $prerelease
-      IsPrerelease = $prerelease -ne ""
+      PrTag = $prTag
+      PrNum = $prNum
+      PrPriority = $prPriority
+      EffectivePriority = $effectivePriority
     }
   }
 
-  # Sort by version (descending), then by prerelease status (stable first)
-  $sortedVersions = $parsedVersions | Sort-Object -Property @{Expression={$_.Version}; Descending=$true}, @{Expression={$_.IsPrerelease}; Descending=$false}
+  # Sort by version (descending), then by EffectivePriority (descending)
+  $sortedVersions = $parsedVersions | Sort-Object -Property @{Expression={$_.Version}; Descending=$true}, @{Expression={$_.EffectivePriority}; Descending=$true}
 
-  # Get the latest version
+  # Get the latest version (Original string)
   $latestUmbracoVersion = $sortedVersions[0].Original
   $result.Version = $latestUmbracoVersion
 
@@ -95,98 +112,74 @@ try {
     $readmeContent = Get-Content $ReadmePath -Raw
     $originalContent = $readmeContent
 
-    # Extract the Umbraco section (between "## Umbraco {version}" and "---")
-    $umbracoPattern = "(?s)(## Umbraco $UmbracoMajorVersion.*?)(---)"
-    if ($readmeContent -match $umbracoPattern) {
-      $umbracoSection = $matches[1]
+    # Extract the Umbraco section header (## Umbraco {version}) and operate only within that section
+    # We'll replace only the specific `dotnet new install` line inside the matching section to avoid accidental cross-section changes
+    $sectionHeaderPattern = "(?m)^##\s+Umbraco\s+$UmbracoMajorVersion\b.*$"  # header line
+    if ($readmeContent -match $sectionHeaderPattern) {
+      # Find the start index of the header
+      $headerMatch = [regex]::Match($readmeContent, $sectionHeaderPattern)
+      $startIndex = $headerMatch.Index
+
+      # Find the end of this section by looking for the next top-level '---' that denotes section break after the header
+      $afterHeader = $readmeContent.Substring($startIndex)
+      $endMarkerMatch = [regex]::Match($afterHeader, "(?s)---")
+      if ($endMarkerMatch.Success) {
+        $sectionLength = $endMarkerMatch.Index
+      } else {
+        # If no '---' found after header, operate until end of file
+        $sectionLength = $afterHeader.Length
+      }
+
+      $umbracoSection = $readmeContent.Substring($startIndex, $sectionLength)
       $originalUmbracoSection = $umbracoSection
-      $fullMatch = $matches[0]  # This includes both the section AND the "---"
 
-      Write-Host "Found Umbraco $UmbracoMajorVersion section, applying updates..." -ForegroundColor Yellow
+      Write-Host "Found Umbraco $UmbracoMajorVersion section, applying targeted updates..." -ForegroundColor Yellow
 
-      # Extract current version from README to compare
+      # Pattern to find the dotnet install line and capture existing version
+      $pattern0 = '(dotnet new install Umbraco\.Templates::)([0-9]+(?:\.[0-9]+){2}(?:-[A-Za-z0-9]+)?)( --force)'
       $currentVersion = $null
-      $pattern0 = '(dotnet new install Umbraco\.Templates::)([\d\.]+-?[\w\d]*)( --force)'
+      $oldLine0 = $null
       if ($umbracoSection -match $pattern0) {
-        # Save the original line immediately before $matches gets overwritten
         $oldLine0 = $matches[0]
         $currentVersion = $matches[2]
         Write-Host "  Current version in README: $currentVersion" -ForegroundColor Cyan
 
-        # Compare versions semantically to prevent downgrades
-        # Parse both versions to compare (handle prerelease tags)
-        $currentBaseVersion = $currentVersion
-        $latestBaseVersion = $latestUmbracoVersion
-        $currentPrerelease = ""
-        $latestPrerelease = ""
-
-        if ($currentVersion -match '^([\d\.]+)(.*)$') {
-          $currentBaseVersion = $matches[1]
-          $currentPrerelease = $matches[2]
-        }
-
-        if ($latestUmbracoVersion -match '^([\d\.]+)(.*)$') {
-          $latestBaseVersion = $matches[1]
-          $latestPrerelease = $matches[2]
-        }
+        # Compare base versions to prevent downgrades
+        if ($currentVersion -match '^([0-9]+\.[0-9]+\.[0-9]+)') { $currentBase = $matches[1] } else { $currentBase = $currentVersion }
+        if ($latestUmbracoVersion -match '^([0-9]+\.[0-9]+\.[0-9]+)') { $latestBase = $matches[1] } else { $latestBase = $latestUmbracoVersion }
 
         try {
-          $currentVer = [Version]$currentBaseVersion
-          $latestVer = [Version]$latestBaseVersion
-
-          # Compare versions
+          $currentVer = [Version]$currentBase
+          $latestVer = [Version]$latestBase
           $comparison = $latestVer.CompareTo($currentVer)
-
           if ($comparison -lt 0) {
-            # Latest version is lower than current - don't downgrade
             Write-Host "  ⚠️  Skipping update: Latest version ($latestUmbracoVersion) is lower than current version ($currentVersion)" -ForegroundColor Yellow
             $result.Updated = $false
             return $result
           } elseif ($comparison -eq 0) {
-            # Same base version - check prerelease tags
-            if ($latestPrerelease -eq $currentPrerelease) {
+            if ($latestUmbracoVersion -eq $currentVersion) {
               Write-Host "  No change needed - already at version $latestUmbracoVersion" -ForegroundColor Cyan
             } else {
               Write-Host "  Updating prerelease tag from $currentVersion to $latestUmbracoVersion" -ForegroundColor Yellow
             }
           } else {
-            # Latest version is higher - proceed with update
             Write-Host "  Updating from $currentVersion to $latestUmbracoVersion" -ForegroundColor Yellow
           }
         } catch {
           Write-Host "  Warning: Could not parse versions for comparison, proceeding with update" -ForegroundColor Yellow
         }
 
-        # Perform the replacement
-        $umbracoSection = $umbracoSection -replace $pattern0, "`${1}$latestUmbracoVersion`${3}"
+        # Replace only the version portion of the matched line using literal string replace
+        $replacementLine = "$($matches[1])$latestUmbracoVersion$($matches[3])"
+        $umbracoSection = $umbracoSection.Replace($oldLine0, $replacementLine)
 
-        # Match again to get the new line for display
-        if ($umbracoSection -match $pattern0) {
-          $newLine0 = $matches[0]
-          if ($oldLine0 -ne $newLine0) {
-            Write-Host "  BEFORE: $oldLine0" -ForegroundColor Yellow
-            Write-Host "  AFTER:  $newLine0" -ForegroundColor Green
-          }
-        }
+        # Update the full readme content by replacing only this section
+        $readmeContent = $readmeContent.Substring(0, $startIndex) + $umbracoSection + $readmeContent.Substring($startIndex + $sectionLength)
+
+        Write-Host "  BEFORE: $oldLine0" -ForegroundColor Yellow
+        Write-Host "  AFTER:  $replacementLine" -ForegroundColor Green
       } else {
         Write-Host "  Warning: Could not find Umbraco.Templates pattern in Umbraco $UmbracoMajorVersion section" -ForegroundColor Yellow
-      }
-
-      # Replace the FULL MATCH (section + "---") in the content
-      # This is more specific and prevents accidentally replacing other sections
-      if ($originalUmbracoSection -ne $umbracoSection) {
-        # Reconstruct the full replacement (modified section + "---")
-        $fullReplacement = $umbracoSection + "---"
-
-        # Escape the full match for literal string matching
-        $escapedFullMatch = [regex]::Escape($fullMatch)
-
-        # Replace only the first occurrence of the complete section
-        $regex = New-Object System.Text.RegularExpressions.Regex($escapedFullMatch)
-        $readmeContent = $regex.Replace($readmeContent, $fullReplacement, 1)
-        Write-Host "  Section was modified, updating README..." -ForegroundColor Green
-      } else {
-        Write-Host "  Section unchanged" -ForegroundColor Cyan
       }
     } else {
       Write-Host "Warning: Could not find Umbraco $UmbracoMajorVersion section in README.md" -ForegroundColor Yellow
