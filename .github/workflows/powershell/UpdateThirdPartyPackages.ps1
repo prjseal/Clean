@@ -337,42 +337,43 @@ function Get-LatestNuGetVersion {
     return $cache[$key]
   }
 
-  # Get all configured NuGet sources
-  $sources = Get-ConfiguredNuGetSources
-  $allVersions = @()
+  try {
+    # Get all configured NuGet sources
+    $sources = Get-ConfiguredNuGetSources
+    $allVersions = @()
 
-  Write-Log ("Querying {0} source(s) for package '{1}'" -f $sources.Count, $packageId)
+    Write-Log ("Querying {0} source(s) for package '{1}'" -f $sources.Count, $packageId)
 
-  # Query each source
-  foreach ($source in $sources) {
-    $url = ('{0}/{1}/index.json' -f $source.Url, $key)
-    try {
-      Write-Log ("  Querying source '{0}': {1}" -f $source.Name, $url)
-      $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 20 -ErrorAction Stop
-      $sourceVersions = @($resp.versions | ForEach-Object { [string]$_ })
-      if ($sourceVersions.Count -gt 0) {
-        Write-Log ("  Found {0} version(s) in '{1}'" -f $sourceVersions.Count, $source.Name)
-        $allVersions += $sourceVersions
+    # Query each source
+    foreach ($source in $sources) {
+      $url = ('{0}/{1}/index.json' -f $source.Url, $key)
+      try {
+        Write-Log ("  Querying source '{0}': {1}" -f $source.Name, $url)
+        $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 20 -ErrorAction Stop
+        $sourceVersions = @($resp.versions | ForEach-Object { [string]$_ })
+        if ($sourceVersions.Count -gt 0) {
+          Write-Log ("  Found {0} version(s) in '{1}'" -f $sourceVersions.Count, $source.Name)
+          $allVersions += $sourceVersions
+        }
+        else {
+          Write-Log ("  No versions found in '{0}'" -f $source.Name) -Level "WARN"
+        }
       }
-      else {
-        Write-Log ("  No versions found in '{0}'" -f $source.Name) -Level "WARN"
+      catch {
+        # Not all sources may have the package, which is expected
+        Write-Log ("  Package not found in '{0}': {1}" -f $source.Name, $_.Exception.Message) -Level "WARN"
       }
     }
-    catch {
-      # Not all sources may have the package, which is expected
-      Write-Log ("  Package not found in '{0}': {1}" -f $source.Name, $_.Exception.Message) -Level "WARN"
+
+    # Remove duplicates and process versions
+    $versions = @($allVersions | Select-Object -Unique)
+
+    if ($versions.Count -eq 0) {
+      Write-Log ("No versions found for {0} in any configured source" -f $packageId) -Level "WARN"
+      $cache[$key] = $null
+      return $null
     }
-  }
-
-  # Remove duplicates and process versions
-  $versions = @($allVersions | Select-Object -Unique)
-
-  if ($versions.Count -eq 0) {
-    Write-Log ("No versions found for {0} in any configured source" -f $packageId) -Level "WARN"
-    $cache[$key] = $null
-    return $null
-  }
-  Write-Log ("Total unique versions found for {0}: {1}" -f $packageId, $versions.Count)
+    Write-Log ("Total unique versions found for {0}: {1}" -f $packageId, $versions.Count)
     if ($IncludePrerelease) {
       # Prefer stable > rc > beta > alpha when including prerelease; respect numeric suffixes (e.g., rc3 > rc2)
       $parsed = $versions | ForEach-Object {
