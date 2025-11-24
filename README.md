@@ -15,7 +15,7 @@ A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a 
 - **Headless/API Support**: Full Content Delivery API integration with Next.js revalidation support
 - **API Endpoints**: Built-in endpoints for dictionary, search, and contact functionality
 - **OpenAPI Documentation**: Swagger UI for exploring and testing API endpoints
-- **Multi-version Support**: Compatible with Umbraco 13 and 17 (.NET 8 and .NET 10)
+- **Multi-version Support**: NuGet packages for Compatible with Umbraco 13 and 17 (.NET 8 and .NET 10)
 - **SQLite by Default**: Quick setup with SQLite database for development
 - **No External Dependencies**: Removed dependency on third-party packages like Contentment
 
@@ -73,7 +73,7 @@ dotnet CLI template for creating new Umbraco projects with Clean pre-installed.
 | 4.x          | 13              | .NET 8       | LTS (Long Term Support) |
 | 7.x          | 17              | .NET 10      | LTS (Long Term Support) |
 
-**Note**: Clean v5 (Umbraco 15) and v6 (Umbraco 16) are no longer maintained. For older Umbraco versions (9-12), see the [Clean Starter Kit for Umbraco v9](https://github.com/prjseal/Clean-Starter-Kit-for-Umbraco-v9) repository.
+**Note**: Clean v5 (Umbraco 15) and v6 (Umbraco 16) are no longer maintained. For the even older Umbraco versions (9-12), see the [Clean Starter Kit for Umbraco v9](https://github.com/prjseal/Clean-Starter-Kit-for-Umbraco-v9) repository.
 
 ## Installation
 
