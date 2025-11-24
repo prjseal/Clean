@@ -220,8 +220,7 @@ jobs:
           ./.github/workflows/powershell/UpdateThirdPartyPackages.ps1 `
             -RootPath "${{ github.workspace }}" `
             -DryRun:$dryRunFlag `
-            -IncludePrerelease:$includePrereleaseFlag `
-            -IgnorePatterns "^uSync"
+            -IncludePrerelease:$includePrereleaseFlag
 
       - name: Build Failure Summary
         if: failure() && steps.update-packages.conclusion == 'failure'
