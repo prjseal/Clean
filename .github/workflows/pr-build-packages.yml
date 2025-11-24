@@ -46,15 +46,47 @@ jobs:
           Write-Host $prBody -ForegroundColor White
           Write-Host "---`n" -ForegroundColor DarkGray
 
+          # Debug: Show PR body as bytes to check for hidden characters
+          Write-Host "`nPR Body Analysis:" -ForegroundColor Cyan
+          Write-Host "  Length: $($prBody.Length) characters" -ForegroundColor White
+          Write-Host "  Contains 'nuget-source': $($prBody -like '*nuget-source*')" -ForegroundColor White
+
+          # Split by lines and show each line
+          Write-Host "`nPR Body Lines:" -ForegroundColor Cyan
+          $lines = $prBody -split "`n"
+          for ($i = 0; $i -lt $lines.Count; $i++) {
+            $line = $lines[$i]
+            Write-Host "  Line $($i + 1): '$line'" -ForegroundColor White
+          }
+
           # Extract NuGet sources from PR description
           # Format: nuget-source: https://example.com/nuget/v3/index.json
-          $pattern = '(?m)^nuget-source:\s*(.+)$'
-          $matches = [regex]::Matches($prBody, $pattern)
+          # Note: Can have leading whitespace or be on its own line
+          # Try multiple patterns to handle different formats
+          $patterns = @(
+            'nuget-source:\s*(\S+)',                    # Pattern 1: simple pattern matching URL (no whitespace)
+            '(?m)^\s*nuget-source:\s*(.+?)[\r\n]',      # Pattern 2: with optional leading whitespace
+            '(?m)^\s*nuget-source:\s*(.+)$',            # Pattern 3: with optional leading whitespace, end of line
+            '(?m)^nuget-source:\s*(.+)$'                # Pattern 4: original pattern (no leading spaces)
+          )
 
-          if ($matches.Count -eq 0) {
-            Write-Host "No custom NuGet sources found in PR description." -ForegroundColor Yellow
+          $matches = $null
+          foreach ($pattern in $patterns) {
+            Write-Host "`nTrying regex pattern: $pattern" -ForegroundColor Cyan
+            $matches = [regex]::Matches($prBody, $pattern)
+            Write-Host "  Regex matches found: $($matches.Count)" -ForegroundColor White
+
+            if ($matches.Count -gt 0) {
+              Write-Host "  ✅ Pattern matched!" -ForegroundColor Green
+              break
+            }
+          }
+
+          if (-not $matches -or $matches.Count -eq 0) {
+            Write-Host "`nNo custom NuGet sources found in PR description." -ForegroundColor Yellow
             Write-Host "To add custom NuGet sources, include them in the PR description using this format:" -ForegroundColor Yellow
             Write-Host "  nuget-source: https://www.myget.org/F/umbraco-dev/api/v3/index.json" -ForegroundColor Cyan
+            Write-Host "`nMake sure the line starts at the beginning (no leading spaces) and uses the exact format." -ForegroundColor Yellow
             exit 0
           }
 

@@ -228,6 +228,65 @@ Set-Location -Path $solutionRoot
 # write the solution root to verbose output
 Write-Verbose "Solution root directory: $solutionRoot"
 
+# ============================================================================
+# Configure NuGet sources for package restore
+# Extract all configured NuGet sources (including custom ones from PR workflow)
+# ============================================================================
+Write-Host "`n================================================" -ForegroundColor Cyan
+Write-Host "Configuring NuGet Sources for Restore" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
+
+$allSourcesOutput = dotnet nuget list source
+$sourceUrls = @()
+
+# Parse the output to extract source URLs
+foreach ($line in $allSourcesOutput) {
+    if ($line -match '^\s+(https?://\S+)') {
+        $url = $matches[1].Trim()
+        $sourceUrls += $url
+        Write-Host "  Found source: $url" -ForegroundColor Cyan
+    }
+}
+
+if ($sourceUrls.Count -eq 0) {
+    Write-Host "  Warning: No NuGet sources found, using default behavior" -ForegroundColor Yellow
+} else {
+    Write-Host "`nFound $($sourceUrls.Count) NuGet source(s)" -ForegroundColor Green
+}
+
+# Explicitly restore the solution with all configured sources before starting Umbraco
+Write-Host "`n================================================" -ForegroundColor Cyan
+Write-Host "Restoring Solution with All Sources" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
+
+if ($sourceUrls.Count -gt 0) {
+    $restoreArgs = @("restore", "Clean.Blog.csproj")
+    foreach ($sourceUrl in $sourceUrls) {
+        $restoreArgs += "--source"
+        $restoreArgs += $sourceUrl
+    }
+
+    Write-Host "Running: dotnet $($restoreArgs -join ' ')" -ForegroundColor Yellow
+    & dotnet $restoreArgs
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Restore failed with exit code $LASTEXITCODE" -ForegroundColor Red
+        exit 1
+    } else {
+        Write-Host "Restore completed successfully" -ForegroundColor Green
+    }
+} else {
+    Write-Host "Running: dotnet restore Clean.Blog.csproj" -ForegroundColor Yellow
+    dotnet restore Clean.Blog.csproj
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Restore failed with exit code $LASTEXITCODE" -ForegroundColor Red
+        exit 1
+    }
+}
+
+Write-Host "================================================`n" -ForegroundColor Cyan
+
 # Extract Umbraco version from Clean.csproj and update README.md before starting Umbraco
 Write-Host "`nExtracting Umbraco version from Clean.csproj..."
 $cleanCsprojFile = Get-ChildItem -Path $CurrentDir -Recurse -Filter "Clean.csproj" -File | Where-Object {
@@ -346,8 +405,8 @@ if (Test-Path $readmePath) {
 # run dotnet run in the current directory to start the Umbraco project
 Write-Verbose "Starting Umbraco project to ensure API is running..."
 
-# Start the process and keep a reference
-$umbracoProcess = Start-Process -FilePath "dotnet" -ArgumentList "run --project Clean.Blog.csproj" -NoNewWindow -PassThru
+# Start the process and keep a reference (--no-restore since we already restored explicitly)
+$umbracoProcess = Start-Process -FilePath "dotnet" -ArgumentList "run --project Clean.Blog.csproj --no-restore" -NoNewWindow -PassThru
 
 Write-Host "Umbraco process started with ID: $($umbracoProcess.Id)"
 
@@ -683,6 +742,29 @@ if ($existingSource) {
 }
 dotnet nuget add source $nugetDestination --name $sourceName
 
+# Get all configured NuGet sources for restore operations
+Write-Host "`nGetting all configured NuGet sources..."
+$allSourcesOutput = dotnet nuget list source
+$sourceUrls = @()
+
+# Parse the output to extract source URLs
+# The format is typically:
+# Registered Sources:
+#   1.  nuget.org [Enabled]
+#       https://api.nuget.org/v3/index.json
+foreach ($line in $allSourcesOutput) {
+    # Match URLs (lines that start with whitespace and contain https://)
+    if ($line -match '^\s+(https?://\S+)') {
+        $url = $matches[1].Trim()
+        $sourceUrls += $url
+        Write-Host "  Found source: $url" -ForegroundColor Cyan
+    }
+}
+
+if ($sourceUrls.Count -eq 0) {
+    Write-Host "  Warning: No NuGet sources found, using default behavior" -ForegroundColor Yellow
+}
+
 try {
     # Build and pack in dependency order to avoid NU1102 errors
     # Order: Clean.Core -> Clean.Headless -> Clean
@@ -702,7 +784,23 @@ try {
     # Step 1: Build and pack Clean.Core
     if ($cleanCorePath) {
         Write-Host "`n=== Building Clean.Core ==="
-        dotnet build $cleanCorePath.FullName --configuration Release
+
+        # Explicit restore with all configured sources
+        if ($sourceUrls.Count -gt 0) {
+            Write-Host "Restoring Clean.Core with all configured sources..."
+            $restoreArgs = @("restore", $cleanCorePath.FullName)
+            foreach ($sourceUrl in $sourceUrls) {
+                $restoreArgs += "--source"
+                $restoreArgs += $sourceUrl
+            }
+            & dotnet $restoreArgs
+
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Warning: Restore failed with exit code $LASTEXITCODE" -ForegroundColor Yellow
+            }
+        }
+
+        dotnet build $cleanCorePath.FullName --configuration Release --no-restore
         if ($LASTEXITCODE -eq 0) {
             Write-Host "Packing Clean.Core..."
             dotnet pack $cleanCorePath.FullName --configuration Release --no-build
@@ -722,7 +820,23 @@ try {
     # Step 2: Build and pack Clean.Headless
     if ($cleanHeadlessPath) {
         Write-Host "`n=== Building Clean.Headless ==="
-        dotnet build $cleanHeadlessPath.FullName --configuration Release
+
+        # Explicit restore with all configured sources
+        if ($sourceUrls.Count -gt 0) {
+            Write-Host "Restoring Clean.Headless with all configured sources..."
+            $restoreArgs = @("restore", $cleanHeadlessPath.FullName)
+            foreach ($sourceUrl in $sourceUrls) {
+                $restoreArgs += "--source"
+                $restoreArgs += $sourceUrl
+            }
+            & dotnet $restoreArgs
+
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Warning: Restore failed with exit code $LASTEXITCODE" -ForegroundColor Yellow
+            }
+        }
+
+        dotnet build $cleanHeadlessPath.FullName --configuration Release --no-restore
         if ($LASTEXITCODE -eq 0) {
             Write-Host "Packing Clean.Headless..."
             dotnet pack $cleanHeadlessPath.FullName --configuration Release --no-build
@@ -742,7 +856,23 @@ try {
     # Step 3: Build and pack Clean (depends on Clean.Core and Clean.Headless)
     if ($cleanPath) {
         Write-Host "`n=== Building Clean ==="
-        dotnet build $cleanPath.FullName --configuration Release
+
+        # Explicit restore with all configured sources
+        if ($sourceUrls.Count -gt 0) {
+            Write-Host "Restoring Clean with all configured sources..."
+            $restoreArgs = @("restore", $cleanPath.FullName)
+            foreach ($sourceUrl in $sourceUrls) {
+                $restoreArgs += "--source"
+                $restoreArgs += $sourceUrl
+            }
+            & dotnet $restoreArgs
+
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Warning: Restore failed with exit code $LASTEXITCODE" -ForegroundColor Yellow
+            }
+        }
+
+        dotnet build $cleanPath.FullName --configuration Release --no-restore
         if ($LASTEXITCODE -eq 0) {
             Write-Host "Packing Clean..."
             dotnet pack $cleanPath.FullName --configuration Release --no-build
@@ -752,7 +882,23 @@ try {
     # Step 4: Pack template-pack if it exists
     if ($templatePackPath) {
         Write-Host "`n=== Packing template-pack ==="
-        dotnet pack $templatePackPath --configuration Release
+
+        # Explicit restore with all configured sources
+        if ($sourceUrls.Count -gt 0) {
+            Write-Host "Restoring template-pack with all configured sources..."
+            $restoreArgs = @("restore", $templatePackPath)
+            foreach ($sourceUrl in $sourceUrls) {
+                $restoreArgs += "--source"
+                $restoreArgs += $sourceUrl
+            }
+            & dotnet $restoreArgs
+
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Warning: Restore failed with exit code $LASTEXITCODE" -ForegroundColor Yellow
+            }
+        }
+
+        dotnet pack $templatePackPath --configuration Release --no-restore
     }
 }
 finally {
