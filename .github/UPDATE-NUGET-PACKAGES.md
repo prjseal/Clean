@@ -6,10 +6,13 @@ This document describes the automated NuGet package update workflow for the Clea
 
 The Update NuGet Packages workflow automatically checks for and applies updates to third-party NuGet package dependencies across the entire solution. It runs daily, builds the solution to verify compatibility, and creates pull requests with the changes for review.
 
-## Workflow File
+## Workflow Files and Scripts
 
-**Location**: `.github/workflows/update-packages.yml`
-**PowerShell Script**: `.github/workflows/powershell/UpdateThirdPartyPackages.ps1`
+**Workflow Location**: `.github/workflows/update-packages.yml`
+
+**PowerShell Scripts**:
+- `.github/workflows/powershell/UpdateThirdPartyPackages.ps1` - Updates third-party NuGet packages
+- `.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1` - Updates README.md with latest Umbraco versions
 
 ## When Does It Run?
 
@@ -24,14 +27,27 @@ The workflow can be triggered in two ways:
 - **Trigger**: GitHub Actions "Run workflow" button
 - **Parameters**:
   - **dryRun**: Run without making changes (default: `false`)
-  - **includePrerelease**: Include prerelease versions (default: `true`)
+  - **includePrerelease**: Include prerelease versions (default: `false` for manual runs)
   - **umbracoVersions**: Comma-separated Umbraco major versions to update (default: `13`)
+    - Supports per-version prerelease flag: append `-` to version (e.g., `17-` to include prereleases for version 17)
+    - Example: `13,17-` updates stable for version 13 and prereleases for version 17
   - **nugetSources**: Comma-separated custom NuGet source URLs (default: empty)
 - **Use Cases**:
   - Emergency security updates
   - Testing before scheduled run
   - Immediate dependency refresh after major releases
   - Testing with pre-release packages from custom NuGet feeds
+
+### Environment Variables
+
+The workflow uses environment variables to control scheduled run behavior:
+
+- **SCHEDULED_INCLUDE_PRERELEASE**: Controls whether scheduled runs include prerelease versions (default: `true`)
+  - Set to `'false'` to only use stable releases in scheduled runs (e.g., when Umbraco 17 is officially released)
+  - Manual runs use the `includePrerelease` input parameter instead
+- **UMBRACO_MAJOR_VERSIONS**: Comma-separated list of Umbraco major versions to track (default: `'13'`)
+  - Used by scheduled runs and manual runs without version input
+  - Example: `'13,17'` to track both Umbraco 13 and 17
 
 ## Custom NuGet Sources
 
@@ -132,9 +148,38 @@ This ensures that if you update to a package version from a custom source, the P
 
 ## What It Does
 
-The workflow performs a comprehensive package update process with multiple validation steps:
+The workflow performs a comprehensive update process with multiple validation steps:
 
-### 1. **Package Discovery and Analysis**
+### 1. **README Version Update**
+
+Before updating packages, the workflow updates README.md with the latest Umbraco version(s):
+
+**Process**:
+- Queries NuGet.org for the latest version of `Umbraco.Cms.Web.Website` for each configured major version
+- Supports both stable and prerelease versions based on configuration
+- Updates installation instructions in README.md with the latest versions
+- Tracks which major versions were updated (e.g., "13", "17", or "13,17")
+
+**Version Selection**:
+- **Stable-only mode**: Uses the latest version without a prerelease suffix (e.g., `17.0.0`)
+- **Prerelease mode**: Uses the latest version including prereleases, with smart sorting:
+  - RC versions (highest priority)
+  - Beta versions
+  - Alpha versions
+  - Stable versions (when no prereleases exist)
+
+**Per-Version Configuration**:
+- Can enable prerelease for specific versions using trailing `-` notation
+- Example: `umbracoVersions: "13,17-"` means stable for v13, prerelease for v17
+
+**README Patterns Updated**:
+```markdown
+dotnet new install Umbraco.Templates::{version} --force
+```
+
+This ensures installation instructions always reference the latest available Umbraco version.
+
+### 2. **Package Discovery and Analysis**
 
 Scans the repository for all `.csproj` files and analyzes their package references:
 
@@ -149,7 +194,7 @@ Scans the repository for all `.csproj` files and analyzes their package referenc
 - Skips packages managed by Central Package Management (CPM)
 - Excludes internal project packages
 
-### 2. **Version Resolution**
+### 3. **Version Resolution**
 
 For each package, queries NuGet.org to determine the latest available version:
 
@@ -168,7 +213,7 @@ https://api.nuget.org/v3-flatcontainer/{package-id}/index.json
 - Cache persists for the duration of the script execution
 - Shared across all `.csproj` files for efficiency
 
-### 3. **Package Update Application**
+### 4. **Package Update Application**
 
 Updates package references in `.csproj` files:
 
@@ -188,7 +233,7 @@ Updates package references in `.csproj` files:
 - Case-insensitive version comparison to avoid unnecessary changes
 - Skips packages without a `Version` attribute (CPM-managed packages)
 
-### 4. **Build Validation**
+### 5. **Build Validation**
 
 Performs comprehensive build validation to ensure updates don't break the solution:
 
@@ -220,7 +265,7 @@ dotnet build "{solution}.sln" -clp:Summary -v:m
 .artifacts/logs/{solution}__{timestamp}.build.stderr.txt
 ```
 
-### 5. **Summary Reporting**
+### 6. **Summary Reporting**
 
 Generates two comprehensive summary tables:
 
@@ -261,45 +306,86 @@ Generates two comprehensive summary tables:
 - Error count (from MSBuild summary or diagnostic count)
 - Warning count (from MSBuild summary or diagnostic count)
 
-### 6. **Change Detection**
+### 7. **Change Detection**
 
 Before creating a pull request, the workflow intelligently checks for changes:
 
-```bash
-git diff --cached --quiet
-```
+**Check Types**:
+1. **README Update Status**: Checks if `UpdateReadmeUmbracoVersion.ps1` modified README.md
+2. **Package Updates**: Reads `.artifacts/package-summary.txt` to verify package changes were made
 
 **Outcomes**:
-- **No changes detected**: Exits gracefully, no PR created
-- **Changes detected**: Proceeds to commit and PR creation
-- **Purpose**: Prevents empty PRs when all packages are already up-to-date
+- **No changes detected**: Exits gracefully with informative message, no PR created
+- **README-only changes**: Proceeds with commit including `[skip ci]` tag
+- **Package-only changes**: Proceeds with standard commit
+- **Both updated**: Proceeds with combined commit
+- **Purpose**: Prevents empty PRs when all packages and README are already up-to-date
 
-### 7. **Pull Request Creation**
+**Smart Exit Message**:
+```
+================================================
+✅ No Changes Needed - Workflow Complete
+================================================
 
-Creates a pull request with updated packages:
+Summary:
+  • README: Already up-to-date with latest Umbraco version(s)
+  • NuGet Packages: All packages are already at their latest versions
+
+No branch created, no commits made, no PR needed.
+================================================
+```
+
+### 8. **Commit and Push Changes**
+
+Creates commits with smart commit messages based on what was updated:
+
+**Commit Message Logic**:
+- **README-only**: `"Update README with latest Umbraco {version} version [skip ci]"`
+  - Includes `[skip ci]` to avoid unnecessary CI builds for documentation updates
+- **Packages-only**: `"Update NuGet packages"`
+- **Both updated**: `"Update README and NuGet packages"`
 
 **Branch Naming**:
 ```
 update-nuget-packages-{timestamp}
 ```
-Example: `update-nuget-packages-20250122143045`
+Example: `update-nuget-packages-20250124143045`
 
-**Commit Message**:
+**Git Operations**:
+```bash
+git config user.name "github-actions"
+git config user.email "github-actions@github.com"
+git checkout -b {branch}
+git add .
+git commit -m "{message}"
+git push
 ```
-Update NuGet packages
-```
+
+### 9. **Pull Request Creation**
+
+Creates a pull request with a detailed description of what was updated:
 
 **PR Title**:
 ```
 Update NuGet packages
 ```
 
-**PR Body**:
+**PR Body** (format varies based on what was updated):
 ```markdown
-This PR updates NuGet packages to the latest versions.
+This PR updates the following:
+
+- ✅ **README.md** - Updated with latest Umbraco {version} version
+- ✅ **NuGet Packages** - Updated to latest versions
+
+**Triggered by:** {github.actor}
+
+## Custom NuGet Sources
+
+This PR was created with custom NuGet sources. The PR build will automatically use these sources:
+
+nuget-source: https://www.myget.org/F/umbraco-dev/api/v3/index.json
 
 **IncludePrerelease:** true
-**Triggered by:** github-actions[bot]
 
 ### Updated Packages:
 ```
@@ -309,7 +395,13 @@ This PR updates NuGet packages to the latest versions.
 
 **Target Branch**: `main`
 
-### 8. **Duplicate Detection**
+**Dynamic Content**:
+- Only shows README section if README was updated
+- Only shows NuGet Packages section if packages were updated
+- Only shows Custom NuGet Sources section if custom sources were provided
+- Displays the actor who triggered the workflow (user or github-actions[bot])
+
+### 10. **Duplicate Detection**
 
 Advanced duplicate PR detection prevents creating redundant pull requests:
 
@@ -379,45 +471,60 @@ Existing PR: https://github.com/{owner}/{repo}/pull/123
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 5. Update README with latest Umbraco versions               │
+│ 5. Update README with Latest Umbraco Versions               │
 │    - Runs UpdateReadmeUmbracoVersion.ps1                    │
-│    - Updates installation instructions                       │
+│    - Processes each configured major version                │
+│    - Queries NuGet.org for latest Umbraco.Cms.Web.Website  │
+│    - Respects per-version prerelease flags (e.g., "17-")    │
+│    - Updates dotnet new install commands in README          │
+│    - Outputs: readme_updated, updated_versions              │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
 │ 6. Run UpdateThirdPartyPackages.ps1                         │
 │    - Scan for .csproj files                                  │
-│    - Query NuGet.org for latest versions                    │
+│    - Query NuGet.org for latest package versions            │
 │    - Update PackageReference elements                        │
 │    - Clean and build all solutions                           │
 │    - Generate package and build summaries                    │
+│    - Fail workflow if build errors occur                     │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 7. Check if any changes were made                           │
-│    - Compare README update status                            │
+│ 7. Build Failure Summary (if step 6 fails)                  │
+│    - Display build-summary.txt content                       │
+│    - Show build errors and warnings                          │
+│    - Exit workflow (no PR created)                           │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 8. Check if Any Changes Were Made                           │
+│    - Check README update status from step 5                 │
 │    - Check package-summary.txt for package updates          │
-│    - Exit if no changes needed                               │
+│    - Exit gracefully if no changes needed                    │
+│    - Display informative "No Changes Needed" message        │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 8. Commit and Push Changes (if not dry run)                 │
+│ 9. Commit and Push Changes (if not dry run)                 │
 │    - Configure git user: github-actions                     │
 │    - Create branch: update-nuget-packages-{timestamp}       │
 │    - Stage all changes: git add .                            │
-│    - Check for changes: git diff --cached                    │
-│    - Commit: "Update NuGet packages"                         │
-│    - Push using PAT_TOKEN                                    │
+│    - Determine commit message based on what changed:        │
+│      * README only: "Update README... [skip ci]"            │
+│      * Packages only: "Update NuGet packages"               │
+│      * Both: "Update README and NuGet packages"             │
+│    - Commit and push using PAT_TOKEN                         │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 9. Read Package Summary                                      │
-│    - Load .artifacts/package-summary.txt                     │
-│    - Store as workflow output for PR body                    │
+│ 10. Read Package Summary                                     │
+│     - Load .artifacts/package-summary.txt                    │
+│     - Store as workflow output for PR body                   │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 10. Check for Existing Similar PRs                           │
+│ 11. Check for Existing Similar PRs                           │
 │     - List open PRs: gh pr list --state open                │
 │     - Filter branches: update-nuget-packages-*               │
 │     - Extract package tables from PR bodies                  │
@@ -426,16 +533,18 @@ Existing PR: https://github.com/{owner}/{repo}/pull/123
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 11. Create Pull Request (if not skipped)                    │
+│ 12. Create Pull Request (if not skipped)                    │
 │     - Authenticate with GitHub CLI                           │
-│     - Generate PR body from template + package summary      │
-│     - Include nuget-source lines if custom sources provided │
+│     - Build dynamic PR body:                                 │
+│       * List what was updated (README/packages)             │
+│       * Include custom NuGet sources if provided            │
+│       * Show package summary table                           │
 │     - Create PR: gh pr create                                │
 │     - Base: main, Head: update-nuget-packages-{timestamp}   │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 12. Summary Output                                           │
+│ 13. Summary Output                                           │
 │     - If skipped: Display existing PR link                  │
 │     - If created: Display new PR link                        │
 └─────────────────────────────────────────────────────────────┘
@@ -443,8 +552,9 @@ Existing PR: https://github.com/{owner}/{repo}/pull/123
 
 ## PowerShell Script Details
 
-### Script Location
-`.github/workflows/powershell/UpdateThirdPartyPackages.ps1`
+### UpdateThirdPartyPackages.ps1
+
+**Location**: `.github/workflows/powershell/UpdateThirdPartyPackages.ps1`
 
 ### Parameters
 
@@ -616,6 +726,110 @@ Write-AsciiTable -Rows $packageChanges -OutputFile "package-summary.txt"
 Write-AsciiTable -Rows $buildSummaryRows -OutputFile "build-summary.txt"
 ```
 
+### UpdateReadmeUmbracoVersion.ps1
+
+**Location**: `.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1`
+
+**Purpose**: Updates README.md with the latest Umbraco version(s) from NuGet.org
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `RootPath` | string | Current directory | Repository root where README.md is located |
+| `ReadmePath` | string | `{RootPath}/README.md` | Path to README.md file |
+| `UmbracoMajorVersion` | string/array | `"13"` | Umbraco major version(s) to update (e.g., "13" or "13,17") |
+| `IncludePrerelease` | switch | `false` | If set, includes prerelease versions (alpha, beta, rc) |
+
+#### Key Features
+
+**1. Multiple Version Support**:
+- Accepts comma-separated version strings: `"13,17"`
+- Accepts string arrays: `@("13", "17")`
+- Processes each version independently
+
+**2. Per-Version Prerelease Flag**:
+- Trailing `-` on version enables prerelease for that version
+- Example: `"13,17-"` means stable for v13, prerelease for v17
+- Overrides global `IncludePrerelease` switch for specific versions
+
+**3. Smart Version Sorting**:
+```powershell
+# Prerelease priority (highest to lowest):
+- RC (release candidate): Priority 70
+- Beta: Priority 50
+- Alpha: Priority 30
+- Unknown prerelease: Priority 40
+- Stable (no suffix): Priority 100
+```
+
+**4. Section-Targeted Updates**:
+- Searches for `## Umbraco {version}` section headers
+- Updates only within that specific section
+- Multiple sections can be updated in a single run
+- Preserves content between sections
+
+**5. Pattern Matching**:
+```regex
+dotnet new install Umbraco\.Templates::(\d+\.\d+\.\d+(?:-[A-Za-z0-9]+)?) --force
+```
+
+Updates version in installation commands while preserving surrounding text.
+
+#### Return Value
+
+Returns a hashtable with:
+- `Updated`: `$true` if README was modified, `$false` otherwise
+- `Version`: Comma-separated list of updated versions (e.g., "13,17")
+- `Error`: Error message if something went wrong, `$null` otherwise
+
+#### Example Usage
+
+```powershell
+# Update single version (stable only)
+.\UpdateReadmeUmbracoVersion.ps1 -UmbracoMajorVersion "13"
+
+# Update single version (include prerelease)
+.\UpdateReadmeUmbracoVersion.ps1 -UmbracoMajorVersion "17" -IncludePrerelease
+
+# Update multiple versions (stable for both)
+.\UpdateReadmeUmbracoVersion.ps1 -UmbracoMajorVersion "13,17"
+
+# Update multiple versions (stable for 13, prerelease for 17)
+.\UpdateReadmeUmbracoVersion.ps1 -UmbracoMajorVersion "13,17-"
+
+# Update with array input
+.\UpdateReadmeUmbracoVersion.ps1 -UmbracoMajorVersion @("13", "17-")
+```
+
+#### Integration with Workflow
+
+The workflow calls this script before updating packages:
+
+```yaml
+- name: Update README with latest Umbraco versions
+  id: update-readme
+  shell: pwsh
+  run: |
+    # Determine version configuration
+    $versionsString = "${{ env.UMBRACO_MAJOR_VERSIONS }}"
+
+    # Process each version with per-version prerelease flags
+    $result = ./.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1 `
+      -RootPath "${{ github.workspace }}" `
+      -UmbracoMajorVersion $version `
+      -IncludePrerelease:$perVersionFlag
+
+    # Output results for subsequent steps
+    echo "readme_updated=$($result.Updated)" >> $env:GITHUB_OUTPUT
+    echo "updated_versions=$($result.Version)" >> $env:GITHUB_OUTPUT
+```
+
+The outputs are used by later steps to:
+1. Determine if any changes were made
+2. Generate appropriate commit messages
+3. Create informative PR descriptions
+
 ## Technical Details
 
 ### Environment
@@ -722,29 +936,46 @@ gh pr create --title "..." --body-file pr-body.md --base main --head {branch}
    - Select branch (usually `main`)
    - Configure parameters:
      - **Run without making changes**: Check for dry run testing
-     - **Include prerelease versions**: Check to include alpha/beta/rc versions
+     - **Include prerelease versions**: Uncheck for stable-only (default: unchecked)
+     - **Comma-separated Umbraco major versions**: Enter versions like `13` or `13,17-` (default: `13`)
+     - **Comma-separated custom NuGet source URLs**: Optional, for custom feeds
    - Click "Run workflow"
 
 3. **Monitor Execution**
    - Workflow appears in the list
    - Click to view real-time logs
-   - Check for errors or warnings
-   - Review build summaries
+   - Check for README update results
+   - Review package update summaries
+   - Check for errors, warnings, or build failures
 
 ### Using GitHub CLI
 
 ```bash
-# Trigger with default parameters (includePrerelease: true, dryRun: false)
+# Trigger with default parameters (uses env variables: UMBRACO_MAJOR_VERSIONS, stable only)
 gh workflow run update-packages.yml
 
-# Dry run to preview changes
+# Dry run to preview changes (stable versions)
 gh workflow run update-packages.yml \
   -f dryRun=true \
-  -f includePrerelease=true
+  -f includePrerelease=false
 
-# Update to stable versions only
+# Update to stable versions only (explicit)
 gh workflow run update-packages.yml \
   -f dryRun=false \
+  -f includePrerelease=false
+
+# Update including prereleases
+gh workflow run update-packages.yml \
+  -f includePrerelease=true
+
+# Update specific Umbraco versions (stable for both)
+gh workflow run update-packages.yml \
+  -f umbracoVersions="13,17" \
+  -f includePrerelease=false
+
+# Update with per-version prerelease flags (stable for 13, prerelease for 17)
+gh workflow run update-packages.yml \
+  -f umbracoVersions="13,17-" \
   -f includePrerelease=false
 
 # Update with custom NuGet source (single source)
@@ -757,10 +988,9 @@ gh workflow run update-packages.yml \
   -f includePrerelease=true \
   -f nugetSources="https://www.myget.org/F/umbraco-dev/api/v3/index.json,https://pkgs.dev.azure.com/myorg/_packaging/myfeed/nuget/v3/index.json"
 
-# Update specific Umbraco versions with custom source
+# Update specific Umbraco versions with custom source (17 prerelease only)
 gh workflow run update-packages.yml \
-  -f umbracoVersions="13,17" \
-  -f includePrerelease=true \
+  -f umbracoVersions="17-" \
   -f nugetSources="https://www.myget.org/F/umbraco-dev/api/v3/index.json"
 
 # Watch workflow execution
@@ -774,10 +1004,32 @@ gh run view --log
 
 For testing or manual updates:
 
+#### Update README with Latest Umbraco Versions
+
 ```powershell
 # Navigate to repository root
 cd /path/to/Clean
 
+# Update single version (stable only)
+./.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1 `
+  -RootPath "." `
+  -UmbracoMajorVersion "13"
+
+# Update single version (include prerelease)
+./.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1 `
+  -RootPath "." `
+  -UmbracoMajorVersion "17" `
+  -IncludePrerelease
+
+# Update multiple versions (stable for 13, prerelease for 17)
+./.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1 `
+  -RootPath "." `
+  -UmbracoMajorVersion "13,17-"
+```
+
+#### Update Third-Party Packages
+
+```powershell
 # Dry run to preview changes
 ./.github/workflows/powershell/UpdateThirdPartyPackages.ps1 `
   -RootPath "." `
@@ -1343,13 +1595,19 @@ on:
 The Update NuGet Packages workflow provides:
 
 - ✅ **Automated Dependency Management**: Daily checks keep packages current
-- ✅ **Build Validation**: Ensures updates don't break compilation
+- ✅ **README Version Updates**: Automatically updates installation instructions with latest Umbraco versions
+- ✅ **Multi-Version Support**: Tracks multiple Umbraco major versions simultaneously (e.g., 13 and 17)
+- ✅ **Per-Version Prerelease Control**: Configure stable/prerelease independently for each version (e.g., `13,17-`)
+- ✅ **Build Validation**: Ensures updates don't break compilation, with detailed failure reporting
 - ✅ **Intelligent Duplicate Detection**: Prevents redundant PRs
-- ✅ **Comprehensive Reporting**: Clear summaries of all changes
+- ✅ **Comprehensive Reporting**: Clear summaries of all changes (README + packages)
+- ✅ **Smart Commit Messages**: Adds `[skip ci]` for README-only changes to avoid unnecessary builds
 - ✅ **Flexible Filtering**: Fine-grained control over which packages update
 - ✅ **Prerelease Support**: Option to include or exclude beta/rc versions
+- ✅ **Custom NuGet Sources**: Support for testing with pre-release packages from custom feeds
 - ✅ **Dry Run Mode**: Test changes without modifying files
 - ✅ **Detailed Logging**: Full build output saved for debugging
 - ✅ **Local Execution**: Can run manually for testing or urgent updates
+- ✅ **Dynamic PR Bodies**: Shows exactly what was updated (README, packages, or both)
 
-This ensures the Clean starter kit stays up-to-date with the latest package versions while maintaining stability and code quality.
+This ensures the Clean starter kit stays up-to-date with the latest Umbraco versions and package dependencies while maintaining stability and code quality.
