@@ -247,6 +247,81 @@ function Write-AsciiTable {
     }
 }
 
+# ---------------------- NuGet Source Discovery ----------------------
+function Get-ConfiguredNuGetSources {
+  try {
+    # Get all configured NuGet sources
+    $output = dotnet nuget list source 2>&1
+    $sources = @()
+
+    # Parse the output to extract source URLs
+    # Format: "  1.  nuget.org [Enabled]"
+    #         "      https://api.nuget.org/v3/index.json"
+    $lines = $output -split "`n"
+    $currentSource = $null
+
+    foreach ($line in $lines) {
+      # Check if this is a source name line (starts with number)
+      if ($line -match '^\s+\d+\.\s+(.+?)\s+\[Enabled\]') {
+        $currentSource = $matches[1].Trim()
+      }
+      # Check if this is a URL line (starts with spaces and contains http)
+      elseif ($currentSource -and $line -match '^\s+(https?://[^\s]+)') {
+        $sourceUrl = $matches[1].Trim()
+        # Convert service index URL to flatcontainer URL if it's a v3 feed
+        if ($sourceUrl -match '^(https?://[^/]+/.+?)/v3/index\.json$') {
+          $baseUrl = $matches[1]
+          $sources += @{
+            Name = $currentSource
+            Url = "$baseUrl/v3-flatcontainer"
+          }
+        }
+        elseif ($sourceUrl -match '^(https?://[^/]+/.+?)/v3-flatcontainer/?$') {
+          # Already a flatcontainer URL
+          $sources += @{
+            Name = $currentSource
+            Url = $sourceUrl.TrimEnd('/')
+          }
+        }
+        else {
+          # Try to query service index to find PackageBaseAddress
+          try {
+            $serviceIndex = Invoke-RestMethod -Uri $sourceUrl -Method Get -TimeoutSec 10 -ErrorAction Stop
+            $packageBaseAddress = $serviceIndex.resources | Where-Object { $_.'@type' -eq 'PackageBaseAddress/3.0.0' } | Select-Object -First 1
+            if ($packageBaseAddress) {
+              $sources += @{
+                Name = $currentSource
+                Url = $packageBaseAddress.'@id'.TrimEnd('/')
+              }
+            }
+          }
+          catch {
+            Write-Log ("Could not resolve flatcontainer URL for source '{0}': {1}" -f $currentSource, $_.Exception.Message) -Level "WARN"
+          }
+        }
+        $currentSource = $null
+      }
+    }
+
+    # Fallback: Always include NuGet.org if not found
+    if (-not ($sources | Where-Object { $_.Name -eq 'nuget.org' })) {
+      $sources += @{
+        Name = 'nuget.org'
+        Url = 'https://api.nuget.org/v3-flatcontainer'
+      }
+    }
+
+    return $sources
+  }
+  catch {
+    Write-Log ("Failed to get configured NuGet sources, using nuget.org only: {0}" -f $_.Exception.Message) -Level "WARN"
+    return @(@{
+      Name = 'nuget.org'
+      Url = 'https://api.nuget.org/v3-flatcontainer'
+    })
+  }
+}
+
 # ------------------------- NuGet Version Helper -----------------------
 function Get-LatestNuGetVersion {
   param(
@@ -261,17 +336,43 @@ function Get-LatestNuGetVersion {
   if ($cache.ContainsKey($key)) {
     return $cache[$key]
   }
-  $url = ('https://api.nuget.org/v3-flatcontainer/{0}/index.json' -f $key)
-  try {
-    Write-Log ('Querying NuGet for {0}' -f $packageId)
-    $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 20 -ErrorAction Stop
-    $versions = @($resp.versions | ForEach-Object { [string]$_ })
-    if ($versions.Count -eq 0) {
-      Write-Log ('No versions found for {0}' -f $packageId) -Level "WARN"
-      $cache[$key] = $null
-      return $null
+
+  # Get all configured NuGet sources
+  $sources = Get-ConfiguredNuGetSources
+  $allVersions = @()
+
+  Write-Log ("Querying {0} source(s) for package '{1}'" -f $sources.Count, $packageId)
+
+  # Query each source
+  foreach ($source in $sources) {
+    $url = ('{0}/{1}/index.json' -f $source.Url, $key)
+    try {
+      Write-Log ("  Querying source '{0}': {1}" -f $source.Name, $url)
+      $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 20 -ErrorAction Stop
+      $sourceVersions = @($resp.versions | ForEach-Object { [string]$_ })
+      if ($sourceVersions.Count -gt 0) {
+        Write-Log ("  Found {0} version(s) in '{1}'" -f $sourceVersions.Count, $source.Name)
+        $allVersions += $sourceVersions
+      }
+      else {
+        Write-Log ("  No versions found in '{0}'" -f $source.Name) -Level "WARN"
+      }
     }
-    Write-Log ('Found {0} versions for {1}' -f $versions.Count, $packageId)
+    catch {
+      # Not all sources may have the package, which is expected
+      Write-Log ("  Package not found in '{0}': {1}" -f $source.Name, $_.Exception.Message) -Level "WARN"
+    }
+  }
+
+  # Remove duplicates and process versions
+  $versions = @($allVersions | Select-Object -Unique)
+
+  if ($versions.Count -eq 0) {
+    Write-Log ("No versions found for {0} in any configured source" -f $packageId) -Level "WARN"
+    $cache[$key] = $null
+    return $null
+  }
+  Write-Log ("Total unique versions found for {0}: {1}" -f $packageId, $versions.Count)
     if ($IncludePrerelease) {
       # Prefer stable > rc > beta > alpha when including prerelease; respect numeric suffixes (e.g., rc3 > rc2)
       $parsed = $versions | ForEach-Object {
