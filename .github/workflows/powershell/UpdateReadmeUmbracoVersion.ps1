@@ -21,7 +21,8 @@ param(
   [string]$RootPath = (Get-Location).Path,
   [string]$ReadmePath = "",
   [Alias('UmbracoVersions')]
-  [object]$UmbracoMajorVersion = "13"
+  [object]$UmbracoMajorVersion = "13",
+  [switch]$IncludePrerelease
 )
 
   Write-Host "================================================" -ForegroundColor Cyan
@@ -64,10 +65,21 @@ try {
   $updatedMajors = @()
 
   foreach ($major in $majors) {
-    # Query NuGet API for the latest Umbraco $major version
+    # Allow a trailing '-' on the requested major to mean "include prerelease for this major"
+    $perMajorIncludePrerelease = $false
+    $requestedMajor = $major
+    if ($requestedMajor.EndsWith('-')) {
+      $perMajorIncludePrerelease = $true
+      $requestedMajor = $requestedMajor.TrimEnd('-').Trim()
+    } elseif ($IncludePrerelease) {
+      # If the global switch was provided, use it as a fallback
+      $perMajorIncludePrerelease = $true
+    }
+
+    # Query NuGet API for the latest Umbraco $requestedMajor version
     $packageId = "Umbraco.Cms.Web.Website"
     $nugetApiUrl = "https://api.nuget.org/v3-flatcontainer/$packageId/index.json"
-    Write-Host "`nQuerying NuGet for latest Umbraco $major.x version..." -ForegroundColor Yellow
+    Write-Host "`nQuerying NuGet for latest Umbraco $requestedMajor.x version (IncludePrerelease=$perMajorIncludePrerelease)..." -ForegroundColor Yellow
     try {
       $response = Invoke-RestMethod -Uri $nugetApiUrl -ErrorAction Stop
       $versions = $response.versions
@@ -77,14 +89,26 @@ try {
       continue
     }
 
-    $umbracoVersions = $versions | Where-Object { $_ -match "^$major\." }
+    $umbracoVersions = $versions | Where-Object { $_ -match "^$requestedMajor\." }
     if ($umbracoVersions.Count -eq 0) {
-      Write-Host "⚠️  No Umbraco $major.x versions found" -ForegroundColor Yellow
-      $result.Error = "No Umbraco $major.x versions found"
+      Write-Host "⚠️  No Umbraco $requestedMajor.x versions found" -ForegroundColor Yellow
+      $result.Error = "No Umbraco $requestedMajor.x versions found"
       continue
     }
 
     # Parse and sort versions for this major
+    if (-not $perMajorIncludePrerelease) {
+      # Prefer stable versions only (no prerelease suffix)
+      $stable = $umbracoVersions | Where-Object { $_ -notmatch '-' }
+      if ($stable.Count -gt 0) {
+        # Choose the highest stable by base version
+        $latestUmbracoVersion = ($stable | Sort-Object {[Version]($_ -split '-')[0]} -Descending)[0]
+      } else {
+        # No stable found; do NOT fall back to prerelease when IncludePrerelease is false
+        Write-Host "  ⚠️  No stable Umbraco $requestedMajor.x versions found and IncludePrerelease is false - skipping update for $requestedMajor" -ForegroundColor Yellow
+        continue
+      }
+    } else {
     $parsedVersions = $umbracoVersions | ForEach-Object {
       $versionString = $_
       $prTag = ""
@@ -112,10 +136,11 @@ try {
     }
     $sortedVersions = $parsedVersions | Sort-Object -Property @{Expression={$_.Version}; Descending=$true}, @{Expression={$_.EffectivePriority}; Descending=$true}
     $latestUmbracoVersion = $sortedVersions[0].Original
-    Write-Host "Latest Umbraco $major.x version: $latestUmbracoVersion" -ForegroundColor Green
+    }
+    Write-Host "Latest Umbraco $requestedMajor.x version: $latestUmbracoVersion" -ForegroundColor Green
 
     # Apply targeted update for this major in the in-memory readme
-    $sectionHeaderPattern = "(?m)^##\s+Umbraco\s+$major\b.*$"
+    $sectionHeaderPattern = "(?m)^##\s+Umbraco\s+$requestedMajor\b.*$"
     if ($readmeContent -match $sectionHeaderPattern) {
       $headerMatch = [regex]::Match($readmeContent, $sectionHeaderPattern)
       $startIndex = $headerMatch.Index
@@ -132,13 +157,13 @@ try {
         $umbracoSection = $umbracoSection.Replace($oldLine0, $replacementLine)
         # Update the readmeContent in-memory
         $readmeContent = $readmeContent.Substring(0, $startIndex) + $umbracoSection + $readmeContent.Substring($startIndex + $sectionLength)
-        Write-Host "  Updated Umbraco $major section: $oldLine0 -> $replacementLine" -ForegroundColor Green
-        $updatedMajors += $major
+        Write-Host "  Updated Umbraco $requestedMajor section: $oldLine0 -> $replacementLine" -ForegroundColor Green
+        $updatedMajors += $requestedMajor
       } else {
         Write-Host "  Warning: Could not find Umbraco.Templates pattern in Umbraco $major section" -ForegroundColor Yellow
       }
     } else {
-      Write-Host "Warning: Could not find Umbraco $major section in README.md" -ForegroundColor Yellow
+      Write-Host "Warning: Could not find Umbraco $requestedMajor section in README.md" -ForegroundColor Yellow
     }
   }
 

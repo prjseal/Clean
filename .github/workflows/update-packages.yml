@@ -2,7 +2,7 @@ name: Update NuGet Packages
 
 on:
   schedule:
-    - cron: '30 10 * * *'  # Run daily at 10:30am UTC (10:30am UK time in winter, 11:30am in summer)
+    - cron: '30 10 * * *' # Run daily at 10:30am UTC (10:30am UK time in winter, 11:30am in summer)
   workflow_dispatch:
     inputs:
       dryRun:
@@ -12,7 +12,7 @@ on:
       includePrerelease:
         description: 'Include prerelease versions'
         required: false
-        default: 'true'
+        default: 'false'
       umbracoVersions:
         description: 'Comma-separated Umbraco major versions (e.g., "13" or "13,17")'
         required: false
@@ -66,19 +66,46 @@ jobs:
             }
           }
 
-          # Parse comma-separated versions
-          $versions = $versionsString -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
+          # Parse comma-separated versions into entries and detect hyphen suffix for prerelease intent
+          # Convention: `13` -> stable-only; `17-` -> include prerelease for major 17
+          $rawTokens = $versionsString -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
+
+          $versionEntries = @()
+          foreach ($tok in $rawTokens) {
+            $entry = [PSCustomObject]@{
+              Major = $null
+              IncludePrerelease = $false
+            }
+
+            # If token ends with '-', treat as prerelease-enabled for that major
+            if ($tok.EndsWith('-')) {
+              $entry.Major = $tok.TrimEnd('-').Trim()
+              $entry.IncludePrerelease = $true
+            } else {
+              $entry.Major = $tok
+              $entry.IncludePrerelease = $false
+            }
+
+            if (-not [string]::IsNullOrWhiteSpace($entry.Major)) {
+              $versionEntries += $entry
+            }
+          }
+
+          # Prepare overall values for later steps
           $anyUpdated = $false
           $updatedVersions = @()
 
           Write-Host "Processing Umbraco versions: $($versions -join ', ')" -ForegroundColor Yellow
           Write-Host ""
 
-          foreach ($version in $versions) {
-            Write-Host "Processing Umbraco version $version..." -ForegroundColor Yellow
+          foreach ($entry in $versionEntries) {
+            $version = $entry.Major
+            $prFlag = $entry.IncludePrerelease
+            Write-Host "Processing Umbraco version $version (IncludePrerelease=$prFlag)..." -ForegroundColor Yellow
             $result = ./.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1 `
               -RootPath "${{ github.workspace }}" `
-              -UmbracoMajorVersion $version
+              -UmbracoMajorVersion $version `
+              -IncludePrerelease:$prFlag
 
             if ($result.Updated) {
               $anyUpdated = $true
