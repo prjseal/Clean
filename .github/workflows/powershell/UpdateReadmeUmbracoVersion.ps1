@@ -173,7 +173,11 @@ try {
 
       # Replace the Umbraco section in the full content
       if ($originalUmbracoSection -ne $umbracoSection) {
-        $readmeContent = $readmeContent -replace [regex]::Escape($originalUmbracoSection), $umbracoSection
+        # Use Regex.Replace with count=1 to replace only the FIRST occurrence
+        # This prevents accidentally replacing other sections with similar content
+        $escapedPattern = [regex]::Escape($originalUmbracoSection)
+        $regex = New-Object System.Text.RegularExpressions.Regex($escapedPattern)
+        $readmeContent = $regex.Replace($readmeContent, $umbracoSection, 1)
         Write-Host "  Section was modified, updating README..." -ForegroundColor Green
       } else {
         Write-Host "  Section unchanged" -ForegroundColor Cyan
