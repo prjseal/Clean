@@ -103,18 +103,64 @@ try {
 
       Write-Host "Found Umbraco $UmbracoMajorVersion section, applying updates..." -ForegroundColor Yellow
 
-      # Pattern: Update Umbraco.Templates version for Umbraco
-      $pattern0 = '(dotnet new install Umbraco\.Templates::)[\d\.]+-?[\w\d]*( --force)'
+      # Extract current version from README to compare
+      $currentVersion = $null
+      $pattern0 = '(dotnet new install Umbraco\.Templates::)([\d\.]+-?[\w\d]*)( --force)'
       if ($umbracoSection -match $pattern0) {
+        $currentVersion = $matches[2]
+        Write-Host "  Current version in README: $currentVersion" -ForegroundColor Cyan
+
+        # Compare versions semantically to prevent downgrades
+        # Parse both versions to compare (handle prerelease tags)
+        $currentBaseVersion = $currentVersion
+        $latestBaseVersion = $latestUmbracoVersion
+        $currentPrerelease = ""
+        $latestPrerelease = ""
+
+        if ($currentVersion -match '^([\d\.]+)(.*)$') {
+          $currentBaseVersion = $matches[1]
+          $currentPrerelease = $matches[2]
+        }
+
+        if ($latestUmbracoVersion -match '^([\d\.]+)(.*)$') {
+          $latestBaseVersion = $matches[1]
+          $latestPrerelease = $matches[2]
+        }
+
+        try {
+          $currentVer = [Version]$currentBaseVersion
+          $latestVer = [Version]$latestBaseVersion
+
+          # Compare versions
+          $comparison = $latestVer.CompareTo($currentVer)
+
+          if ($comparison -lt 0) {
+            # Latest version is lower than current - don't downgrade
+            Write-Host "  ⚠️  Skipping update: Latest version ($latestUmbracoVersion) is lower than current version ($currentVersion)" -ForegroundColor Yellow
+            $result.Updated = $false
+            return $result
+          } elseif ($comparison -eq 0) {
+            # Same base version - check prerelease tags
+            if ($latestPrerelease -eq $currentPrerelease) {
+              Write-Host "  No change needed - already at version $latestUmbracoVersion" -ForegroundColor Cyan
+            } else {
+              Write-Host "  Updating prerelease tag from $currentVersion to $latestUmbracoVersion" -ForegroundColor Yellow
+            }
+          } else {
+            # Latest version is higher - proceed with update
+            Write-Host "  Updating from $currentVersion to $latestUmbracoVersion" -ForegroundColor Yellow
+          }
+        } catch {
+          Write-Host "  Warning: Could not parse versions for comparison, proceeding with update" -ForegroundColor Yellow
+        }
+
         $oldLine0 = $matches[0]
-        $umbracoSection = $umbracoSection -replace $pattern0, "`${1}$latestUmbracoVersion`${2}"
+        $umbracoSection = $umbracoSection -replace $pattern0, "`${1}$latestUmbracoVersion`${3}"
         if ($umbracoSection -match $pattern0) {
           $newLine0 = $matches[0]
           if ($oldLine0 -ne $newLine0) {
             Write-Host "  BEFORE: $oldLine0" -ForegroundColor Yellow
             Write-Host "  AFTER:  $newLine0" -ForegroundColor Green
-          } else {
-            Write-Host "  No change needed - already at version $latestUmbracoVersion" -ForegroundColor Cyan
           }
         }
       } else {
