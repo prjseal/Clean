@@ -1,7 +1,7 @@
 {
     "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
     "Title": "Clean Starter Kit for Umbraco",
-    "Description": "A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 13 and 17. Features include: modern blog theme with responsive design, pre-configured content types for blog posts, categories, and tags, full Content Delivery API integration with Next.js revalidation support, built-in API endpoints for dictionary, search, and contact functionality, OpenAPI/Swagger documentation, multi-version support for Umbraco 13 and 17, SQLite by default for quick setup, and no external dependencies.",
+    "Description": "A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly.\n\nKey Features:\n• Modern Blog Theme - Clean, responsive design built with Bootstrap\n• Pre-configured Content Types - Blog posts, categories, tags, and more\n• Headless/API Support - Full Content Delivery API integration with Next.js revalidation support\n• API Endpoints - Built-in endpoints for dictionary, search, and contact functionality\n• OpenAPI Documentation - Swagger UI for exploring and testing API endpoints\n• Multi-version Support - Compatible with Umbraco 13 (.NET 8) and Umbraco 17 (.NET 10)\n• SQLite by Default - Quick setup with SQLite database for development\n• No External Dependencies - Removed dependency on third-party packages like Contentment\n• dotnet Template - Available as 'dotnet new' template for quick project scaffolding\n\nPackage Structure:\n• Clean - Main package with views, assets, and Umbraco content (switch to Clean.Core after initial setup)\n• Clean.Core - Core library with components, controllers, and helpers\n• Clean.Headless - Headless CMS functionality and API controllers\n• Umbraco.Community.Templates.Clean - dotnet CLI template\n\nPerfect for developers looking to quickly start a blog project with Umbraco, whether for traditional web rendering or headless implementations with modern JavaScript frameworks like Next.js.",
     "Category": "Themes & Starter Kits",
     "AlternateCategory": "Developer Tools",
     "PackageType": "Package",
@@ -23,12 +23,18 @@
         "Swagger",
         "OpenAPI",
         "Umbraco 13",
-        "Umbraco 17"
+        "Umbraco 17",
+        "Theme",
+        "Template",
+        "dotnet new",
+        "REST API",
+        ".NET 8",
+        ".NET 10"
     ],
     "AuthorDetails": {
         "Name": "Paul Seal",
-        "Description": "Paul is an Umbraco Master and 7 x Umbraco MVP who loves making tutorials and small Umbraco packages.",
-        "Url": "http://codeshare.co.uk",
+        "Description": "Paul is an Umbraco Master and 8 x Umbraco MVP who loves making tutorials and small Umbraco packages. Creator of the Package Script Writer and various Umbraco community resources.",
+        "Url": "https://codeshare.co.uk",
         "ImageUrl": "https://codeshare.co.uk/media/mkzbdrvf/paul-seal-profile-2019-square.jpg?anchor=center&mode=crop&width=500",
         "Contributors": [
             {
@@ -54,11 +60,13 @@
         },
         {
             "PackageId": "Clean.Headless",
-            "Description": "Headless CMS functionality with API controllers and Next.js revalidation support. Automatically installed as a dependency of the Clean package."
+            "Description": "Headless CMS functionality with API controllers and Next.js revalidation support. Automatically installed as a dependency of the Clean package. Enables full headless CMS capabilities with Content Delivery API integration.",
+            "GroupTitle": "Clean Starter Kit Packages"
         },
         {
             "PackageId": "Umbraco.Community.Templates.Clean",
-            "Description": "dotnet CLI template for creating new Umbraco projects with Clean pre-installed. Use with 'dotnet new umbraco-starter-clean' to scaffold a complete Umbraco project."
+            "Description": "dotnet CLI template for creating new Umbraco projects with Clean pre-installed. Use with 'dotnet new umbraco-starter-clean' to scaffold a complete Umbraco project with the Clean starter kit already configured.",
+            "GroupTitle": "Clean Starter Kit Packages"
         }
     ],
     "VersionSpecificPackageIds": [
