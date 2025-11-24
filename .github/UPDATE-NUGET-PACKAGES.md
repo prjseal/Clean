@@ -25,10 +25,110 @@ The workflow can be triggered in two ways:
 - **Parameters**:
   - **dryRun**: Run without making changes (default: `false`)
   - **includePrerelease**: Include prerelease versions (default: `true`)
+  - **umbracoVersions**: Comma-separated Umbraco major versions to update (default: `13`)
+  - **nugetSources**: Comma-separated custom NuGet source URLs (default: empty)
 - **Use Cases**:
   - Emergency security updates
   - Testing before scheduled run
   - Immediate dependency refresh after major releases
+  - Testing with pre-release packages from custom NuGet feeds
+
+## Custom NuGet Sources
+
+The Update NuGet Packages workflow supports using custom NuGet sources when checking for package updates. This is useful for testing with pre-release packages from feeds like Umbraco's development feed, MyGet, or Azure DevOps that aren't available on the public NuGet.org feed.
+
+### How to Use
+
+When manually triggering the workflow, provide custom NuGet source URLs in the **nugetSources** input field:
+
+**Single Source**:
+```
+https://www.myget.org/F/umbraco-dev/api/v3/index.json
+```
+
+**Multiple Sources** (comma-separated):
+```
+https://www.myget.org/F/umbraco-dev/api/v3/index.json, https://pkgs.dev.azure.com/myorg/_packaging/myfeed/nuget/v3/index.json
+```
+
+### What Happens
+
+When custom NuGet sources are provided:
+
+1. **Sources are Added**: The workflow configures the custom sources before checking for package updates
+2. **Package Updates**: The script checks both NuGet.org and custom sources for the latest versions
+3. **PR Creation**: The created PR automatically includes `nuget-source:` lines in the description
+4. **PR Build Integration**: The PR build workflow automatically detects and uses these sources
+
+### Example Workflow
+
+**Step 1: Trigger Update Workflow**
+- Go to Actions → "Update NuGet Packages"
+- Click "Run workflow"
+- Set parameters:
+  - **Include prerelease versions**: `true`
+  - **Custom NuGet sources**: `https://www.myget.org/F/umbraco-dev/api/v3/index.json`
+- Click "Run workflow"
+
+**Step 2: Workflow Runs**
+- Adds custom NuGet source
+- Checks for updates (including packages from custom source)
+- Creates PR with changes
+
+**Step 3: PR is Created**
+The PR description automatically includes:
+```markdown
+## Custom NuGet Sources
+
+This PR was created with custom NuGet sources. The PR build will automatically use these sources:
+
+nuget-source: https://www.myget.org/F/umbraco-dev/api/v3/index.json
+```
+
+**Step 4: PR Build Runs**
+- The PR build workflow reads the `nuget-source:` line
+- Automatically adds the source before building packages
+- Tests with the same sources used to create the PR
+
+### Common Use Cases
+
+**Testing Umbraco RC Versions**:
+```
+https://www.myget.org/F/umbraco-dev/api/v3/index.json
+```
+
+Use this when you want to update to a release candidate version of Umbraco that hasn't been published to NuGet.org yet.
+
+**Azure DevOps Artifacts Feed**:
+```
+https://pkgs.dev.azure.com/myorg/_packaging/myfeed/nuget/v3/index.json
+```
+
+Use this for testing with internal or preview packages.
+
+**MyGet Feed**:
+```
+https://www.myget.org/F/myfeed/api/v3/index.json
+```
+
+Use this for packages published to MyGet before public release.
+
+### Limitations
+
+- Only public NuGet feeds are supported (no authentication)
+- Sources are only used for the specific workflow run
+- Sources are not persisted to repository configuration
+- Invalid URLs will cause warnings but won't fail the workflow
+
+### Integration with PR Workflow
+
+The custom sources feature seamlessly integrates with the PR build workflow:
+
+1. **Update Workflow** → Adds sources → Finds new packages → Creates PR with `nuget-source:` lines
+2. **PR Workflow** → Reads `nuget-source:` lines → Adds sources → Builds with same sources
+3. **Result** → Consistent package resolution across both workflows
+
+This ensures that if you update to a package version from a custom source, the PR build can also access that version.
 
 ## What It Does
 
@@ -266,13 +366,26 @@ Existing PR: https://github.com/{owner}/{repo}/pull/123
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 3. Install GitHub CLI                                        │
+│ 3. Configure Custom NuGet Sources (if provided)             │
+│    - Reads nugetSources input (comma-separated)             │
+│    - Adds each source with dotnet nuget add source          │
+│    - Lists all configured sources for verification          │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 4. Install GitHub CLI                                        │
 │    - Via Chocolatey: choco install gh -y                    │
 │    - Required for PR creation and duplicate detection       │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 4. Run UpdateThirdPartyPackages.ps1                         │
+│ 5. Update README with latest Umbraco versions               │
+│    - Runs UpdateReadmeUmbracoVersion.ps1                    │
+│    - Updates installation instructions                       │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 6. Run UpdateThirdPartyPackages.ps1                         │
 │    - Scan for .csproj files                                  │
 │    - Query NuGet.org for latest versions                    │
 │    - Update PackageReference elements                        │
@@ -281,7 +394,14 @@ Existing PR: https://github.com/{owner}/{repo}/pull/123
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 5. Commit and Push Changes (if not dry run)                 │
+│ 7. Check if any changes were made                           │
+│    - Compare README update status                            │
+│    - Check package-summary.txt for package updates          │
+│    - Exit if no changes needed                               │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 8. Commit and Push Changes (if not dry run)                 │
 │    - Configure git user: github-actions                     │
 │    - Create branch: update-nuget-packages-{timestamp}       │
 │    - Stage all changes: git add .                            │
@@ -291,32 +411,33 @@ Existing PR: https://github.com/{owner}/{repo}/pull/123
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 6. Read Package Summary                                      │
+│ 9. Read Package Summary                                      │
 │    - Load .artifacts/package-summary.txt                     │
 │    - Store as workflow output for PR body                    │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 7. Check for Existing Similar PRs                            │
-│    - List open PRs: gh pr list --state open                 │
-│    - Filter branches: update-nuget-packages-*                │
-│    - Extract package tables from PR bodies                   │
-│    - Compare with current summary (normalized)               │
-│    - Set skip flag if identical PR exists                    │
+│ 10. Check for Existing Similar PRs                           │
+│     - List open PRs: gh pr list --state open                │
+│     - Filter branches: update-nuget-packages-*               │
+│     - Extract package tables from PR bodies                  │
+│     - Compare with current summary (normalized)              │
+│     - Set skip flag if identical PR exists                   │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 8. Create Pull Request (if not skipped)                     │
-│    - Authenticate with GitHub CLI                            │
-│    - Generate PR body from template + package summary       │
-│    - Create PR: gh pr create                                 │
-│    - Base: main, Head: update-nuget-packages-{timestamp}    │
+│ 11. Create Pull Request (if not skipped)                    │
+│     - Authenticate with GitHub CLI                           │
+│     - Generate PR body from template + package summary      │
+│     - Include nuget-source lines if custom sources provided │
+│     - Create PR: gh pr create                                │
+│     - Base: main, Head: update-nuget-packages-{timestamp}   │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 9. Summary Output                                            │
-│    - If skipped: Display existing PR link                   │
-│    - If created: Display new PR link                         │
+│ 12. Summary Output                                           │
+│     - If skipped: Display existing PR link                  │
+│     - If created: Display new PR link                        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -625,6 +746,22 @@ gh workflow run update-packages.yml \
 gh workflow run update-packages.yml \
   -f dryRun=false \
   -f includePrerelease=false
+
+# Update with custom NuGet source (single source)
+gh workflow run update-packages.yml \
+  -f includePrerelease=true \
+  -f nugetSources="https://www.myget.org/F/umbraco-dev/api/v3/index.json"
+
+# Update with multiple custom NuGet sources
+gh workflow run update-packages.yml \
+  -f includePrerelease=true \
+  -f nugetSources="https://www.myget.org/F/umbraco-dev/api/v3/index.json,https://pkgs.dev.azure.com/myorg/_packaging/myfeed/nuget/v3/index.json"
+
+# Update specific Umbraco versions with custom source
+gh workflow run update-packages.yml \
+  -f umbracoVersions="13,17" \
+  -f includePrerelease=true \
+  -f nugetSources="https://www.myget.org/F/umbraco-dev/api/v3/index.json"
 
 # Watch workflow execution
 gh run watch

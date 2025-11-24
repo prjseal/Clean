@@ -10,6 +10,117 @@ The PR workflow automatically builds, tests, and publishes development packages 
 
 Location: `.github/workflows/pr-build-packages.yml`
 
+## Custom NuGet Sources
+
+The PR workflow supports specifying custom NuGet package sources directly in the PR description. This is useful for testing with pre-release packages from feeds like Umbraco's development feed, MyGet, or Azure DevOps.
+
+### How to Use
+
+Add one or more `nuget-source:` lines anywhere in your PR description:
+
+```
+Testing with Umbraco RC packages
+
+nuget-source: https://www.myget.org/F/umbraco-dev/api/v3/index.json
+
+This PR updates to use Umbraco 17 RC packages that aren't on NuGet yet.
+```
+
+### Format
+
+```
+nuget-source: <URL>
+```
+
+- Each source must be on its own line
+- Multiple sources are supported
+- The URL should point to a NuGet v3 feed (ending in `/index.json`)
+
+### Examples
+
+**Single Custom Source**:
+```
+nuget-source: https://www.myget.org/F/umbraco-dev/api/v3/index.json
+```
+
+**Multiple Custom Sources**:
+```
+nuget-source: https://www.myget.org/F/umbraco-dev/api/v3/index.json
+nuget-source: https://pkgs.dev.azure.com/myorg/_packaging/myfeed/nuget/v3/index.json
+```
+
+**In Context**:
+```markdown
+## Description
+This PR updates dependencies to test Umbraco 17.0.0-rc4.
+
+## NuGet Sources
+nuget-source: https://www.myget.org/F/umbraco-dev/api/v3/index.json
+
+## Changes
+- Updated Umbraco.Cms.Web.Website to 17.0.0-rc4
+- Fixed compatibility issues
+```
+
+### What Happens
+
+When the PR workflow runs:
+
+1. The pipeline reads the PR description
+2. Extracts all `nuget-source:` URLs
+3. Adds them as NuGet sources before building packages
+4. All package restore operations will use these sources
+5. The sources are named `CustomSource1`, `CustomSource2`, etc.
+
+### Workflow Output
+
+You'll see output like this in the workflow logs:
+
+```
+================================================
+Checking PR Description for Custom NuGet Sources
+================================================
+
+Found 1 custom NuGet source(s):
+
+Adding NuGet source:
+  Name: CustomSource1
+  URL:  https://www.myget.org/F/umbraco-dev/api/v3/index.json
+  ✅ Successfully added CustomSource1
+
+================================================
+NuGet Source Configuration Complete
+================================================
+
+All configured NuGet sources:
+  1. nuget.org [Enabled]
+  2. CustomSource1 [Enabled]
+```
+
+### Common Use Cases
+
+**Testing Umbraco RC Versions**:
+```
+nuget-source: https://www.myget.org/F/umbraco-dev/api/v3/index.json
+```
+
+**Azure DevOps Artifacts Feed**:
+```
+nuget-source: https://pkgs.dev.azure.com/myorg/_packaging/myfeed/nuget/v3/index.json
+```
+
+**MyGet Private Feed** (public feeds only - authenticated feeds not supported):
+```
+nuget-source: https://www.myget.org/F/myfeed/api/v3/index.json
+```
+
+### Limitations
+
+- Only public NuGet feeds are supported (no authentication)
+- Sources are only available during the PR build workflow
+- Sources are not persisted to the repository's NuGet.config
+- Invalid URLs will cause warnings but won't fail the build
+
 ## When Does It Run?
 
 The workflow triggers automatically on:
@@ -128,37 +239,44 @@ Here's the complete sequence:
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 3. Get Latest NuGet Version & Create Build Version          │
+│ 3. Configure Custom NuGet Sources (if specified in PR)      │
+│    - Reads PR description for nuget-source: lines           │
+│    - Adds custom sources to NuGet configuration             │
+│    - Lists all configured sources                            │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 4. Get Latest NuGet Version & Create Build Version          │
 │    - Queries NuGet.org API for latest "Clean" version       │
 │    - Parses semantic versioning                              │
 │    - Creates CI version: {base}-ci.{build-number}           │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 4. Display Version Info                                      │
+│ 5. Display Version Info                                      │
 │    - Shows base version, build number, and full version     │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 5. Run CreateNuGetPackages Script                           │
+│ 6. Run CreateNuGetPackages Script                           │
 │    - Builds all 4 packages with CI version number            │
 │    - Outputs to .artifacts/nuget/ directory                  │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 6. Upload NuGet Packages as Artifacts                        │
+│ 7. Upload NuGet Packages as Artifacts                        │
 │    - Makes packages downloadable from Actions tab           │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 7. Publish to GitHub Packages                                │
+│ 8. Publish to GitHub Packages                                │
 │    - Adds GitHub Packages as NuGet source                    │
 │    - Pushes each package to feed                             │
 │    - Uses GITHUB_TOKEN for authentication                    │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 8. Test Package Installation                                 │
+│ 9. Test Package Installation                                 │
 │    - Configures GitHub Packages source                       │
 │    - Creates fresh Umbraco project                           │
 │    - Installs Clean package from GitHub Packages            │
@@ -170,12 +288,12 @@ Here's the complete sequence:
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 9. Upload Package Test Screenshots                           │
-│    - Uploads all screenshots as workflow artifact           │
+│ 10. Upload Package Test Screenshots                          │
+│     - Uploads all screenshots as workflow artifact          │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 10. Test Template Installation                               │
+│ 11. Test Template Installation                               │
 │     - Configures GitHub Packages source                      │
 │     - Installs Clean template from GitHub Packages          │
 │     - Creates project: dotnet new umbraco-starter-clean     │
@@ -187,12 +305,23 @@ Here's the complete sequence:
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 11. Upload Template Test Screenshots                         │
+│ 12. Upload Template Test Screenshots                         │
 │     - Uploads all screenshots as workflow artifact          │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 12. Build Summary                                            │
+│ 13. Test Template with Period in Name                        │
+│     - Tests Issue #11 fix with Company.Website name         │
+│     - Same test process as step 11                           │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 14. Upload Period Name Test Screenshots                      │
+│     - Uploads all screenshots as workflow artifact          │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 15. Build Summary                                            │
 │     - Displays version, PR number, branch, and packages     │
 │     - Shows link to GitHub Packages                          │
 └─────────────────────────────────────────────────────────────┘
