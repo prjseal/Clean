@@ -211,13 +211,11 @@ You can still install the older versions from NuGet though.
 
 Here is a table which shows you which version of Clean was for which version of Umbraco.
 
-the idea is that we target the latest Lobg Term Support (LTS)
-
 | Clean Version | Umbraco Version | .NET Version | Umbraco Support Type        |
 | ------------- | --------------- | ------------ | --------------------------- |
 | 4.x           | 13              | .NET 8       | LTS (Long Term Support)     |
-| 5.x           | 15              | .NET 9       | LTS (Standard Term Support) |
-| 6.x           | 16              | .NET 9       | LTS (Standard Term Support) |
+| 5.x           | 15              | .NET 9       | STS (Standard Term Support) |
+| 6.x           | 16              | .NET 9       | STS (Standard Term Support) |
 | 7.x           | 17              | .NET 10      | LTS (Long Term Support)     |
 
 ## Headless/API Implementation
