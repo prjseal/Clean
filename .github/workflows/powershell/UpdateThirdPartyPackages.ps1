@@ -271,41 +271,7 @@ function Get-LatestNuGetVersion {
       return $null
     }
     if ($IncludePrerelease) {
-      # Prefer stable > rc > beta > alpha when including prerelease; respect numeric suffixes (e.g., rc3 > rc2)
-      $parsed = $versions | ForEach-Object {
-        $v = $_
-        $prTag = ''
-        $prNum = 0
-        if ($v -match '^([0-9]+\.[0-9]+\.[0-9]+)(?:-([A-Za-z]+)([0-9]*))?$') {
-          $base = $matches[1]
-          if ($matches[2]) { $prTag = $matches[2].ToLower() }
-          if ($matches[3] -and $matches[3] -ne '') { $prNum = [int]$matches[3] }
-        } else {
-          $base = $v
-        }
-        switch ($prTag) {
-          'rc'    { $prPriority = 70 }
-          'beta'  { $prPriority = 50 }
-          'alpha' { $prPriority = 30 }
-          default { if ($prTag -ne '') { $prPriority = 40 } else { $prPriority = 100 } }
-        }
-        [pscustomobject]@{
-          Original = $v
-          BaseVer   = [Version]$base
-          PrTag     = $prTag
-          PrNum     = $prNum
-          PrPriority = $prPriority
-          Effective = $prPriority + $prNum
-        }
-      }
-      $sorted = $parsed | Sort-Object -Property @{Expression={$_.BaseVer}; Descending=$true}, @{Expression={$_.Effective}; Descending=$true}
-      $chosen = $sorted[0].Original
-    } else {
-      $stable = @($versions | Where-Object { $_ -notmatch '-' })
-      $chosen = if ($stable.Count -gt 0) { $stable[-1] } else { $versions[-1] }
-    }
-    $cache[$key] = $chosen
-    return $chosen
+      $chosen = $versions[-1]
   }
   catch {
     Write-Log ('Failed to query NuGet for {0}: {1}' -f $packageId, $_.Exception.Message) -Level "ERROR"
