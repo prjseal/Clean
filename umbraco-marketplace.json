@@ -69,16 +69,6 @@
             "GroupTitle": "Clean Starter Kit Packages"
         }
     ],
-    "VersionSpecificPackageIds": [
-        {
-            "UmbracoMajorVersion": 13,
-            "PackageId": "Clean"
-        },
-        {
-            "UmbracoMajorVersion": 17,
-            "PackageId": "Clean"
-        }
-    ],
     "LookingForContributors": true,
     "LookingForMaintainer": false
 }
