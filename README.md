@@ -89,7 +89,7 @@ Download and install the latest [.NET 10 SDK](https://dotnet.microsoft.com/en-us
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::17.0.0-rc2 --force
+dotnet new install Umbraco.Templates::17.0.0-beta --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
@@ -139,7 +139,7 @@ dotnet run --project "MyProject.Blog"
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::13.11.0 --force
+dotnet new install Umbraco.Templates::17.0.0-beta --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
