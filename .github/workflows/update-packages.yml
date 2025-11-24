@@ -13,10 +13,16 @@ on:
         description: 'Include prerelease versions'
         required: false
         default: 'true'
+      umbracoVersions:
+        description: 'Comma-separated Umbraco major versions (e.g., "13" or "13,17")'
+        required: false
+        default: '13'
 
 env:
   # Change this to 'false' when you want scheduled runs to only use stable releases (e.g., when Umbraco 17 is officially released)
   SCHEDULED_INCLUDE_PRERELEASE: 'true'
+  # Comma-separated list of Umbraco major versions to track (e.g., "13" or "13,17" for multiple versions)
+  UMBRACO_MAJOR_VERSIONS: '13'
 
 jobs:
   update-packages:
@@ -37,129 +43,60 @@ jobs:
         run: |
           choco install gh -y
 
-      - name: Update README with latest Umbraco 13 version
+      - name: Update README with latest Umbraco versions
         id: update-readme
         shell: pwsh
         run: |
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Updating README with Latest Umbraco 13 Version" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
+          # Determine which versions to process
+          # For manual runs with input provided, use the input; otherwise use env variable
+          $isScheduled = '${{ github.event_name }}' -eq 'schedule'
+          $manualVersionInput = '${{ github.event.inputs.umbracoVersions }}'
 
-          try {
-            # Query NuGet API for the latest Umbraco 13.x version
-            $packageId = "Umbraco.Cms.Web.Website"
-            $nugetApiUrl = "https://api.nuget.org/v3-flatcontainer/$packageId/index.json"
-
-            Write-Host "`nQuerying NuGet for latest Umbraco 13.x version..." -ForegroundColor Yellow
-
-            $response = Invoke-RestMethod -Uri $nugetApiUrl -ErrorAction Stop
-            $versions = $response.versions
-
-            # Filter to only Umbraco 13.x versions
-            $umbraco13Versions = $versions | Where-Object { $_ -match '^13\.' }
-
-            if ($umbraco13Versions.Count -eq 0) {
-              Write-Host "⚠️  No Umbraco 13.x versions found" -ForegroundColor Yellow
-              exit 0
-            }
-
-            # Parse and sort versions to get the latest stable or prerelease
-            $parsedVersions = $umbraco13Versions | ForEach-Object {
-              $versionString = $_
-              $prerelease = ""
-
-              # Split on hyphen to separate version from prerelease tag
-              if ($versionString -match '^([0-9]+\.[0-9]+\.[0-9]+)(.*)$') {
-                $baseVersion = $matches[1]
-                $prerelease = $matches[2]
-              } else {
-                $baseVersion = $versionString
-              }
-
-              # Create object for sorting
-              [PSCustomObject]@{
-                Original = $versionString
-                Version = [Version]$baseVersion
-                Prerelease = $prerelease
-                IsPrerelease = $prerelease -ne ""
-              }
-            }
-
-            # Sort by version (descending), then by prerelease status (stable first)
-            $sortedVersions = $parsedVersions | Sort-Object -Property @{Expression={$_.Version}; Descending=$true}, @{Expression={$_.IsPrerelease}; Descending=$false}
-
-            # Get the latest version
-            $latestUmbraco13Version = $sortedVersions[0].Original
-
-            Write-Host "Latest Umbraco 13.x version: $latestUmbraco13Version" -ForegroundColor Green
-
-            # Update README.md with the new version for Umbraco 13 examples
-            $readmePath = "README.md"
-            if (Test-Path $readmePath) {
-              Write-Host "`nUpdating README.md with version $latestUmbraco13Version for Umbraco 13 examples..."
-
-              $readmeContent = Get-Content $readmePath -Raw
-              $originalContent = $readmeContent
-
-              # Extract the Umbraco 13 section (between "## Umbraco 13" and "---")
-              $umbraco13Pattern = '(?s)(## Umbraco 13.*?)(---)'
-              if ($readmeContent -match $umbraco13Pattern) {
-                $umbraco13Section = $matches[1]
-                $originalUmbraco13Section = $umbraco13Section
-
-                Write-Host "Found Umbraco 13 section, applying updates..." -ForegroundColor Yellow
-
-                # Pattern: Update Umbraco.Templates version for Umbraco 13
-                $pattern0 = '(dotnet new install Umbraco\.Templates::)[\d\.]+-?[\w\d]*( --force)'
-                if ($umbraco13Section -match $pattern0) {
-                  $oldLine0 = $matches[0]
-                  $umbraco13Section = $umbraco13Section -replace $pattern0, "`${1}$latestUmbraco13Version`${2}"
-                  if ($umbraco13Section -match $pattern0) {
-                    $newLine0 = $matches[0]
-                    if ($oldLine0 -ne $newLine0) {
-                      Write-Host "  BEFORE: $oldLine0" -ForegroundColor Yellow
-                      Write-Host "  AFTER:  $newLine0" -ForegroundColor Green
-                    } else {
-                      Write-Host "  No change needed - already at version $latestUmbraco13Version" -ForegroundColor Cyan
-                    }
-                  }
-                } else {
-                  Write-Host "  Warning: Could not find Umbraco.Templates pattern in Umbraco 13 section" -ForegroundColor Yellow
-                }
-
-                # Replace the Umbraco 13 section in the full content
-                if ($originalUmbraco13Section -ne $umbraco13Section) {
-                  $readmeContent = $readmeContent -replace [regex]::Escape($originalUmbraco13Section), $umbraco13Section
-                  Write-Host "  Section was modified, updating README..." -ForegroundColor Green
-                } else {
-                  Write-Host "  Section unchanged" -ForegroundColor Cyan
-                }
-              } else {
-                Write-Host "Warning: Could not find Umbraco 13 section in README.md" -ForegroundColor Yellow
-              }
-
-              if ($readmeContent -ne $originalContent) {
-                Set-Content -Path $readmePath -Value $readmeContent -NoNewline
-                Write-Host "`n✅ README.md updated successfully with version $latestUmbraco13Version" -ForegroundColor Green
-                echo "readme_updated=true" >> $env:GITHUB_OUTPUT
-              } else {
-                Write-Host "`nℹ️  README.md already has the correct version or no changes were needed" -ForegroundColor Yellow
-                echo "readme_updated=false" >> $env:GITHUB_OUTPUT
-              }
+          if (-not $isScheduled -and -not [string]::IsNullOrWhiteSpace($manualVersionInput)) {
+            # Manual run with version input provided
+            $versionsString = $manualVersionInput
+            Write-Host "Manual run - using umbracoVersions input: $versionsString" -ForegroundColor Cyan
+          } else {
+            # Scheduled run or manual run without version input - use env variable
+            $versionsString = "${{ env.UMBRACO_MAJOR_VERSIONS }}"
+            if ($isScheduled) {
+              Write-Host "Scheduled run - using UMBRACO_MAJOR_VERSIONS env variable: $versionsString" -ForegroundColor Cyan
             } else {
-              Write-Host "Warning: README.md not found at $readmePath" -ForegroundColor Yellow
-              echo "readme_updated=false" >> $env:GITHUB_OUTPUT
+              Write-Host "Manual run (no version input) - using UMBRACO_MAJOR_VERSIONS env variable: $versionsString" -ForegroundColor Cyan
             }
+          }
 
-            Write-Host "`n================================================" -ForegroundColor Cyan
-            Write-Host "README update complete" -ForegroundColor Green
-            Write-Host "================================================" -ForegroundColor Cyan
+          # Parse comma-separated versions
+          $versions = $versionsString -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
+          $anyUpdated = $false
+          $updatedVersions = @()
 
-          } catch {
-            Write-Host "⚠️  Error updating README: $_" -ForegroundColor Yellow
-            Write-Host "Stack trace: $($_.ScriptStackTrace)" -ForegroundColor Yellow
-            Write-Host "Continuing with workflow..." -ForegroundColor Yellow
+          Write-Host "Processing Umbraco versions: $($versions -join ', ')" -ForegroundColor Yellow
+          Write-Host ""
+
+          foreach ($version in $versions) {
+            Write-Host "Processing Umbraco version $version..." -ForegroundColor Yellow
+            $result = ./.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1 `
+              -RootPath "${{ github.workspace }}" `
+              -UmbracoMajorVersion $version
+
+            if ($result.Updated) {
+              $anyUpdated = $true
+              $updatedVersions += $version
+              Write-Host "✅ Umbraco $version section updated" -ForegroundColor Green
+            } else {
+              Write-Host "ℹ️  Umbraco $version section unchanged" -ForegroundColor Yellow
+            }
+            Write-Host ""
+          }
+
+          if ($anyUpdated) {
+            echo "readme_updated=true" >> $env:GITHUB_OUTPUT
+            $versionsText = $updatedVersions -join ','
+            echo "updated_versions=$versionsText" >> $env:GITHUB_OUTPUT
+          } else {
             echo "readme_updated=false" >> $env:GITHUB_OUTPUT
+            echo "updated_versions=" >> $env:GITHUB_OUTPUT
           }
 
       - name: Run UpdateThirdPartyPackages script
@@ -212,7 +149,9 @@ jobs:
             Write-Host "================================================" -ForegroundColor Green
             Write-Host ""
             Write-Host "📋 Summary:" -ForegroundColor Cyan
-            Write-Host "  • README: Already up-to-date with latest Umbraco 13 version" -ForegroundColor Yellow
+            $versions = "${{ env.UMBRACO_MAJOR_VERSIONS }}" -split ',' | ForEach-Object { $_.Trim() }
+            $versionText = if ($versions.Count -eq 1) { "Umbraco $($versions[0])" } else { "Umbraco $($versions -join ' and ')" }
+            Write-Host "  • README: Already up-to-date with latest $versionText version(s)" -ForegroundColor Yellow
             Write-Host "  • NuGet Packages: All packages are already at their latest versions" -ForegroundColor Yellow
             Write-Host ""
             Write-Host "No branch created, no commits made, no PR needed." -ForegroundColor Cyan
@@ -254,7 +193,13 @@ jobs:
           # Create appropriate commit message
           if ($readmeUpdated -and -not $packagesUpdated) {
             # Only README updated - skip CI builds
-            $commitMessage = "Update README with latest Umbraco 13 version [skip ci]"
+            $updatedVersions = '${{ steps.update-readme.outputs.updated_versions }}' -split ',' | ForEach-Object { $_.Trim() }
+            if ($updatedVersions.Count -eq 1) {
+              $versionText = "Umbraco $($updatedVersions[0])"
+            } else {
+              $versionText = "Umbraco $($updatedVersions -join ' and ')"
+            }
+            $commitMessage = "Update README with latest $versionText version [skip ci]"
             Write-Host "Only README updated - adding [skip ci] to commit message" -ForegroundColor Cyan
           } elseif (-not $readmeUpdated -and $packagesUpdated) {
             # Only packages updated
@@ -346,7 +291,13 @@ jobs:
           "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
 
           if ($readmeUpdated) {
-            "- ✅ **README.md** - Updated with latest Umbraco 13 version" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            $updatedVersions = '${{ steps.update-readme.outputs.updated_versions }}' -split ',' | ForEach-Object { $_.Trim() }
+            if ($updatedVersions.Count -eq 1) {
+              $versionText = "Umbraco $($updatedVersions[0])"
+            } else {
+              $versionText = "Umbraco $($updatedVersions -join ' and ')"
+            }
+            "- ✅ **README.md** - Updated with latest $versionText version" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
           }
           if ($packagesUpdated) {
             "- ✅ **NuGet Packages** - Updated to latest versions" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
