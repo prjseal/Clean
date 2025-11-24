@@ -17,6 +17,8 @@ on:
 env:
   # Change this to 'false' when you want scheduled runs to only use stable releases (e.g., when Umbraco 17 is officially released)
   SCHEDULED_INCLUDE_PRERELEASE: 'true'
+  # Change this to '17' when you want to track Umbraco 17 versions instead of Umbraco 13
+  UMBRACO_MAJOR_VERSION: '13'
 
 jobs:
   update-packages:
@@ -37,11 +39,13 @@ jobs:
         run: |
           choco install gh -y
 
-      - name: Update README with latest Umbraco 13 version
+      - name: Update README with latest Umbraco version
         id: update-readme
         shell: pwsh
         run: |
-          $result = ./.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1 -RootPath "${{ github.workspace }}"
+          $result = ./.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1 `
+            -RootPath "${{ github.workspace }}" `
+            -UmbracoMajorVersion "${{ env.UMBRACO_MAJOR_VERSION }}"
 
           if ($result.Updated) {
             echo "readme_updated=true" >> $env:GITHUB_OUTPUT
@@ -99,7 +103,7 @@ jobs:
             Write-Host "================================================" -ForegroundColor Green
             Write-Host ""
             Write-Host "📋 Summary:" -ForegroundColor Cyan
-            Write-Host "  • README: Already up-to-date with latest Umbraco 13 version" -ForegroundColor Yellow
+            Write-Host "  • README: Already up-to-date with latest Umbraco ${{ env.UMBRACO_MAJOR_VERSION }} version" -ForegroundColor Yellow
             Write-Host "  • NuGet Packages: All packages are already at their latest versions" -ForegroundColor Yellow
             Write-Host ""
             Write-Host "No branch created, no commits made, no PR needed." -ForegroundColor Cyan
@@ -141,7 +145,7 @@ jobs:
           # Create appropriate commit message
           if ($readmeUpdated -and -not $packagesUpdated) {
             # Only README updated - skip CI builds
-            $commitMessage = "Update README with latest Umbraco 13 version [skip ci]"
+            $commitMessage = "Update README with latest Umbraco ${{ env.UMBRACO_MAJOR_VERSION }} version [skip ci]"
             Write-Host "Only README updated - adding [skip ci] to commit message" -ForegroundColor Cyan
           } elseif (-not $readmeUpdated -and $packagesUpdated) {
             # Only packages updated
@@ -233,7 +237,7 @@ jobs:
           "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
 
           if ($readmeUpdated) {
-            "- ✅ **README.md** - Updated with latest Umbraco 13 version" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "- ✅ **README.md** - Updated with latest Umbraco ${{ env.UMBRACO_MAJOR_VERSION }} version" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
           }
           if ($packagesUpdated) {
             "- ✅ **NuGet Packages** - Updated to latest versions" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append

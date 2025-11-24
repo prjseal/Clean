@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
- Updates README.md with the latest Umbraco 13.x version from NuGet.
+ Updates README.md with the latest Umbraco version from NuGet.
 
 .PARAMETER RootPath
  Repository root where README.md is located. Defaults to current directory.
@@ -8,19 +8,23 @@
 .PARAMETER ReadmePath
  Path to the README.md file. If not provided, looks for README.md in RootPath.
 
+.PARAMETER UmbracoMajorVersion
+ The Umbraco major version to update (e.g., "13", "17"). Defaults to "13".
+
 .OUTPUTS
  Returns a hashtable with:
  - Updated: $true if README was modified, $false otherwise
- - Version: The latest Umbraco 13.x version found
+ - Version: The latest Umbraco version found
  - Error: Error message if something went wrong
 #>
 param(
   [string]$RootPath = (Get-Location).Path,
-  [string]$ReadmePath = ""
+  [string]$ReadmePath = "",
+  [string]$UmbracoMajorVersion = "13"
 )
 
 Write-Host "================================================" -ForegroundColor Cyan
-Write-Host "Updating README with Latest Umbraco 13 Version" -ForegroundColor Cyan
+Write-Host "Updating README with Latest Umbraco $UmbracoMajorVersion Version" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 
 $result = @{
@@ -30,26 +34,26 @@ $result = @{
 }
 
 try {
-  # Query NuGet API for the latest Umbraco 13.x version
+  # Query NuGet API for the latest Umbraco version
   $packageId = "Umbraco.Cms.Web.Website"
   $nugetApiUrl = "https://api.nuget.org/v3-flatcontainer/$packageId/index.json"
 
-  Write-Host "`nQuerying NuGet for latest Umbraco 13.x version..." -ForegroundColor Yellow
+  Write-Host "`nQuerying NuGet for latest Umbraco $UmbracoMajorVersion.x version..." -ForegroundColor Yellow
 
   $response = Invoke-RestMethod -Uri $nugetApiUrl -ErrorAction Stop
   $versions = $response.versions
 
-  # Filter to only Umbraco 13.x versions
-  $umbraco13Versions = $versions | Where-Object { $_ -match '^13\.' }
+  # Filter to only Umbraco versions matching the major version
+  $umbracoVersions = $versions | Where-Object { $_ -match "^$UmbracoMajorVersion\." }
 
-  if ($umbraco13Versions.Count -eq 0) {
-    Write-Host "⚠️  No Umbraco 13.x versions found" -ForegroundColor Yellow
-    $result.Error = "No Umbraco 13.x versions found"
+  if ($umbracoVersions.Count -eq 0) {
+    Write-Host "⚠️  No Umbraco $UmbracoMajorVersion.x versions found" -ForegroundColor Yellow
+    $result.Error = "No Umbraco $UmbracoMajorVersion.x versions found"
     return $result
   }
 
   # Parse and sort versions to get the latest stable or prerelease
-  $parsedVersions = $umbraco13Versions | ForEach-Object {
+  $parsedVersions = $umbracoVersions | ForEach-Object {
     $versionString = $_
     $prerelease = ""
 
@@ -74,63 +78,63 @@ try {
   $sortedVersions = $parsedVersions | Sort-Object -Property @{Expression={$_.Version}; Descending=$true}, @{Expression={$_.IsPrerelease}; Descending=$false}
 
   # Get the latest version
-  $latestUmbraco13Version = $sortedVersions[0].Original
-  $result.Version = $latestUmbraco13Version
+  $latestUmbracoVersion = $sortedVersions[0].Original
+  $result.Version = $latestUmbracoVersion
 
-  Write-Host "Latest Umbraco 13.x version: $latestUmbraco13Version" -ForegroundColor Green
+  Write-Host "Latest Umbraco $UmbracoMajorVersion.x version: $latestUmbracoVersion" -ForegroundColor Green
 
   # Determine README path
   if ([string]::IsNullOrWhiteSpace($ReadmePath)) {
     $ReadmePath = Join-Path $RootPath "README.md"
   }
 
-  # Update README.md with the new version for Umbraco 13 examples
+  # Update README.md with the new version for Umbraco examples
   if (Test-Path $ReadmePath) {
-    Write-Host "`nUpdating README.md with version $latestUmbraco13Version for Umbraco 13 examples..."
+    Write-Host "`nUpdating README.md with version $latestUmbracoVersion for Umbraco $UmbracoMajorVersion examples..."
 
     $readmeContent = Get-Content $ReadmePath -Raw
     $originalContent = $readmeContent
 
-    # Extract the Umbraco 13 section (between "## Umbraco 13" and "---")
-    $umbraco13Pattern = '(?s)(## Umbraco 13.*?)(---)'
-    if ($readmeContent -match $umbraco13Pattern) {
-      $umbraco13Section = $matches[1]
-      $originalUmbraco13Section = $umbraco13Section
+    # Extract the Umbraco section (between "## Umbraco {version}" and "---")
+    $umbracoPattern = "(?s)(## Umbraco $UmbracoMajorVersion.*?)(---)"
+    if ($readmeContent -match $umbracoPattern) {
+      $umbracoSection = $matches[1]
+      $originalUmbracoSection = $umbracoSection
 
-      Write-Host "Found Umbraco 13 section, applying updates..." -ForegroundColor Yellow
+      Write-Host "Found Umbraco $UmbracoMajorVersion section, applying updates..." -ForegroundColor Yellow
 
-      # Pattern: Update Umbraco.Templates version for Umbraco 13
+      # Pattern: Update Umbraco.Templates version for Umbraco
       $pattern0 = '(dotnet new install Umbraco\.Templates::)[\d\.]+-?[\w\d]*( --force)'
-      if ($umbraco13Section -match $pattern0) {
+      if ($umbracoSection -match $pattern0) {
         $oldLine0 = $matches[0]
-        $umbraco13Section = $umbraco13Section -replace $pattern0, "`${1}$latestUmbraco13Version`${2}"
-        if ($umbraco13Section -match $pattern0) {
+        $umbracoSection = $umbracoSection -replace $pattern0, "`${1}$latestUmbracoVersion`${2}"
+        if ($umbracoSection -match $pattern0) {
           $newLine0 = $matches[0]
           if ($oldLine0 -ne $newLine0) {
             Write-Host "  BEFORE: $oldLine0" -ForegroundColor Yellow
             Write-Host "  AFTER:  $newLine0" -ForegroundColor Green
           } else {
-            Write-Host "  No change needed - already at version $latestUmbraco13Version" -ForegroundColor Cyan
+            Write-Host "  No change needed - already at version $latestUmbracoVersion" -ForegroundColor Cyan
           }
         }
       } else {
-        Write-Host "  Warning: Could not find Umbraco.Templates pattern in Umbraco 13 section" -ForegroundColor Yellow
+        Write-Host "  Warning: Could not find Umbraco.Templates pattern in Umbraco $UmbracoMajorVersion section" -ForegroundColor Yellow
       }
 
-      # Replace the Umbraco 13 section in the full content
-      if ($originalUmbraco13Section -ne $umbraco13Section) {
-        $readmeContent = $readmeContent -replace [regex]::Escape($originalUmbraco13Section), $umbraco13Section
+      # Replace the Umbraco section in the full content
+      if ($originalUmbracoSection -ne $umbracoSection) {
+        $readmeContent = $readmeContent -replace [regex]::Escape($originalUmbracoSection), $umbracoSection
         Write-Host "  Section was modified, updating README..." -ForegroundColor Green
       } else {
         Write-Host "  Section unchanged" -ForegroundColor Cyan
       }
     } else {
-      Write-Host "Warning: Could not find Umbraco 13 section in README.md" -ForegroundColor Yellow
+      Write-Host "Warning: Could not find Umbraco $UmbracoMajorVersion section in README.md" -ForegroundColor Yellow
     }
 
     if ($readmeContent -ne $originalContent) {
       Set-Content -Path $ReadmePath -Value $readmeContent -NoNewline
-      Write-Host "`n✅ README.md updated successfully with version $latestUmbraco13Version" -ForegroundColor Green
+      Write-Host "`n✅ README.md updated successfully with version $latestUmbracoVersion" -ForegroundColor Green
       $result.Updated = $true
     } else {
       Write-Host "`nℹ️  README.md already has the correct version or no changes were needed" -ForegroundColor Yellow
