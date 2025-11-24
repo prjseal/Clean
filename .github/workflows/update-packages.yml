@@ -14,6 +14,10 @@ on:
         required: false
         default: 'true'
 
+env:
+  # Change this to 'false' when you want scheduled runs to only use stable releases (e.g., when Umbraco 17 is officially released)
+  SCHEDULED_INCLUDE_PRERELEASE: 'true'
+
 jobs:
   update-packages:
     runs-on: windows-latest
@@ -33,21 +37,8 @@ jobs:
         run: |
           choco install gh -y
 
-      - name: Run UpdateThirdPartyPackages script
-        shell: pwsh
-        run: |
-          $dryRunFlag = if ('${{ github.event.inputs.dryRun }}' -eq 'true') { $true } else { $false }
-          # Default to true for scheduled runs (when input is empty), only false if explicitly set to 'false'
-          $includePrereleaseFlag = if ('${{ github.event.inputs.includePrerelease }}' -eq 'false') { $false } else { $true }
-
-          Write-Host "DryRunFlag = $dryRunFlag"
-          Write-Host "IncludePrereleaseFlag = $includePrereleaseFlag"
-          ./.github/workflows/powershell/UpdateThirdPartyPackages.ps1 `
-            -RootPath "${{ github.workspace }}" `
-            -DryRun:$dryRunFlag `
-            -IncludePrerelease:$includePrereleaseFlag
-
       - name: Update README with latest Umbraco 13 version
+        id: update-readme
         shell: pwsh
         run: |
           Write-Host "================================================" -ForegroundColor Cyan
@@ -150,11 +141,14 @@ jobs:
               if ($readmeContent -ne $originalContent) {
                 Set-Content -Path $readmePath -Value $readmeContent -NoNewline
                 Write-Host "`n✅ README.md updated successfully with version $latestUmbraco13Version" -ForegroundColor Green
+                echo "readme_updated=true" >> $env:GITHUB_OUTPUT
               } else {
                 Write-Host "`nℹ️  README.md already has the correct version or no changes were needed" -ForegroundColor Yellow
+                echo "readme_updated=false" >> $env:GITHUB_OUTPUT
               }
             } else {
               Write-Host "Warning: README.md not found at $readmePath" -ForegroundColor Yellow
+              echo "readme_updated=false" >> $env:GITHUB_OUTPUT
             }
 
             Write-Host "`n================================================" -ForegroundColor Cyan
@@ -165,11 +159,74 @@ jobs:
             Write-Host "⚠️  Error updating README: $_" -ForegroundColor Yellow
             Write-Host "Stack trace: $($_.ScriptStackTrace)" -ForegroundColor Yellow
             Write-Host "Continuing with workflow..." -ForegroundColor Yellow
+            echo "readme_updated=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Run UpdateThirdPartyPackages script
+        id: update-packages
+        shell: pwsh
+        run: |
+          $dryRunFlag = if ('${{ github.event.inputs.dryRun }}' -eq 'true') { $true } else { $false }
+
+          # Determine if this is a scheduled run or manual trigger
+          $isScheduled = '${{ github.event_name }}' -eq 'schedule'
+
+          # For manual runs, use the includePrerelease input
+          # For scheduled runs, use the SCHEDULED_INCLUDE_PRERELEASE environment variable
+          if ($isScheduled) {
+            $includePrereleaseFlag = if ('${{ env.SCHEDULED_INCLUDE_PRERELEASE }}' -eq 'false') { $false } else { $true }
+            Write-Host "Scheduled run - using SCHEDULED_INCLUDE_PRERELEASE env variable" -ForegroundColor Cyan
+          } else {
+            $includePrereleaseFlag = if ('${{ github.event.inputs.includePrerelease }}' -eq 'false') { $false } else { $true }
+            Write-Host "Manual run - using includePrerelease input" -ForegroundColor Cyan
+          }
+
+          Write-Host "DryRunFlag = $dryRunFlag"
+          Write-Host "IncludePrereleaseFlag = $includePrereleaseFlag"
+          ./.github/workflows/powershell/UpdateThirdPartyPackages.ps1 `
+            -RootPath "${{ github.workspace }}" `
+            -DryRun:$dryRunFlag `
+            -IncludePrerelease:$includePrereleaseFlag
+
+      - name: Check if any changes were made
+        id: check-changes
+        shell: pwsh
+        run: |
+          $readmeUpdated = '${{ steps.update-readme.outputs.readme_updated }}' -eq 'true'
+
+          # Check if packages were updated by reading the summary file
+          $summaryPath = "${{ github.workspace }}\.artifacts\package-summary.txt"
+          $packagesUpdated = $false
+          if (Test-Path $summaryPath) {
+            $content = Get-Content $summaryPath -Raw
+            $packagesUpdated = $content -notmatch 'No packages to update'
+          }
+
+          Write-Host "README updated: $readmeUpdated"
+          Write-Host "Packages updated: $packagesUpdated"
+
+          if (-not $readmeUpdated -and -not $packagesUpdated) {
+            Write-Host ""
+            Write-Host "================================================" -ForegroundColor Green
+            Write-Host "✅ No Changes Needed - Workflow Complete" -ForegroundColor Green
+            Write-Host "================================================" -ForegroundColor Green
+            Write-Host ""
+            Write-Host "📋 Summary:" -ForegroundColor Cyan
+            Write-Host "  • README: Already up-to-date with latest Umbraco 13 version" -ForegroundColor Yellow
+            Write-Host "  • NuGet Packages: All packages are already at their latest versions" -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "No branch created, no commits made, no PR needed." -ForegroundColor Cyan
+            Write-Host "================================================" -ForegroundColor Green
+
+            echo "has_changes=false" >> $env:GITHUB_OUTPUT
+            exit 0
+          } else {
+            echo "has_changes=true" >> $env:GITHUB_OUTPUT
           }
 
       - name: Commit and push changes
         id: commit-and-push
-        if: ${{ github.event.inputs.dryRun != 'true' }}
+        if: ${{ github.event.inputs.dryRun != 'true' && steps.check-changes.outputs.has_changes == 'true' }}
         env:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
@@ -184,7 +241,30 @@ jobs:
             Write-Host "No changes detected. Skipping commit and PR."
             exit 0
           }
-          git commit -m "Update NuGet packages"
+
+          # Determine what was updated for commit message
+          $readmeUpdated = '${{ steps.update-readme.outputs.readme_updated }}' -eq 'true'
+          $summaryPath = "${{ github.workspace }}\.artifacts\package-summary.txt"
+          $packagesUpdated = $false
+          if (Test-Path $summaryPath) {
+            $content = Get-Content $summaryPath -Raw
+            $packagesUpdated = $content -notmatch 'No packages to update'
+          }
+
+          # Create appropriate commit message
+          if ($readmeUpdated -and -not $packagesUpdated) {
+            # Only README updated - skip CI builds
+            $commitMessage = "Update README with latest Umbraco 13 version [skip ci]"
+            Write-Host "Only README updated - adding [skip ci] to commit message" -ForegroundColor Cyan
+          } elseif (-not $readmeUpdated -and $packagesUpdated) {
+            # Only packages updated
+            $commitMessage = "Update NuGet packages"
+          } else {
+            # Both updated
+            $commitMessage = "Update README and NuGet packages"
+          }
+
+          git commit -m $commitMessage
           git push https://x-access-token:$env:PAT_TOKEN@github.com/${{ github.repository }}.git $branchName
 
       - name: Read package summary
@@ -204,7 +284,7 @@ jobs:
 
       - name: Check for existing similar PRs
         id: check-existing-pr
-        if: ${{ github.event.inputs.dryRun != 'true' }}
+        if: ${{ github.event.inputs.dryRun != 'true' && steps.check-changes.outputs.has_changes == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
@@ -247,7 +327,7 @@ jobs:
           echo "existing_pr_number=$matchingPR" >> $env:GITHUB_OUTPUT
 
       - name: Create Pull Request
-        if: ${{ github.event.inputs.dryRun != 'true' && steps.check-existing-pr.outputs.skip != 'true' }}
+        if: ${{ github.event.inputs.dryRun != 'true' && steps.check-changes.outputs.has_changes == 'true' && steps.check-existing-pr.outputs.skip != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
@@ -256,16 +336,34 @@ jobs:
           # Create PR body in a file to avoid escaping issues
           $prBodyFile = "${{ github.workspace }}\.artifacts\pr-body.md"
 
+          # Determine what was updated
+          $readmeUpdated = '${{ steps.update-readme.outputs.readme_updated }}' -eq 'true'
+          $summaryContent = '${{ steps.read-summary.outputs.summary }}'
+          $packagesUpdated = ($summaryContent -notmatch 'No package summary found') -and ($summaryContent -notmatch 'No packages to update')
+
           # Write PR body content line by line
-          "This PR updates NuGet packages to the latest versions." | Out-File -FilePath $prBodyFile -Encoding UTF8
+          "This PR updates the following:" | Out-File -FilePath $prBodyFile -Encoding UTF8
           "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+
+          if ($readmeUpdated) {
+            "- ✅ **README.md** - Updated with latest Umbraco 13 version" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+          }
+          if ($packagesUpdated) {
+            "- ✅ **NuGet Packages** - Updated to latest versions" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+          }
+
+          "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
           "**Triggered by:** ${{ github.actor }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "### Updated Packages:" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "${{ steps.read-summary.outputs.summary }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+
+          if ($packagesUpdated) {
+            "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "### Updated Packages:" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "${{ steps.read-summary.outputs.summary }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+          }
 
           gh pr create `
             --title "Update NuGet packages" `
@@ -274,7 +372,7 @@ jobs:
             --head ${{ steps.commit-and-push.outputs.branchName }}
 
       - name: Summary - PR Skipped
-        if: ${{ github.event.inputs.dryRun != 'true' && steps.check-existing-pr.outputs.skip == 'true' }}
+        if: ${{ github.event.inputs.dryRun != 'true' && steps.check-changes.outputs.has_changes == 'true' && steps.check-existing-pr.outputs.skip == 'true' }}
         run: |
           Write-Host "================================================" -ForegroundColor Yellow
           Write-Host "PR CREATION SKIPPED" -ForegroundColor Yellow
