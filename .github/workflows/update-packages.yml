@@ -16,7 +16,7 @@ on:
       umbracoVersions:
         description: 'Comma-separated Umbraco major versions (e.g., "13" or "13,17")'
         required: false
-        default: ''
+        default: '13'
 
 env:
   # Change this to 'false' when you want scheduled runs to only use stable releases (e.g., when Umbraco 17 is officially released)
