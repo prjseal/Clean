@@ -233,8 +233,8 @@ jobs:
           $branchName = "update-nuget-packages-$(Get-Date -Format 'yyyyMMddHHmmss')"
           echo "branchName=$branchName" >> $env:GITHUB_OUTPUT
 
-          git config user.name "Paul Seal"
-          git config user.email "prjseal@gmail.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
           git checkout -b $branchName
           git add .
           if (git diff --cached --quiet) {
