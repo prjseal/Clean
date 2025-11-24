@@ -107,6 +107,8 @@ try {
       $currentVersion = $null
       $pattern0 = '(dotnet new install Umbraco\.Templates::)([\d\.]+-?[\w\d]*)( --force)'
       if ($umbracoSection -match $pattern0) {
+        # Save the original line immediately before $matches gets overwritten
+        $oldLine0 = $matches[0]
         $currentVersion = $matches[2]
         Write-Host "  Current version in README: $currentVersion" -ForegroundColor Cyan
 
@@ -154,8 +156,10 @@ try {
           Write-Host "  Warning: Could not parse versions for comparison, proceeding with update" -ForegroundColor Yellow
         }
 
-        $oldLine0 = $matches[0]
+        # Perform the replacement
         $umbracoSection = $umbracoSection -replace $pattern0, "`${1}$latestUmbracoVersion`${3}"
+
+        # Match again to get the new line for display
         if ($umbracoSection -match $pattern0) {
           $newLine0 = $matches[0]
           if ($oldLine0 -ne $newLine0) {
