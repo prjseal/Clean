@@ -59,7 +59,8 @@ function Write-Log {
 
 
 function Fail-Fast {
-  Write-Log $Message "ERROR"
+  param([string]$Message)
+  Write-Log -Prefix "" -Value $Message -ValueColor "Red" -Level "ERROR"
   exit 1
 }
 function Ensure-Directory {
@@ -270,18 +271,26 @@ function Get-LatestNuGetVersion {
       $cache[$key] = $null
       return $null
     }
+    Write-Log ('Found {0} versions for {1}' -f $versions.Count, $packageId)
     if ($IncludePrerelease) {
       # Prefer stable > rc > beta > alpha when including prerelease; respect numeric suffixes (e.g., rc3 > rc2)
       $parsed = $versions | ForEach-Object {
         $v = $_
         $prTag = ''
         $prNum = 0
-        if ($v -match '^([0-9]+\.[0-9]+\.[0-9]+)(?:-([A-Za-z]+)([0-9]*))?$') {
+        # Updated regex to handle 3 or 4 segment versions with optional prerelease (e.g., "72.1.0.3", "8.0.0-beta.1")
+        if ($v -match '^([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?)(?:-([A-Za-z]+)[\.-]?([0-9]*))?$') {
           $base = $matches[1]
           if ($matches[2]) { $prTag = $matches[2].ToLower() }
           if ($matches[3] -and $matches[3] -ne '') { $prNum = [int]$matches[3] }
         } else {
-          $base = $v
+          # If pattern doesn't match, try to extract just the numeric version part (3 or 4 segments)
+          if ($v -match '^([0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?)') {
+            $base = $matches[1]
+          } else {
+            # Fallback to the original version (may fail later, but preserves behavior)
+            $base = $v
+          }
         }
         switch ($prTag) {
           'rc'    { $prPriority = 70 }
@@ -300,9 +309,11 @@ function Get-LatestNuGetVersion {
       }
       $sorted = $parsed | Sort-Object -Property @{Expression={$_.BaseVer}; Descending=$true}, @{Expression={$_.Effective}; Descending=$true}
       $chosen = $sorted[0].Original
+      Write-Log ('Selected version {0} for {1} (IncludePrerelease=true, from {2} candidates)' -f $chosen, $packageId, $versions.Count)
     } else {
       $stable = @($versions | Where-Object { $_ -notmatch '-' })
       $chosen = if ($stable.Count -gt 0) { $stable[-1] } else { $versions[-1] }
+      Write-Log ('Selected version {0} for {1} (IncludePrerelease=false, {2} stable versions available)' -f $chosen, $packageId, $stable.Count)
     }
     $cache[$key] = $chosen
     return $chosen
@@ -391,8 +402,15 @@ function Update-Csproj-PackageReferences {
     # ---- ONLY NOW query NuGet ----
     $existingVersion = $pr.Version
     $latest = Get-LatestNuGetVersion -packageId $pkgId -cache $versionCache -IncludePrerelease:$IncludePrerelease
-    if (-not $latest) { continue }
-    if ($existingVersion -and ($existingVersion -ieq $latest)) { continue }
+    if (-not $latest) {
+      Write-Log ('No latest version found for {0}' -f $pkgId) -Level "WARN"
+      continue
+    }
+    if ($existingVersion -and ($existingVersion -ieq $latest)) {
+      Write-Log ('Package {0} is already at latest version {1}' -f $pkgId, $latest) -Level "INFO"
+      continue
+    }
+    Write-Log ('Package {0}: {1} -> {2}' -f $pkgId, $existingVersion, $latest) -Level "INFO"
 
     if (-not $DryRunFlag) {
       $pr.SetAttribute("Version", $latest)
@@ -693,10 +711,10 @@ Write-Host "`n===== PACKAGE UPDATE RESULTS ====="
 $packageUpdateFile = Join-Path $artifactsRoot "package-summary.txt"
 if ($packageChanges.Count -gt 0) {
 
-$sorted = $packageChanges |
+$sorted = @($packageChanges |
     Sort-Object `
         @{ Expression = 'File Name';    Ascending = $true }, `
-        @{ Expression = 'Package Name'; Ascending = $true }
+        @{ Expression = 'Package Name'; Ascending = $true })
 
     Write-AsciiTable -Rows $sorted `
                      -Headers @('File Name','Package Name','Old Version','New Version') `
