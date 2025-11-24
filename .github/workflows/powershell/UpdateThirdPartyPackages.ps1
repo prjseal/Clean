@@ -519,13 +519,19 @@ foreach ($result in $updateResults) {
 
 # ------------------------------ BUILD SECTION -----------------------------
 
-Write-Log ('Scanning for sln files...')
-$slnFiles = Get-ChildItem -Path $RootPath -Filter *.sln -Recurse -File
-Write-Log -Prefix "Found " -Value $slnFiles.Count -ValueColor Cyan -Suffix " sln files."
+# Skip build if there are no packages to update
+if ($packageChanges.Count -eq 0) {
+    Write-Log "No packages to update - skipping build section" -Level "INFO"
+    $buildResults = @()
+    $buildSummaryRows = New-Object System.Collections.Generic.List[object]
+} else {
+    Write-Log ('Scanning for sln files...')
+    $slnFiles = Get-ChildItem -Path $RootPath -Filter *.sln -Recurse -File
+    Write-Log -Prefix "Found " -Value $slnFiles.Count -ValueColor Cyan -Suffix " sln files."
 
-$buildResults = @()
-$timestamp = (Get-Date).ToString('yyyyMMdd_HHmmss')
-$buildSummaryRows = New-Object System.Collections.Generic.List[object]
+    $buildResults = @()
+    $timestamp = (Get-Date).ToString('yyyyMMdd_HHmmss')
+    $buildSummaryRows = New-Object System.Collections.Generic.List[object]
 
 foreach ($sln in $slnFiles) {
     $slnName = [System.IO.Path]::GetFileNameWithoutExtension($sln.FullName)
@@ -635,20 +641,21 @@ foreach ($sln in $slnFiles) {
     }
 }
 
-if ($KillRunning) {
-    Write-Log "Checking for running template processes to stop..."
+    if ($KillRunning) {
+        Write-Log "Checking for running template processes to stop..."
 
-    # Get current process ID
-    $currentPid = $PID
+        # Get current process ID
+        $currentPid = $PID
 
-    # Find processes related to the template path
-    $processes = Get-Process | Where-Object {
-        $_.Path -like "*$templatePath*" -and $_.Id -ne $currentPid
-    }
+        # Find processes related to the template path
+        $processes = Get-Process | Where-Object {
+            $_.Path -like "*$templatePath*" -and $_.Id -ne $currentPid
+        }
 
-    foreach ($proc in $processes) {
-        Write-Log "Stopping process: $($proc.ProcessName) (PID: $($proc.Id))"
-        Stop-Process -Id $proc.Id -Force
+        foreach ($proc in $processes) {
+            Write-Log "Stopping process: $($proc.ProcessName) (PID: $($proc.Id))"
+            Stop-Process -Id $proc.Id -Force
+        }
     }
 }
 
