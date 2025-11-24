@@ -100,6 +100,7 @@ try {
     if ($readmeContent -match $umbracoPattern) {
       $umbracoSection = $matches[1]
       $originalUmbracoSection = $umbracoSection
+      $fullMatch = $matches[0]  # This includes both the section AND the "---"
 
       Write-Host "Found Umbraco $UmbracoMajorVersion section, applying updates..." -ForegroundColor Yellow
 
@@ -171,13 +172,18 @@ try {
         Write-Host "  Warning: Could not find Umbraco.Templates pattern in Umbraco $UmbracoMajorVersion section" -ForegroundColor Yellow
       }
 
-      # Replace the Umbraco section in the full content
+      # Replace the FULL MATCH (section + "---") in the content
+      # This is more specific and prevents accidentally replacing other sections
       if ($originalUmbracoSection -ne $umbracoSection) {
-        # Use Regex.Replace with count=1 to replace only the FIRST occurrence
-        # This prevents accidentally replacing other sections with similar content
-        $escapedPattern = [regex]::Escape($originalUmbracoSection)
-        $regex = New-Object System.Text.RegularExpressions.Regex($escapedPattern)
-        $readmeContent = $regex.Replace($readmeContent, $umbracoSection, 1)
+        # Reconstruct the full replacement (modified section + "---")
+        $fullReplacement = $umbracoSection + "---"
+
+        # Escape the full match for literal string matching
+        $escapedFullMatch = [regex]::Escape($fullMatch)
+
+        # Replace only the first occurrence of the complete section
+        $regex = New-Object System.Text.RegularExpressions.Regex($escapedFullMatch)
+        $readmeContent = $regex.Replace($readmeContent, $fullReplacement, 1)
         Write-Host "  Section was modified, updating README..." -ForegroundColor Green
       } else {
         Write-Host "  Section unchanged" -ForegroundColor Cyan
