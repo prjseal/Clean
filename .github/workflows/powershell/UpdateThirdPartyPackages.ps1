@@ -268,36 +268,50 @@ function Get-ConfiguredNuGetSources {
       # Check if this is a URL line (starts with spaces and contains http)
       elseif ($currentSource -and $line -match '^\s+(https?://[^\s]+)') {
         $sourceUrl = $matches[1].Trim()
-        # Convert service index URL to flatcontainer URL if it's a v3 feed
-        if ($sourceUrl -match '^(https?://[^/]+/.+?)/v3/index\.json$') {
-          $baseUrl = $matches[1]
+
+        # For nuget.org, use the known flatcontainer URL
+        if ($sourceUrl -match 'api\.nuget\.org') {
           $sources += @{
             Name = $currentSource
-            Url = "$baseUrl/v3-flatcontainer"
+            Url = 'https://api.nuget.org/v3-flatcontainer'
           }
         }
-        elseif ($sourceUrl -match '^(https?://[^/]+/.+?)/v3-flatcontainer/?$') {
-          # Already a flatcontainer URL
+        # For all other sources, query the service index to find PackageBaseAddress
+        elseif ($sourceUrl -match '/v3/index\.json$' -or $sourceUrl -match '/v3/?$') {
+          try {
+            Write-Host "Querying service index for $currentSource at $sourceUrl" -ForegroundColor Cyan
+            $serviceIndex = Invoke-RestMethod -Uri $sourceUrl -Method Get -TimeoutSec 10 -ErrorAction Stop
+
+            # Look for PackageBaseAddress/3.0.0 resource
+            $packageBaseAddress = $serviceIndex.resources | Where-Object {
+              $_.'@type' -eq 'PackageBaseAddress/3.0.0'
+            } | Select-Object -First 1
+
+            if ($packageBaseAddress -and $packageBaseAddress.'@id') {
+              $flatcontainerUrl = $packageBaseAddress.'@id'.TrimEnd('/')
+              Write-Host "Found PackageBaseAddress: $flatcontainerUrl" -ForegroundColor Green
+              $sources += @{
+                Name = $currentSource
+                Url = $flatcontainerUrl
+              }
+            }
+            else {
+              Write-Log ("No PackageBaseAddress found in service index for '{0}'" -f $currentSource) -Level "WARN"
+            }
+          }
+          catch {
+            Write-Log ("Could not query service index for '{0}': {1}" -f $currentSource, $_.Exception.Message) -Level "WARN"
+          }
+        }
+        # If it's already a flatcontainer URL
+        elseif ($sourceUrl -match 'flatcontainer') {
           $sources += @{
             Name = $currentSource
             Url = $sourceUrl.TrimEnd('/')
           }
         }
         else {
-          # Try to query service index to find PackageBaseAddress
-          try {
-            $serviceIndex = Invoke-RestMethod -Uri $sourceUrl -Method Get -TimeoutSec 10 -ErrorAction Stop
-            $packageBaseAddress = $serviceIndex.resources | Where-Object { $_.'@type' -eq 'PackageBaseAddress/3.0.0' } | Select-Object -First 1
-            if ($packageBaseAddress) {
-              $sources += @{
-                Name = $currentSource
-                Url = $packageBaseAddress.'@id'.TrimEnd('/')
-              }
-            }
-          }
-          catch {
-            Write-Log ("Could not resolve flatcontainer URL for source '{0}': {1}" -f $currentSource, $_.Exception.Message) -Level "WARN"
-          }
+          Write-Log ("Unsupported source URL format for '{0}': {1}" -f $currentSource, $sourceUrl) -Level "WARN"
         }
         $currentSource = $null
       }
