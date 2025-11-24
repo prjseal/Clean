@@ -14,6 +14,10 @@ on:
         required: false
         default: 'true'
 
+env:
+  # Change this to 'false' when you want scheduled runs to only use stable releases (e.g., when Umbraco 17 is officially released)
+  SCHEDULED_INCLUDE_PRERELEASE: 'true'
+
 jobs:
   update-packages:
     runs-on: windows-latest
@@ -163,8 +167,19 @@ jobs:
         shell: pwsh
         run: |
           $dryRunFlag = if ('${{ github.event.inputs.dryRun }}' -eq 'true') { $true } else { $false }
-          # Default to true for scheduled runs (when input is empty), only false if explicitly set to 'false'
-          $includePrereleaseFlag = if ('${{ github.event.inputs.includePrerelease }}' -eq 'false') { $false } else { $true }
+
+          # Determine if this is a scheduled run or manual trigger
+          $isScheduled = '${{ github.event_name }}' -eq 'schedule'
+
+          # For manual runs, use the includePrerelease input
+          # For scheduled runs, use the SCHEDULED_INCLUDE_PRERELEASE environment variable
+          if ($isScheduled) {
+            $includePrereleaseFlag = if ('${{ env.SCHEDULED_INCLUDE_PRERELEASE }}' -eq 'false') { $false } else { $true }
+            Write-Host "Scheduled run - using SCHEDULED_INCLUDE_PRERELEASE env variable" -ForegroundColor Cyan
+          } else {
+            $includePrereleaseFlag = if ('${{ github.event.inputs.includePrerelease }}' -eq 'false') { $false } else { $true }
+            Write-Host "Manual run - using includePrerelease input" -ForegroundColor Cyan
+          }
 
           Write-Host "DryRunFlag = $dryRunFlag"
           Write-Host "IncludePrereleaseFlag = $includePrereleaseFlag"
@@ -315,10 +330,11 @@ jobs:
           }
 
           "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
           "**Triggered by:** ${{ github.actor }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
 
           if ($packagesUpdated) {
+            "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            "**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
             "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
             "### Updated Packages:" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
             "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
