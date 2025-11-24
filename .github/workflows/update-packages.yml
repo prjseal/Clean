@@ -300,7 +300,8 @@ jobs:
 
           # Determine what was updated
           $readmeUpdated = '${{ steps.update-readme.outputs.readme_updated }}' -eq 'true'
-          $packagesUpdated = '${{ steps.read-summary.outputs.summary }}' -notmatch 'No package summary found'
+          $summaryContent = '${{ steps.read-summary.outputs.summary }}'
+          $packagesUpdated = ($summaryContent -notmatch 'No package summary found') -and ($summaryContent -notmatch 'No packages to update')
 
           # Write PR body content line by line
           "This PR updates the following:" | Out-File -FilePath $prBodyFile -Encoding UTF8
