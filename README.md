@@ -307,15 +307,6 @@ This project includes comprehensive documentation to help you work with the Clea
 - **[Consuming GitHub Packages](.github/CONSUMING-GITHUB-PACKAGES.md)** - Using packages from GitHub Package Registry
 - **[CreateNuGetPackages Script Documentation](.github/CreateNuGetPackages-Documentation.md)** - Detailed guide for building and publishing NuGet packages
 
-### Scripts and Tools
-
-- **[Scripts Overview](scripts/README.md)** - Information about available PowerShell scripts and utilities
-- **[Removal Guide](scripts/REMOVAL-GUIDE.md)** - How to safely remove Clean from your project
-
-### Blog Posts and Tutorials
-
-- **[Running Local HTTPS Site in GitHub Actions](.github/blog-posts/running-local-https-site-in-github-actions.md)** - Setting up HTTPS for local testing in CI/CD
-
 ---
 
 ## Support and Resources
@@ -324,12 +315,6 @@ This project includes comprehensive documentation to help you work with the Clea
 - **Issues and Bug Reports**: [GitHub Issues](https://github.com/prjseal/Clean/issues)
 - **NuGet Package**: [https://www.nuget.org/packages/Clean](https://www.nuget.org/packages/Clean)
 - **License**: MIT
-
----
-
-## Contributing
-
-Contributions are welcome! Please see our [Contributing Guide](.github/CONTRIBUTING.md) for detailed information on how to get started, code standards, testing requirements, and the contribution workflow.
 
 ---
 
