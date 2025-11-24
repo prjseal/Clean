@@ -13,6 +13,10 @@ on:
         description: 'Include prerelease versions'
         required: false
         default: 'true'
+      umbracoVersions:
+        description: 'Comma-separated Umbraco major versions (e.g., "13" or "13,17")'
+        required: false
+        default: ''
 
 env:
   # Change this to 'false' when you want scheduled runs to only use stable releases (e.g., when Umbraco 17 is officially released)
@@ -43,12 +47,31 @@ jobs:
         id: update-readme
         shell: pwsh
         run: |
+          # Determine which versions to process
+          # For manual runs with input provided, use the input; otherwise use env variable
+          $isScheduled = '${{ github.event_name }}' -eq 'schedule'
+          $manualVersionInput = '${{ github.event.inputs.umbracoVersions }}'
+
+          if (-not $isScheduled -and -not [string]::IsNullOrWhiteSpace($manualVersionInput)) {
+            # Manual run with version input provided
+            $versionsString = $manualVersionInput
+            Write-Host "Manual run - using umbracoVersions input: $versionsString" -ForegroundColor Cyan
+          } else {
+            # Scheduled run or manual run without version input - use env variable
+            $versionsString = "${{ env.UMBRACO_MAJOR_VERSIONS }}"
+            if ($isScheduled) {
+              Write-Host "Scheduled run - using UMBRACO_MAJOR_VERSIONS env variable: $versionsString" -ForegroundColor Cyan
+            } else {
+              Write-Host "Manual run (no version input) - using UMBRACO_MAJOR_VERSIONS env variable: $versionsString" -ForegroundColor Cyan
+            }
+          }
+
           # Parse comma-separated versions
-          $versions = "${{ env.UMBRACO_MAJOR_VERSIONS }}" -split ',' | ForEach-Object { $_.Trim() }
+          $versions = $versionsString -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
           $anyUpdated = $false
           $updatedVersions = @()
 
-          Write-Host "Processing Umbraco versions: $($versions -join ', ')" -ForegroundColor Cyan
+          Write-Host "Processing Umbraco versions: $($versions -join ', ')" -ForegroundColor Yellow
           Write-Host ""
 
           foreach ($version in $versions) {
