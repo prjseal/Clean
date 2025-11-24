@@ -241,7 +241,30 @@ jobs:
             Write-Host "No changes detected. Skipping commit and PR."
             exit 0
           }
-          git commit -m "Update NuGet packages"
+
+          # Determine what was updated for commit message
+          $readmeUpdated = '${{ steps.update-readme.outputs.readme_updated }}' -eq 'true'
+          $summaryPath = "${{ github.workspace }}\.artifacts\package-summary.txt"
+          $packagesUpdated = $false
+          if (Test-Path $summaryPath) {
+            $content = Get-Content $summaryPath -Raw
+            $packagesUpdated = $content -notmatch 'No packages to update'
+          }
+
+          # Create appropriate commit message
+          if ($readmeUpdated -and -not $packagesUpdated) {
+            # Only README updated - skip CI builds
+            $commitMessage = "Update README with latest Umbraco 13 version [skip ci]"
+            Write-Host "Only README updated - adding [skip ci] to commit message" -ForegroundColor Cyan
+          } elseif (-not $readmeUpdated -and $packagesUpdated) {
+            # Only packages updated
+            $commitMessage = "Update NuGet packages"
+          } else {
+            # Both updated
+            $commitMessage = "Update README and NuGet packages"
+          }
+
+          git commit -m $commitMessage
           git push https://x-access-token:$env:PAT_TOKEN@github.com/${{ github.repository }}.git $branchName
 
       - name: Read package summary
