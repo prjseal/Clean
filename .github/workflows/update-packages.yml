@@ -17,8 +17,8 @@ on:
 env:
   # Change this to 'false' when you want scheduled runs to only use stable releases (e.g., when Umbraco 17 is officially released)
   SCHEDULED_INCLUDE_PRERELEASE: 'true'
-  # Change this to '17' when you want to track Umbraco 17 versions instead of Umbraco 13
-  UMBRACO_MAJOR_VERSION: '13'
+  # Comma-separated list of Umbraco major versions to track (e.g., "13" or "13,17" for multiple versions)
+  UMBRACO_MAJOR_VERSIONS: '13'
 
 jobs:
   update-packages:
@@ -39,18 +39,41 @@ jobs:
         run: |
           choco install gh -y
 
-      - name: Update README with latest Umbraco version
+      - name: Update README with latest Umbraco versions
         id: update-readme
         shell: pwsh
         run: |
-          $result = ./.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1 `
-            -RootPath "${{ github.workspace }}" `
-            -UmbracoMajorVersion "${{ env.UMBRACO_MAJOR_VERSION }}"
+          # Parse comma-separated versions
+          $versions = "${{ env.UMBRACO_MAJOR_VERSIONS }}" -split ',' | ForEach-Object { $_.Trim() }
+          $anyUpdated = $false
+          $updatedVersions = @()
 
-          if ($result.Updated) {
+          Write-Host "Processing Umbraco versions: $($versions -join ', ')" -ForegroundColor Cyan
+          Write-Host ""
+
+          foreach ($version in $versions) {
+            Write-Host "Processing Umbraco version $version..." -ForegroundColor Yellow
+            $result = ./.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1 `
+              -RootPath "${{ github.workspace }}" `
+              -UmbracoMajorVersion $version
+
+            if ($result.Updated) {
+              $anyUpdated = $true
+              $updatedVersions += $version
+              Write-Host "✅ Umbraco $version section updated" -ForegroundColor Green
+            } else {
+              Write-Host "ℹ️  Umbraco $version section unchanged" -ForegroundColor Yellow
+            }
+            Write-Host ""
+          }
+
+          if ($anyUpdated) {
             echo "readme_updated=true" >> $env:GITHUB_OUTPUT
+            $versionsText = $updatedVersions -join ','
+            echo "updated_versions=$versionsText" >> $env:GITHUB_OUTPUT
           } else {
             echo "readme_updated=false" >> $env:GITHUB_OUTPUT
+            echo "updated_versions=" >> $env:GITHUB_OUTPUT
           }
 
       - name: Run UpdateThirdPartyPackages script
@@ -103,7 +126,9 @@ jobs:
             Write-Host "================================================" -ForegroundColor Green
             Write-Host ""
             Write-Host "📋 Summary:" -ForegroundColor Cyan
-            Write-Host "  • README: Already up-to-date with latest Umbraco ${{ env.UMBRACO_MAJOR_VERSION }} version" -ForegroundColor Yellow
+            $versions = "${{ env.UMBRACO_MAJOR_VERSIONS }}" -split ',' | ForEach-Object { $_.Trim() }
+            $versionText = if ($versions.Count -eq 1) { "Umbraco $($versions[0])" } else { "Umbraco $($versions -join ' and ')" }
+            Write-Host "  • README: Already up-to-date with latest $versionText version(s)" -ForegroundColor Yellow
             Write-Host "  • NuGet Packages: All packages are already at their latest versions" -ForegroundColor Yellow
             Write-Host ""
             Write-Host "No branch created, no commits made, no PR needed." -ForegroundColor Cyan
@@ -145,7 +170,13 @@ jobs:
           # Create appropriate commit message
           if ($readmeUpdated -and -not $packagesUpdated) {
             # Only README updated - skip CI builds
-            $commitMessage = "Update README with latest Umbraco ${{ env.UMBRACO_MAJOR_VERSION }} version [skip ci]"
+            $updatedVersions = '${{ steps.update-readme.outputs.updated_versions }}' -split ',' | ForEach-Object { $_.Trim() }
+            if ($updatedVersions.Count -eq 1) {
+              $versionText = "Umbraco $($updatedVersions[0])"
+            } else {
+              $versionText = "Umbraco $($updatedVersions -join ' and ')"
+            }
+            $commitMessage = "Update README with latest $versionText version [skip ci]"
             Write-Host "Only README updated - adding [skip ci] to commit message" -ForegroundColor Cyan
           } elseif (-not $readmeUpdated -and $packagesUpdated) {
             # Only packages updated
@@ -237,7 +268,13 @@ jobs:
           "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
 
           if ($readmeUpdated) {
-            "- ✅ **README.md** - Updated with latest Umbraco ${{ env.UMBRACO_MAJOR_VERSION }} version" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
+            $updatedVersions = '${{ steps.update-readme.outputs.updated_versions }}' -split ',' | ForEach-Object { $_.Trim() }
+            if ($updatedVersions.Count -eq 1) {
+              $versionText = "Umbraco $($updatedVersions[0])"
+            } else {
+              $versionText = "Umbraco $($updatedVersions -join ' and ')"
+            }
+            "- ✅ **README.md** - Updated with latest $versionText version" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
           }
           if ($packagesUpdated) {
             "- ✅ **NuGet Packages** - Updated to latest versions" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
