@@ -222,8 +222,34 @@ jobs:
             -DryRun:$dryRunFlag `
             -IncludePrerelease:$includePrereleaseFlag
 
+      - name: Build Failure Summary
+        if: failure() && steps.update-packages.conclusion == 'failure'
+        shell: pwsh
+        run: |
+          Write-Host "================================================" -ForegroundColor Red
+          Write-Host "❌ UPDATE PACKAGES WORKFLOW FAILED" -ForegroundColor Red
+          Write-Host "================================================" -ForegroundColor Red
+          Write-Host ""
+          Write-Host "The UpdateThirdPartyPackages script encountered build failures." -ForegroundColor Yellow
+          Write-Host ""
+          Write-Host "📋 Build Summary:" -ForegroundColor Cyan
+          $buildSummaryPath = "${{ github.workspace }}\.artifacts\build-summary.txt"
+          if (Test-Path $buildSummaryPath) {
+            $buildSummary = Get-Content $buildSummaryPath -Raw
+            Write-Host $buildSummary
+          } else {
+            Write-Host "Build summary file not found." -ForegroundColor Yellow
+          }
+          Write-Host ""
+          Write-Host "🔍 Check the logs above for detailed error messages." -ForegroundColor Cyan
+          Write-Host "📂 Build logs are saved in .artifacts/logs/ directory." -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "No PR will be created due to build failures." -ForegroundColor Yellow
+          Write-Host "================================================" -ForegroundColor Red
+
       - name: Check if any changes were made
         id: check-changes
+        if: success()
         shell: pwsh
         run: |
           $readmeUpdated = '${{ steps.update-readme.outputs.readme_updated }}' -eq 'true'

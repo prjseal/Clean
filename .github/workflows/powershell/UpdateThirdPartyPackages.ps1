@@ -784,22 +784,41 @@ foreach ($sln in $slnFiles) {
     # Write-Host ('{0}: {1} (ExitCode={2})' -f $slnName, $status, $buildResult.ExitCode) -ForegroundColor $color
 
     if (-not $buildResult.Success) {
+        Write-Host "`n========================================" -ForegroundColor Red
+        Write-Host "BUILD FAILED: $($sln.Name)" -ForegroundColor Red
+        Write-Host "========================================" -ForegroundColor Red
+
         if ($cleanResult.Success -eq $false) {
-            Write-Host ("  Clean failed. See:") -ForegroundColor Yellow
-            Write-Host ("    {0}" -f $stdoutClean)
-            Write-Host ("    {0}" -f $stderrClean)
+            Write-Host "`nClean failed for this solution." -ForegroundColor Yellow
         }
+
         if ($errorLines.Count -gt 0) {
-            Write-Host ("  Top error lines:") -ForegroundColor Yellow
+            Write-Host "`nTop error lines:" -ForegroundColor Yellow
             foreach ($line in $errorLines) {
-                Write-Host ("    {0}" -f $line) -ForegroundColor Red
+                Write-Host "  $line" -ForegroundColor Red
             }
         } else {
-            Write-Host ("  No error lines detected; check full logs.") -ForegroundColor Yellow
+            Write-Host "`nNo error lines matched the error pattern." -ForegroundColor Yellow
         }
-        Write-Host ("  Full logs:") -ForegroundColor Yellow
-        Write-Host ("    StdOut: {0}" -f $stdoutBuild)
-        Write-Host ("    StdErr: {0}" -f $stderrBuild)
+
+        # Show last 50 lines of build output to capture errors
+        Write-Host "`nBuild output (last 50 lines):" -ForegroundColor Yellow
+        $buildOutputLines = ($buildResult.StdOut + "`n" + $buildResult.StdErr) -split "`r?`n"
+        $lastLines = $buildOutputLines | Select-Object -Last 50
+        foreach ($line in $lastLines) {
+            if ($line -match "error") {
+                Write-Host "  $line" -ForegroundColor Red
+            } elseif ($line -match "warning") {
+                Write-Host "  $line" -ForegroundColor Yellow
+            } else {
+                Write-Host "  $line" -ForegroundColor Gray
+            }
+        }
+
+        Write-Host "`nFull logs saved to:" -ForegroundColor Cyan
+        Write-Host "  StdOut: $stdoutBuild" -ForegroundColor Cyan
+        Write-Host "  StdErr: $stderrBuild" -ForegroundColor Cyan
+        Write-Host "========================================`n" -ForegroundColor Red
     }
 }
 
@@ -851,6 +870,25 @@ if ($buildSummaryRows.Count -gt 0) {
         -Headers @('Solution Name','Clean Result','Build Result','Errors','Warnings') `
         -AlignRight @('Errors','Warnings') `
         -OutputFile $buildSummaryFile
+
+    # Check if any builds failed
+    $failedBuilds = $summarySorted | Where-Object { $_.'Build Result' -eq 'Failed' }
+    if ($failedBuilds.Count -gt 0) {
+        Write-Host "`n================================================" -ForegroundColor Red
+        Write-Host "ERROR: $($failedBuilds.Count) solution(s) failed to build" -ForegroundColor Red
+        Write-Host "================================================" -ForegroundColor Red
+        foreach ($failed in $failedBuilds) {
+            Write-Host "  - $($failed.'Solution Name')" -ForegroundColor Red
+        }
+        Write-Host "`nPlease review the error details above." -ForegroundColor Yellow
+        Write-Host "Build logs are saved in: $logsDir" -ForegroundColor Cyan
+        Write-Host "================================================`n" -ForegroundColor Red
+
+        # Exit with error code to fail the workflow
+        exit 1
+    } else {
+        Write-Host "`nAll builds completed successfully! ✅" -ForegroundColor Green
+    }
 } else {
     $msg = "(no solutions found)"
     Write-Host $msg -ForegroundColor DarkGray
