@@ -382,8 +382,18 @@ function Get-LatestNuGetVersion {
     # Remove duplicates and process versions
     $versions = @($allVersions | Select-Object -Unique)
 
+    # Exclude nightly build versions (versions containing "-build" in the suffix)
+    # This prevents selecting unstable nightly builds like "17.0.0-build.20251124.1"
+    $beforeFilter = $versions.Count
+    $versions = @($versions | Where-Object { $_ -notmatch '-build' })
+    $afterFilter = $versions.Count
+    if ($beforeFilter -ne $afterFilter) {
+      $excluded = $beforeFilter - $afterFilter
+      Write-Log ("Excluded {0} nightly build version(s) for {1}" -f $excluded, $packageId) -Level "INFO"
+    }
+
     if ($versions.Count -eq 0) {
-      Write-Log ("No versions found for {0} in any configured source" -f $packageId) -Level "WARN"
+      Write-Log ("No versions found for {0} in any configured source (after filtering)" -f $packageId) -Level "WARN"
       $cache[$key] = $null
       return $null
     }
