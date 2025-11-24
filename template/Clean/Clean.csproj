@@ -37,9 +37,9 @@
     <EmbeddedResource Include="Migrations\package.zip" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.Website" Version="17.0.0-rc3" />
-    <PackageReference Include="Clean.Core" Version="7.0.0-rc1" />
-    <PackageReference Include="Clean.Headless" Version="7.0.0-rc1" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="16.3.4" />
+    <PackageReference Include="Clean.Core" Version="6.0.1" />
+    <PackageReference Include="Clean.Headless" Version="6.0.1" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />
