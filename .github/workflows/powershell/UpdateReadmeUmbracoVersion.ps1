@@ -140,8 +140,12 @@ try {
       $currentVersion = $null
       $oldLine0 = $null
       if ($umbracoSection -match $pattern0) {
+        # Capture match groups immediately to avoid later overwrites of $matches
+        $group1 = $matches[1]
+        $group2 = $matches[2]
+        $group3 = $matches[3]
         $oldLine0 = $matches[0]
-        $currentVersion = $matches[2]
+        $currentVersion = $group2
         Write-Host "  Current version in README: $currentVersion" -ForegroundColor Cyan
 
         # Compare base versions to prevent downgrades
@@ -169,8 +173,8 @@ try {
           Write-Host "  Warning: Could not parse versions for comparison, proceeding with update" -ForegroundColor Yellow
         }
 
-        # Replace only the version portion of the matched line using literal string replace
-        $replacementLine = "$($matches[1])$latestUmbracoVersion$($matches[3])"
+        # Replace only the version portion of the matched line using the captured old line
+        $replacementLine = $oldLine0.Replace($currentVersion, $latestUmbracoVersion)
         $umbracoSection = $umbracoSection.Replace($oldLine0, $replacementLine)
 
         # Update the full readme content by replacing only this section
