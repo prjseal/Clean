@@ -78,7 +78,7 @@ This script is a critical component of the CI/CD pipeline and is used by the fol
 **How it works:**
 - Extracts version from the release tag (e.g., `v7.0.0` → `7.0.0`)
 - Validates version format (SemVer)
-- Updates README.md with version information
+- Updates README.md and Umbraco marketplace README files with version information
 - Calls `CreateNuGetPackages.ps1` with the release version
 - Publishes packages to NuGet.org
 - Uploads packages as GitHub release assets
@@ -117,7 +117,7 @@ This script is a critical component of the CI/CD pipeline and is used by the fol
 │  (release-nuget.yml)                                            │
 ├─────────────────────────────────────────────────────────────────┤
 │ 1. Extract version from release tag                             │
-│ 2. Update README.md with versions                               │
+│ 2. Update README.md and marketplace README files                │
 │ 3. → CreateNuGetPackages.ps1 -Version "7.0.0"                   │
 │ 4. Publish to NuGet.org                                         │
 │ 5. Upload to GitHub release assets                              │
@@ -141,8 +141,8 @@ The `update-packages.yml` workflow does NOT use this script. It uses `UpdateThir
 ### 2. Version Extraction and README Update
 
 - Extracts the Umbraco version from `Clean.csproj`
-- Updates `README.md` with the new version number for Umbraco 17 examples
-- Updates the following patterns in README.md:
+- Updates `README.md`, `umbraco-marketplace-readme.md`, and `umbraco-marketplace-readme-clean.md` with the new version number
+- Updates the following patterns in all README files:
   - `dotnet new install Umbraco.Templates::X.Y.Z`
   - `dotnet add "MyProject" package Clean --version X.Y.Z`
   - `dotnet add "MyProject" package Clean.Core --version X.Y.Z`
@@ -332,7 +332,7 @@ All packages are copied to: `.artifacts/nuget/`
 
 **Artifacts:**
 - All `.nupkg` files copied to `.artifacts/nuget/`
-- Updated `README.md` with new version numbers
+- Updated `README.md`, `umbraco-marketplace-readme.md`, and `umbraco-marketplace-readme-clean.md` with new version numbers
 - Updated `.csproj` files with new version numbers
 
 ## Environment Compatibility
@@ -379,6 +379,8 @@ All packages are copied to: `.artifacts/nuget/`
 - `Clean.Headless.csproj` - Headless CMS package
 - `template-pack.csproj` - Template package
 - `README.md` - Updated with version numbers
+- `umbraco-marketplace-readme.md` - Umbraco marketplace README, updated with version numbers
+- `umbraco-marketplace-readme-clean.md` - Umbraco marketplace README for Clean package, updated with version numbers
 - `template/Clean.Blog/uSync/v17/DataTypes/BlockListMainContent.config` - Source of BlockList labels
 
 ## Support

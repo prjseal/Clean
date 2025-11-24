@@ -216,15 +216,17 @@ When you publish a release, the `release-nuget.yml` workflow:
    - Reads Umbraco version from `template/Clean/Clean.csproj` (Umbraco.Cms.Web.Website package reference)
    - Updates installation commands with new Clean version
    - Updates Umbraco.Templates version to match the Umbraco version used in the project
-   - Updates both `README.md` and `template/README.md`
+   - Updates `README.md`, `umbraco-marketplace-readme.md`, and `umbraco-marketplace-readme-clean.md`
 9. **Commits** version updates to `main` branch (automatically, without triggering other workflows)
 10. **Reports** success or failure
 
 > **Note**: The version updates are automatically committed back to the `main` branch after a successful release. This includes:
 > - All `.csproj` files with the new Clean package version
-> - README.md files with updated installation commands
+> - `README.md` with updated installation commands
+> - `umbraco-marketplace-readme.md` with updated installation commands
+> - `umbraco-marketplace-readme-clean.md` with updated installation commands
 >
-> This ensures that anyone cloning the repository will see the latest released versions. The commit includes `[skip ci]` to prevent triggering other workflows, avoiding circular pipeline runs.
+> This ensures that anyone cloning the repository will see the latest released versions in all documentation. The commit includes `[skip ci]` to prevent triggering other workflows, avoiding circular pipeline runs.
 
 ### Post-Release Verification
 
@@ -301,7 +303,7 @@ The Clean packages maintain version alignment with Umbraco CMS:
 3. Build packages with release version
 4. Publish to NuGet.org (requires `NUGET_API_KEY`)
 5. Upload to release assets
-6. Update README.md files with latest Umbraco and Clean versions
+6. Update README.md and Umbraco marketplace README files with latest Umbraco and Clean versions
 7. Commit version updates to `main` branch (with `[skip ci]` to prevent triggering workflows)
 8. Generate summary
 
@@ -319,11 +321,11 @@ The Clean packages maintain version alignment with Umbraco CMS:
 - Version changes are automatically committed directly to `main` after successful release
 - The commit includes:
   - Updated `.csproj` files with new Clean package version
-  - Updated `README.md` and `template/README.md` with versions from the csproj files
+  - Updated `README.md`, `umbraco-marketplace-readme.md`, and `umbraco-marketplace-readme-clean.md` with versions from the csproj files
   - Umbraco.Templates version matches the Umbraco.Cms version used in the project
 - The commit message includes `[skip ci]` to prevent triggering other workflows
 - Uses `github-actions[bot]` as the commit author
-- This ensures developers cloning the repo see the latest released versions with correct installation commands
+- This ensures developers cloning the repo see the latest released versions with correct installation commands in all documentation files
 
 ## Troubleshooting
 

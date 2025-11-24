@@ -122,7 +122,9 @@ jobs:
 
             # Update README files
             $readmeFiles = @(
-              "README.md"
+              "README.md",
+              "umbraco-marketplace-readme.md",
+              "umbraco-marketplace-readme-clean.md"
             )
 
             $umbracoSectionHeader = "## Umbraco $umbracoMajor"
@@ -319,6 +321,9 @@ jobs:
           Write-Host "Staging README.md file..." -ForegroundColor Yellow
           git add "README.md"
 
+          Write-Host "Staging Umbraco marketplace README files..." -ForegroundColor Yellow
+          git add "umbraco-marketplace-readme.md" "umbraco-marketplace-readme-clean.md"
+
           # Commit with skip ci flag to prevent triggering other workflows
           $commitMessage = "chore: Update versions to ${{ steps.version.outputs.version }} [skip ci]"
           Write-Host "`nCommitting changes with message: $commitMessage" -ForegroundColor Yellow
@@ -344,7 +349,8 @@ jobs:
 
           ## Changes
           - Updated version references in .csproj files
-          - Updated README.md files with the latest version information
+          - Updated README.md with the latest version information
+          - Updated Umbraco marketplace README files with the latest version information
 
           ## Additional Info
           - Release: [${{ github.event.release.tag_name }}](${{ github.event.release.html_url }})
