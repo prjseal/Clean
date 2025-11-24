@@ -24,7 +24,9 @@ A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a 
 This starter kit consists of four NuGet packages:
 
 ### 1. Clean (Main Package)
+
 The complete starter kit including views, assets, and Umbraco package content.
+
 - **Package ID**: `Clean`
 - **Dependencies**: Clean.Core, Clean.Headless
 - **Use Case**: Install this package to add the full Clean starter kit to your existing Umbraco project
@@ -32,6 +34,7 @@ The complete starter kit including views, assets, and Umbraco package content.
 **⚠️ Important Post-Installation Step**: After installing the `Clean` package and running your project for the first time (once all content, settings, and assets have been created in your Umbraco installation), you should update your package reference from `Clean` to `Clean.Core`. This prevents the Razor views and other assets from being overridden during future updates.
 
 To make this change:
+
 ```powershell
 # Remove the Clean package
 dotnet remove package Clean
@@ -41,37 +44,46 @@ dotnet add package Clean.Core
 ```
 
 Or manually edit your `.csproj` file to change:
+
 ```xml
 <PackageReference Include="Clean" Version="x.x.x" />
 ```
+
 to:
+
 ```xml
 <PackageReference Include="Clean.Core" Version="x.x.x" />
 ```
 
 ### 2. Clean.Core
+
 Core library containing components, controllers, helpers, and tag helpers.
+
 - **Package ID**: `Clean.Core`
 - **Dependencies**: Umbraco.Cms.Web.Website
 - **Use Case**: Automatically installed as a dependency of the Clean package
 
 ### 3. Clean.Headless
+
 Headless CMS functionality with API controllers and Next.js revalidation support.
+
 - **Package ID**: `Clean.Headless`
 - **Dependencies**: Umbraco.Cms.Web.Website, Umbraco.Cms.Api.Common
 - **Use Case**: Automatically installed as a dependency of the Clean package
 
 ### 4. Umbraco.Community.Templates.Clean
+
 dotnet CLI template for creating new Umbraco projects with Clean pre-installed.
+
 - **Package ID**: `Umbraco.Community.Templates.Clean`
 - **Use Case**: Use with `dotnet new` to scaffold a complete Umbraco project with Clean
 
 ## Version Mapping
 
-| Clean Version | Umbraco Version | .NET Version | Support Type |
-|--------------|-----------------|--------------|--------------|
-| 4.x          | 13              | .NET 8       | LTS (Long Term Support) |
-| 7.x          | 17              | .NET 10      | LTS (Long Term Support) |
+| Clean Version | Umbraco Version | .NET Version | Support Type            |
+| ------------- | --------------- | ------------ | ----------------------- |
+| 4.x           | 13              | .NET 8       | LTS (Long Term Support) |
+| 7.x           | 17              | .NET 10      | LTS (Long Term Support) |
 
 **Note**: Clean v5 (Umbraco 15) and v6 (Umbraco 16) are no longer maintained. For the even older Umbraco versions (9-12), see the [Clean Starter Kit for Umbraco v9](https://github.com/prjseal/Clean-Starter-Kit-for-Umbraco-v9) repository.
 
@@ -108,6 +120,7 @@ dotnet run --project "MyProject"
 ```
 
 **⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
+
 ```powershell
 dotnet remove "MyProject" package Clean
 dotnet add "MyProject" package Clean.Core --version 7.0.0-preview8
@@ -139,7 +152,7 @@ dotnet run --project "MyProject.Blog"
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::13.11.0 --force
+dotnet new install Umbraco.Templates::13.12.0 --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
@@ -158,6 +171,7 @@ dotnet run --project "MyProject"
 ```
 
 **⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
+
 ```powershell
 dotnet remove "MyProject" package Clean
 dotnet add "MyProject" package Clean.Core --version 4.2.2
@@ -189,22 +203,22 @@ dotnet run --project "MyProject.Blog"
 
 ## Development and Source Code
 
-**Staying up to date**: The main branch will always be for the latest Long Term Support (LTS) version of Umbraco. 
+**Staying up to date**: The main branch will always be for the latest Long Term Support (LTS) version of Umbraco.
 
-We do not maintain old versions as those versions of Umbraco are no longer supported. 
+We do not maintain old versions as those versions of Umbraco are no longer supported.
 
-You can still install the older versions from NuGet though. 
+You can still install the older versions from NuGet though.
 
 Here is a table which shows you which version of Clean was for which version of Umbraco.
 
 the idea is that we target the latest Lobg Term Support (LTS)
 
-| Clean Version | Umbraco Version | .NET Version | Umbraco Support Type |
-|--------------|-----------------|--------------|--------------|
-| 4.x          | 13              | .NET 8       | LTS (Long Term Support) |
-| 5.x          |  15            | .NET 9       | LTS (Standard Term Support) |
-| 6.x          | 16             | .NET 9       | LTS (Standard Term Support) |
-| 7.x          | 17              | .NET 10       | LTS (Long Term Support) |
+| Clean Version | Umbraco Version | .NET Version | Umbraco Support Type        |
+| ------------- | --------------- | ------------ | --------------------------- |
+| 4.x           | 13              | .NET 8       | LTS (Long Term Support)     |
+| 5.x           | 15              | .NET 9       | LTS (Standard Term Support) |
+| 6.x           | 16              | .NET 9       | LTS (Standard Term Support) |
+| 7.x           | 17              | .NET 10      | LTS (Long Term Support)     |
 
 ## Headless/API Implementation
 
