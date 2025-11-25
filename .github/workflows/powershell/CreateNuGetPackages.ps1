@@ -754,20 +754,21 @@ $sourceUrls = @()
 #       https://api.nuget.org/v3/index.json
 #   2.  CleanLocalPackages [Enabled]
 #       D:\a\Clean\Clean\.artifacts\nuget
+# Note: Paths may contain spaces (e.g., C:\Program Files\...)
 foreach ($line in $allSourcesOutput) {
-    # Match URLs (http/https) and local paths
-    if ($line -match '^\s+(https?://\S+)') {
+    # Match URLs (http/https) - match everything after http(s):// to end of line
+    if ($line -match '^\s+(https?://.+)$') {
         $url = $matches[1].Trim()
         $sourceUrls += $url
         Write-Host "  Found source: $url" -ForegroundColor Cyan
     }
-    elseif ($line -match '^\s+([A-Za-z]:\\[^\s]+)') {
-        # Windows absolute path (e.g., D:\path\to\folder)
+    elseif ($line -match '^\s+([A-Za-z]:\\.+)$') {
+        # Windows absolute path (e.g., D:\path\to\folder or C:\Program Files\dotnet)
         $path = $matches[1].Trim()
         $sourceUrls += $path
         Write-Host "  Found source: $path" -ForegroundColor Cyan
     }
-    elseif ($line -match '^\s+(/[^\s]+)') {
+    elseif ($line -match '^\s+(/.+)$') {
         # Unix absolute path (e.g., /path/to/folder)
         $path = $matches[1].Trim()
         $sourceUrls += $path
