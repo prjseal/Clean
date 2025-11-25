@@ -274,6 +274,7 @@ jobs:
           dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
 
           # Push each package
+          $failedPackages = @()
           foreach ($pkg in $packages) {
             Write-Host "Publishing $($pkg.Name)..." -ForegroundColor Cyan
             dotnet nuget push $pkg.FullName --source "GitHubPackages" --api-key "$env:GITHUB_TOKEN" --skip-duplicate
@@ -281,7 +282,8 @@ jobs:
             if ($LASTEXITCODE -eq 0) {
               Write-Host "✅ Successfully published $($pkg.Name)" -ForegroundColor Green
             } else {
-              Write-Host "⚠️  Failed to publish $($pkg.Name) (exit code: $LASTEXITCODE)" -ForegroundColor Yellow
+              Write-Host "❌ Failed to publish $($pkg.Name) (exit code: $LASTEXITCODE)" -ForegroundColor Red
+              $failedPackages += $pkg.Name
             }
           }
 
@@ -289,6 +291,17 @@ jobs:
           Write-Host "================================================" -ForegroundColor Cyan
           Write-Host "Package Publishing Complete" -ForegroundColor Cyan
           Write-Host "================================================" -ForegroundColor Cyan
+
+          # Check if any packages failed
+          if ($failedPackages.Count -gt 0) {
+            Write-Host "::error::Failed to publish the following packages:" -ForegroundColor Red
+            foreach ($failedPkg in $failedPackages) {
+              Write-Host "  - $failedPkg" -ForegroundColor Red
+            }
+            exit 1
+          }
+
+          Write-Host "✅ All packages published successfully!" -ForegroundColor Green
 
       - name: Test Package Installation and Site
         shell: pwsh
