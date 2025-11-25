@@ -32,9 +32,8 @@ function Fix-BlockListLabels {
         $labelMap = @{}
         foreach ($block in $usyncConfig.blocks) {
             if ($block.contentElementTypeKey -and $block.label) {
-                # Strip markdown bold markers
-                $label = $block.label -replace '\*\*', ''
-                $labelMap[$block.contentElementTypeKey] = $label
+                # Preserve asterisks for markdown formatting
+                $labelMap[$block.contentElementTypeKey] = $block.label
             }
         }
 
