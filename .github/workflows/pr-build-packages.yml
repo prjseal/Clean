@@ -341,6 +341,68 @@ jobs:
 
           Write-Host "✅ All packages published successfully!" -ForegroundColor Green
 
+          # Wait for packages to be available in GitHub Packages (retry logic)
+          Write-Host ""
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Waiting for Packages to be Available" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
+          $maxRetries = 10
+          $retryDelay = 30
+          $allPackagesAvailable = $false
+
+          for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+            Write-Host "`nAttempt $attempt of $maxRetries..." -ForegroundColor Yellow
+
+            $unavailablePackages = @()
+            foreach ($pkg in $packages) {
+              $packageName = $pkg.BaseName -replace '\.\d+\.\d+\.\d+.*$', ''
+              $version = "${{ steps.version.outputs.version }}"
+
+              Write-Host "Checking if $packageName $version is available..." -ForegroundColor Cyan
+
+              try {
+                # Try to query the package from GitHub Packages
+                $searchUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/download/$packageName/$version/$packageName.$version.nupkg"
+                $headers = @{
+                  "Authorization" = "Bearer $env:GITHUB_TOKEN"
+                }
+
+                $response = Invoke-WebRequest -Uri $searchUrl -Headers $headers -Method Head -ErrorAction Stop
+                Write-Host "  ✅ $packageName is available" -ForegroundColor Green
+              }
+              catch {
+                Write-Host "  ⏳ $packageName is not yet available" -ForegroundColor Yellow
+                $unavailablePackages += $packageName
+              }
+            }
+
+            if ($unavailablePackages.Count -eq 0) {
+              $allPackagesAvailable = $true
+              Write-Host "`n✅ All packages are now available!" -ForegroundColor Green
+              break
+            }
+
+            if ($attempt -lt $maxRetries) {
+              Write-Host "`n⏳ $($unavailablePackages.Count) package(s) not yet available. Waiting $retryDelay seconds..." -ForegroundColor Yellow
+              Start-Sleep -Seconds $retryDelay
+            }
+          }
+
+          if (-not $allPackagesAvailable) {
+            Write-Host "::error::Packages are still not available after $maxRetries attempts ($($maxRetries * $retryDelay) seconds)" -ForegroundColor Red
+            Write-Host "Unavailable packages:" -ForegroundColor Red
+            foreach ($pkg in $unavailablePackages) {
+              Write-Host "  - $pkg" -ForegroundColor Red
+            }
+            exit 1
+          }
+
+          Write-Host ""
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Packages Ready for Testing" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+
       - name: Test Package Installation and Site
         shell: pwsh
         env:
