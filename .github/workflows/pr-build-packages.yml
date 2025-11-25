@@ -212,25 +212,37 @@ jobs:
           }
           catch {
             Write-Host "Error fetching version from NuGet: $_"
-            Write-Host "Falling back to version from Clean.csproj..."
+            Write-Host "Falling back to version from .csproj files..."
 
-            # Read version from Clean.csproj as fallback
-            $cleanCsprojPath = Get-ChildItem -Path "${{ github.workspace }}" -Recurse -Filter "Clean.csproj" -File |
-              Where-Object { $_.FullName -notmatch "\\bin\\" -and $_.FullName -notmatch "\\obj\\" -and $_.Name -eq "Clean.csproj" } |
-              Select-Object -First 1
-
+            # Try multiple .csproj files in order of preference
+            $csprojFilesToTry = @("Clean.csproj", "Clean.Core.csproj", "Clean.Headless.csproj", "template-pack.csproj")
             $fallbackVersion = "1.0.0"
-            if ($cleanCsprojPath) {
-              [xml]$cleanXml = Get-Content $cleanCsprojPath.FullName
-              $versionNode = $cleanXml.Project.PropertyGroup.Version | Select-Object -First 1
-              if ($versionNode) {
-                # Strip any prerelease suffix to get base version
-                if ($versionNode -match '^([0-9]+\.[0-9]+\.[0-9]+)') {
-                  $fallbackVersion = $matches[1]
-                  Write-Host "Found version in Clean.csproj: $versionNode"
-                  Write-Host "Using base version: $fallbackVersion"
+            $versionFound = $false
+
+            foreach ($fileName in $csprojFilesToTry) {
+              Write-Host "Checking $fileName..."
+              $csprojPath = Get-ChildItem -Path "${{ github.workspace }}" -Recurse -Filter $fileName -File |
+                Where-Object { $_.FullName -notmatch "\\bin\\" -and $_.FullName -notmatch "\\obj\\" } |
+                Select-Object -First 1
+
+              if ($csprojPath) {
+                [xml]$csprojXml = Get-Content $csprojPath.FullName
+                $versionNode = $csprojXml.Project.PropertyGroup.Version | Select-Object -First 1
+                if ($versionNode) {
+                  # Strip any prerelease suffix to get base version
+                  if ($versionNode -match '^([0-9]+\.[0-9]+\.[0-9]+)') {
+                    $fallbackVersion = $matches[1]
+                    Write-Host "✓ Found version in $fileName`: $versionNode"
+                    Write-Host "  Using base version: $fallbackVersion"
+                    $versionFound = $true
+                    break
+                  }
                 }
               }
+            }
+
+            if (-not $versionFound) {
+              Write-Host "⚠ Could not find version in any .csproj file, using default: $fallbackVersion"
             }
 
             $buildNumber = "${{ github.run_number }}"
