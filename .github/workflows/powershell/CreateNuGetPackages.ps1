@@ -752,13 +752,33 @@ $sourceUrls = @()
 # Registered Sources:
 #   1.  nuget.org [Enabled]
 #       https://api.nuget.org/v3/index.json
+#   2.  CleanLocalPackages [Enabled]
+#       D:\a\Clean\Clean\.artifacts\nuget
 foreach ($line in $allSourcesOutput) {
-    # Match URLs (lines that start with whitespace and contain https://)
+    # Match URLs (http/https) and local paths
     if ($line -match '^\s+(https?://\S+)') {
         $url = $matches[1].Trim()
         $sourceUrls += $url
         Write-Host "  Found source: $url" -ForegroundColor Cyan
     }
+    elseif ($line -match '^\s+([A-Za-z]:\\[^\s]+)') {
+        # Windows absolute path (e.g., D:\path\to\folder)
+        $path = $matches[1].Trim()
+        $sourceUrls += $path
+        Write-Host "  Found source: $path" -ForegroundColor Cyan
+    }
+    elseif ($line -match '^\s+(/[^\s]+)') {
+        # Unix absolute path (e.g., /path/to/folder)
+        $path = $matches[1].Trim()
+        $sourceUrls += $path
+        Write-Host "  Found source: $path" -ForegroundColor Cyan
+    }
+}
+
+# Ensure local source is always included (in case parsing missed it)
+if ($sourceUrls -notcontains $nugetDestination) {
+    $sourceUrls += $nugetDestination
+    Write-Host "  Added local source: $nugetDestination" -ForegroundColor Green
 }
 
 if ($sourceUrls.Count -eq 0) {
