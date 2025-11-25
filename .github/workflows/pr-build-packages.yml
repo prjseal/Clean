@@ -392,7 +392,7 @@ jobs:
 
           # Install Clean package from local packages
           Write-Host "`nInstalling Clean package version ${{ steps.version.outputs.version }} from local packages..." -ForegroundColor Yellow
-          dotnet add "TestProject" package Clean --version "${{ steps.version.outputs.version }}" --source "LocalPackages"
+          dotnet add "TestProject" package Clean --version "${{ steps.version.outputs.version }}" --source $localPackagesPath
 
           # Start the site in background
           Write-Host "`nStarting Umbraco site..." -ForegroundColor Yellow
@@ -604,7 +604,7 @@ jobs:
 
           # Install the Clean template from local packages
           Write-Host "`nInstalling Clean template version ${{ steps.version.outputs.version }} from local packages..." -ForegroundColor Yellow
-          dotnet new install Umbraco.Community.Templates.Clean::${{ steps.version.outputs.version }} --nuget-source "LocalPackages" --force
+          dotnet new install Umbraco.Community.Templates.Clean::${{ steps.version.outputs.version }} --nuget-source $localPackagesPath --force
 
           # Create a new project using the template
           Write-Host "`nCreating test project using template..." -ForegroundColor Yellow
@@ -827,7 +827,7 @@ jobs:
 
           # Install the Clean template from local packages
           Write-Host "`nInstalling Clean template version ${{ steps.version.outputs.version }} from local packages..." -ForegroundColor Yellow
-          dotnet new install Umbraco.Community.Templates.Clean::${{ steps.version.outputs.version }} --nuget-source "LocalPackages" --force
+          dotnet new install Umbraco.Community.Templates.Clean::${{ steps.version.outputs.version }} --nuget-source $localPackagesPath --force
 
           # Create a new project using the template with a period in the name
           Write-Host "`nCreating test project with period in name..." -ForegroundColor Yellow
