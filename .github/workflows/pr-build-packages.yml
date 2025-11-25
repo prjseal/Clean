@@ -212,11 +212,44 @@ jobs:
           }
           catch {
             Write-Host "Error fetching version from NuGet: $_"
+            Write-Host "Falling back to version from .csproj files..."
+
+            # Try multiple .csproj files in order of preference
+            $csprojFilesToTry = @("Clean.Blog.csproj", "Clean.csproj", "Clean.Core.csproj", "Clean.Headless.csproj", "template-pack.csproj")
+            $fallbackVersion = "1.0.0"
+            $versionFound = $false
+
+            foreach ($fileName in $csprojFilesToTry) {
+              Write-Host "Checking $fileName..."
+              $csprojPath = Get-ChildItem -Path "${{ github.workspace }}" -Recurse -Filter $fileName -File |
+                Where-Object { $_.FullName -notmatch "\\bin\\" -and $_.FullName -notmatch "\\obj\\" } |
+                Select-Object -First 1
+
+              if ($csprojPath) {
+                [xml]$csprojXml = Get-Content $csprojPath.FullName
+                $versionNode = $csprojXml.Project.PropertyGroup.Version | Select-Object -First 1
+                if ($versionNode) {
+                  # Strip any prerelease suffix to get base version
+                  if ($versionNode -match '^([0-9]+\.[0-9]+\.[0-9]+)') {
+                    $fallbackVersion = $matches[1]
+                    Write-Host "✓ Found version in $fileName`: $versionNode"
+                    Write-Host "  Using base version: $fallbackVersion"
+                    $versionFound = $true
+                    break
+                  }
+                }
+              }
+            }
+
+            if (-not $versionFound) {
+              Write-Host "⚠ Could not find version in any .csproj file, using default: $fallbackVersion"
+            }
+
             $buildNumber = "${{ github.run_number }}"
-            $buildVersion = "1.0.0-ci.$buildNumber"
-            Write-Host "Using default version: $buildVersion"
+            $buildVersion = "$fallbackVersion-ci.$buildNumber"
+            Write-Host "Using fallback version: $buildVersion"
             echo "version=$buildVersion" >> $env:GITHUB_OUTPUT
-            echo "base_version=1.0.0" >> $env:GITHUB_OUTPUT
+            echo "base_version=$fallbackVersion" >> $env:GITHUB_OUTPUT
           }
 
       - name: Display version info
@@ -274,6 +307,7 @@ jobs:
           dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
 
           # Push each package
+          $failedPackages = @()
           foreach ($pkg in $packages) {
             Write-Host "Publishing $($pkg.Name)..." -ForegroundColor Cyan
             dotnet nuget push $pkg.FullName --source "GitHubPackages" --api-key "$env:GITHUB_TOKEN" --skip-duplicate
@@ -281,7 +315,8 @@ jobs:
             if ($LASTEXITCODE -eq 0) {
               Write-Host "✅ Successfully published $($pkg.Name)" -ForegroundColor Green
             } else {
-              Write-Host "⚠️  Failed to publish $($pkg.Name) (exit code: $LASTEXITCODE)" -ForegroundColor Yellow
+              Write-Host "❌ Failed to publish $($pkg.Name) (exit code: $LASTEXITCODE)" -ForegroundColor Red
+              $failedPackages += $pkg.Name
             }
           }
 
@@ -289,6 +324,17 @@ jobs:
           Write-Host "================================================" -ForegroundColor Cyan
           Write-Host "Package Publishing Complete" -ForegroundColor Cyan
           Write-Host "================================================" -ForegroundColor Cyan
+
+          # Check if any packages failed
+          if ($failedPackages.Count -gt 0) {
+            Write-Host "::error::Failed to publish the following packages:" -ForegroundColor Red
+            foreach ($failedPkg in $failedPackages) {
+              Write-Host "  - $failedPkg" -ForegroundColor Red
+            }
+            exit 1
+          }
+
+          Write-Host "✅ All packages published successfully!" -ForegroundColor Green
 
       - name: Test Package Installation and Site
         shell: pwsh
