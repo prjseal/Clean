@@ -127,6 +127,8 @@ jobs:
               "umbraco-marketplace-readme-clean.md"
             )
 
+            $umbracoSectionHeader = "## Umbraco $umbracoMajor"
+
             foreach ($readmeFile in $readmeFiles) {
               if (-not (Test-Path $readmeFile)) {
                 Write-Host "⚠️  File not found: $readmeFile" -ForegroundColor Yellow
@@ -137,69 +139,38 @@ jobs:
               $content = Get-Content $readmeFile -Raw
               $originalContent = $content
 
-              # Determine if this is a marketplace readme (different structure)
-              $isMarketplaceReadme = $readmeFile -like "*marketplace*"
+              # Find the section for this Umbraco version
+              if ($content -match "(?s)$umbracoSectionHeader.*?(?=(##|\z))") {
+                $section = $matches[0]
+                $updatedSection = $section
 
-              if ($isMarketplaceReadme) {
-                # Marketplace readmes use "**For Umbraco X (.NET Y):**" sections
-                # Find and update the section for this Umbraco version
-                $umbracoNetVersion = if ($umbracoMajor -eq 13) { "8" } else { "10" }
-                $marketplaceSectionPattern = "\*\*For Umbraco $umbracoMajor \(\.NET $umbracoNetVersion\):\*\*.*?(?=(\*\*For Umbraco|\z))"
+                # Update Umbraco.Templates version
+                $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Templates::\S+", "dotnet new install Umbraco.Templates::$umbracoVersion"
 
-                if ($content -match "(?s)$marketplaceSectionPattern") {
-                  $section = $matches[0]
-                  $updatedSection = $section
+                # Update Clean package version
+                $updatedSection = $updatedSection -replace "(dotnet add .* package Clean --version )\S+", "`${1}$cleanVersion"
 
-                  # Update Clean package version
-                  $updatedSection = $updatedSection -replace "(dotnet add .* package Clean\s*(?!\.Core|\.Headless))", "dotnet add `"MyProject`" package Clean"
+                # Update Clean.Core package version (in warning sections)
+                $updatedSection = $updatedSection -replace "(dotnet add .* package Clean\.Core --version )\S+", "`${1}$cleanVersion"
 
-                  # Update Clean.Core package version (in warning sections)
-                  $updatedSection = $updatedSection -replace "(dotnet add .* package Clean\.Core --version )\S+", "`${1}$cleanVersion"
+                # Update Clean template package version
+                $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Community\.Templates\.Clean::\S+", "dotnet new install Umbraco.Community.Templates.Clean::$cleanVersion"
 
-                  # Replace the section in the content
-                  $content = $content -replace [regex]::Escape($section), $updatedSection
+                # Replace the section in the content
+                $content = $content -replace [regex]::Escape($section), $updatedSection
 
-                  Write-Host "✅ Updated $readmeFile (marketplace format)" -ForegroundColor Green
-                  Write-Host "   - Clean.Core: $cleanVersion" -ForegroundColor White
-                } else {
-                  Write-Host "⚠️  Could not find section '**For Umbraco $umbracoMajor (.NET $umbracoNetVersion):**' in $readmeFile" -ForegroundColor Yellow
+                # Write back to file only if content changed
+                if ($content -ne $originalContent) {
+                  Set-Content -Path $readmeFile -Value $content -NoNewline
                 }
+
+                Write-Host "✅ Updated $readmeFile" -ForegroundColor Green
+                Write-Host "   - Umbraco.Templates: $umbracoVersion" -ForegroundColor White
+                Write-Host "   - Clean: $cleanVersion" -ForegroundColor White
+                Write-Host "   - Clean.Core: $cleanVersion" -ForegroundColor White
+                Write-Host "   - Umbraco.Community.Templates.Clean: $cleanVersion" -ForegroundColor White
               } else {
-                # Main README.md uses "## Umbraco X" section headers
-                $umbracoSectionHeader = "## Umbraco $umbracoMajor"
-
-                if ($content -match "(?s)$umbracoSectionHeader.*?(?=(##|\z))") {
-                  $section = $matches[0]
-                  $updatedSection = $section
-
-                  # Update Umbraco.Templates version
-                  $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Templates::\S+", "dotnet new install Umbraco.Templates::$umbracoVersion"
-
-                  # Update Clean package version
-                  $updatedSection = $updatedSection -replace "(dotnet add .* package Clean --version )\S+", "`${1}$cleanVersion"
-
-                  # Update Clean.Core package version (in warning sections)
-                  $updatedSection = $updatedSection -replace "(dotnet add .* package Clean\.Core --version )\S+", "`${1}$cleanVersion"
-
-                  # Update Clean template package version
-                  $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Community\.Templates\.Clean::\S+", "dotnet new install Umbraco.Community.Templates.Clean::$cleanVersion"
-
-                  # Replace the section in the content
-                  $content = $content -replace [regex]::Escape($section), $updatedSection
-
-                  Write-Host "✅ Updated $readmeFile (standard format)" -ForegroundColor Green
-                  Write-Host "   - Umbraco.Templates: $umbracoVersion" -ForegroundColor White
-                  Write-Host "   - Clean: $cleanVersion" -ForegroundColor White
-                  Write-Host "   - Clean.Core: $cleanVersion" -ForegroundColor White
-                  Write-Host "   - Umbraco.Community.Templates.Clean: $cleanVersion" -ForegroundColor White
-                } else {
-                  Write-Host "⚠️  Could not find section '$umbracoSectionHeader' in $readmeFile" -ForegroundColor Yellow
-                }
-              }
-
-              # Write back to file only if content changed
-              if ($content -ne $originalContent) {
-                Set-Content -Path $readmeFile -Value $content -NoNewline
+                Write-Host "⚠️  Could not find section '$umbracoSectionHeader' in $readmeFile" -ForegroundColor Yellow
               }
             }
 
