@@ -1,4 +1,4 @@
-name: Update NuGet Packages
+name: Scheduled - Update NuGet Packages
 
 on:
   schedule:
