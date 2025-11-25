@@ -248,6 +248,7 @@ Here's the complete sequence:
 ┌─────────────────────────────────────────────────────────────┐
 │ 4. Get Latest NuGet Version & Create Build Version          │
 │    - Queries NuGet.org API for latest "Clean" version       │
+│    - Falls back to .csproj files if API unavailable         │
 │    - Parses semantic versioning                              │
 │    - Creates CI version: {base}-ci.{build-number}           │
 └─────────────────────────────────────────────────────────────┘
@@ -273,6 +274,7 @@ Here's the complete sequence:
 │    - Adds GitHub Packages as NuGet source                    │
 │    - Pushes each package to feed                             │
 │    - Uses GITHUB_TOKEN for authentication                    │
+│    - Tracks failed packages and fails build if any fail      │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -422,8 +424,10 @@ When reviewing a PR, check:
 ### Common Issues
 
 **Version API Failure**:
-- If NuGet.org API is unavailable, workflow defaults to `1.0.0-ci.{build}`
-- Check workflow logs for "Error fetching version from NuGet"
+- If NuGet.org API is unavailable, workflow falls back to reading version from .csproj files
+- Checks files in order: `Clean.Blog.csproj`, `Clean.csproj`, `Clean.Core.csproj`, `Clean.Headless.csproj`, `template-pack.csproj`
+- Only defaults to `1.0.0-ci.{build}` if no .csproj files contain version information
+- Check workflow logs for "Error fetching version from NuGet" and "Falling back to version from .csproj files..."
 
 **Site Startup Timeout**:
 - Site has 180 seconds to start
@@ -436,9 +440,12 @@ When reviewing a PR, check:
 - Verify navigation structure hasn't broken
 
 **GitHub Packages Push Failures**:
-- Usually authentication issues
+- The workflow will **fail** if any package fails to publish
+- Failed packages are tracked and displayed in error messages
+- Usually caused by authentication issues
 - Requires `GITHUB_TOKEN` with package write permissions
 - May occur if duplicate version already exists (uses `--skip-duplicate`)
+- Check workflow logs for "Failed to publish" error messages and exit code details
 
 ### Logs and Debugging
 

@@ -99,11 +99,3 @@ If you're unsure whether Umbraco has fixed the issue:
 4. Check if the `blocks` array contains `"label"` properties
 
 If labels are present, the bug is fixed and you can safely remove this workaround!
-
-## What Changed from Python to PowerShell
-
-This removal guide has been updated. The original implementation used Python, but was rewritten in PowerShell for better integration with the existing build process. The removal steps are now simpler:
-
-- ✅ No Python setup to remove from GitHub Actions workflows
-- ✅ Everything is self-contained in one PowerShell script
-- ✅ Easier to maintain and remove
