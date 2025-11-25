@@ -81,8 +81,8 @@ function Fix-BlockListLabels {
         # Unicode-escape single quotes to match Umbraco format
         $modifiedJson = $modifiedJson -replace "'", '\u0027'
 
-        # HTML-encode for XML attribute
-        $modifiedEncoded = $modifiedJson -replace '"', '&quot;'
+        # HTML-encode for XML attribute (properly escape all special XML characters: <, >, &, ", ')
+        $modifiedEncoded = [System.Web.HttpUtility]::HtmlEncode($modifiedJson)
 
         # Replace in the original XML content
         $prefix = $match.Groups[1].Value
