@@ -197,7 +197,7 @@ dotnet run --project "MyProject.Blog"
 # The site should now be running and visible on the front end
 ```
 
-> **✨ Note**: As of version 7.0.0-rc2+, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
+> **✨ Note**: As of version 7.0.0-rc4, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
 
 ---
 
