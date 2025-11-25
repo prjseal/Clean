@@ -215,7 +215,7 @@ jobs:
             Write-Host "Falling back to version from .csproj files..."
 
             # Try multiple .csproj files in order of preference
-            $csprojFilesToTry = @("Clean.csproj", "Clean.Core.csproj", "Clean.Headless.csproj", "template-pack.csproj")
+            $csprojFilesToTry = @("Clean.Blog.csproj", "Clean.csproj", "Clean.Core.csproj", "Clean.Headless.csproj", "template-pack.csproj")
             $fallbackVersion = "1.0.0"
             $versionFound = $false
 
