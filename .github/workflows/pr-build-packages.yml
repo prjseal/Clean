@@ -341,75 +341,13 @@ jobs:
 
           Write-Host "✅ All packages published successfully!" -ForegroundColor Green
 
-          # Wait for packages to be available in GitHub Packages (retry logic)
-          Write-Host ""
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Waiting for Packages to be Available" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
-          $maxRetries = 10
-          $retryDelay = 30
-          $allPackagesAvailable = $false
-
-          for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
-            Write-Host "`nAttempt $attempt of $maxRetries..." -ForegroundColor Yellow
-
-            $unavailablePackages = @()
-            foreach ($pkg in $packages) {
-              $packageName = $pkg.BaseName -replace '\.\d+\.\d+\.\d+.*$', ''
-              $version = "${{ steps.version.outputs.version }}"
-
-              Write-Host "Checking if $packageName $version is available..." -ForegroundColor Cyan
-
-              try {
-                # Try to query the package from GitHub Packages
-                $searchUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/download/$packageName/$version/$packageName.$version.nupkg"
-                $headers = @{
-                  "Authorization" = "Bearer $env:GITHUB_TOKEN"
-                }
-
-                $response = Invoke-WebRequest -Uri $searchUrl -Headers $headers -Method Head -ErrorAction Stop
-                Write-Host "  ✅ $packageName is available" -ForegroundColor Green
-              }
-              catch {
-                Write-Host "  ⏳ $packageName is not yet available" -ForegroundColor Yellow
-                $unavailablePackages += $packageName
-              }
-            }
-
-            if ($unavailablePackages.Count -eq 0) {
-              $allPackagesAvailable = $true
-              Write-Host "`n✅ All packages are now available!" -ForegroundColor Green
-              break
-            }
-
-            if ($attempt -lt $maxRetries) {
-              Write-Host "`n⏳ $($unavailablePackages.Count) package(s) not yet available. Waiting $retryDelay seconds..." -ForegroundColor Yellow
-              Start-Sleep -Seconds $retryDelay
-            }
-          }
-
-          if (-not $allPackagesAvailable) {
-            Write-Host "::error::Packages are still not available after $maxRetries attempts ($($maxRetries * $retryDelay) seconds)" -ForegroundColor Red
-            Write-Host "Unavailable packages:" -ForegroundColor Red
-            foreach ($pkg in $unavailablePackages) {
-              Write-Host "  - $pkg" -ForegroundColor Red
-            }
-            exit 1
-          }
-
-          Write-Host ""
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Packages Ready for Testing" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
       - name: Test Package Installation and Site
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Testing Package Installation from GitHub Packages" -ForegroundColor Cyan
+          Write-Host "Testing Package Installation from Local Packages" -ForegroundColor Cyan
           Write-Host "================================================" -ForegroundColor Cyan
 
           # Create test directory
@@ -420,18 +358,19 @@ jobs:
           New-Item -ItemType Directory -Path $testDir | Out-Null
           Set-Location $testDir
 
-          # Configure GitHub Packages as NuGet source
-          Write-Host "`nConfiguring GitHub Packages as NuGet source..." -ForegroundColor Yellow
-          $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+          # Configure local NuGet packages folder as source
+          Write-Host "`nConfiguring local NuGet packages folder as source..." -ForegroundColor Yellow
+          $localPackagesPath = "${{ github.workspace }}\.artifacts\nuget"
+          Write-Host "Local packages path: $localPackagesPath" -ForegroundColor Cyan
 
           # Check if source already exists
           $existingSources = dotnet nuget list source
-          if ($existingSources -match "GitHubPackages") {
-            Write-Host "GitHubPackages source already exists, removing it first..." -ForegroundColor Yellow
-            dotnet nuget remove source "GitHubPackages"
+          if ($existingSources -match "LocalPackages") {
+            Write-Host "LocalPackages source already exists, removing it first..." -ForegroundColor Yellow
+            dotnet nuget remove source "LocalPackages"
           }
 
-          dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
+          dotnet nuget add source $localPackagesPath --name "LocalPackages"
 
           # Read Umbraco version from Clean.csproj to determine which template version to use
           Write-Host "`nDetermining Umbraco version from Clean package..." -ForegroundColor Yellow
@@ -451,9 +390,9 @@ jobs:
           dotnet new umbraco --force -n "TestProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
           dotnet sln add "TestProject"
 
-          # Install Clean package from GitHub Packages
-          Write-Host "`nInstalling Clean package version ${{ steps.version.outputs.version }} from GitHub Packages..." -ForegroundColor Yellow
-          dotnet add "TestProject" package Clean --version "${{ steps.version.outputs.version }}" --source $sourceUrl
+          # Install Clean package from local packages
+          Write-Host "`nInstalling Clean package version ${{ steps.version.outputs.version }} from local packages..." -ForegroundColor Yellow
+          dotnet add "TestProject" package Clean --version "${{ steps.version.outputs.version }}" --source "LocalPackages"
 
           # Start the site in background
           Write-Host "`nStarting Umbraco site..." -ForegroundColor Yellow
@@ -638,7 +577,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Testing Template Installation from GitHub Packages" -ForegroundColor Cyan
+          Write-Host "Testing Template Installation from Local Packages" -ForegroundColor Cyan
           Write-Host "================================================" -ForegroundColor Cyan
 
           # Create test directory for template
@@ -649,22 +588,23 @@ jobs:
           New-Item -ItemType Directory -Path $testDir | Out-Null
           Set-Location $testDir
 
-          # Configure GitHub Packages as NuGet source
-          Write-Host "`nConfiguring GitHub Packages as NuGet source..." -ForegroundColor Yellow
-          $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+          # Configure local NuGet packages folder as source
+          Write-Host "`nConfiguring local NuGet packages folder as source..." -ForegroundColor Yellow
+          $localPackagesPath = "${{ github.workspace }}\.artifacts\nuget"
+          Write-Host "Local packages path: $localPackagesPath" -ForegroundColor Cyan
 
           # Check if source already exists
           $existingSources = dotnet nuget list source
-          if ($existingSources -match "GitHubPackages") {
-            Write-Host "GitHubPackages source already exists, removing it first..." -ForegroundColor Yellow
-            dotnet nuget remove source "GitHubPackages"
+          if ($existingSources -match "LocalPackages") {
+            Write-Host "LocalPackages source already exists, removing it first..." -ForegroundColor Yellow
+            dotnet nuget remove source "LocalPackages"
           }
 
-          dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
+          dotnet nuget add source $localPackagesPath --name "LocalPackages"
 
-          # Install the Clean template from GitHub Packages
-          Write-Host "`nInstalling Clean template version ${{ steps.version.outputs.version }} from GitHub Packages..." -ForegroundColor Yellow
-          dotnet new install Umbraco.Community.Templates.Clean::${{ steps.version.outputs.version }} --nuget-source $sourceUrl --force
+          # Install the Clean template from local packages
+          Write-Host "`nInstalling Clean template version ${{ steps.version.outputs.version }} from local packages..." -ForegroundColor Yellow
+          dotnet new install Umbraco.Community.Templates.Clean::${{ steps.version.outputs.version }} --nuget-source "LocalPackages" --force
 
           # Create a new project using the template
           Write-Host "`nCreating test project using template..." -ForegroundColor Yellow
@@ -867,26 +807,27 @@ jobs:
           New-Item -ItemType Directory -Path $testDir | Out-Null
           Set-Location $testDir
 
-          # Configure GitHub Packages as NuGet source
-          Write-Host "`nConfiguring GitHub Packages as NuGet source..." -ForegroundColor Yellow
-          $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+          # Configure local NuGet packages folder as source
+          Write-Host "`nConfiguring local NuGet packages folder as source..." -ForegroundColor Yellow
+          $localPackagesPath = "${{ github.workspace }}\.artifacts\nuget"
+          Write-Host "Local packages path: $localPackagesPath" -ForegroundColor Cyan
 
           # Check if source already exists
           $existingSources = dotnet nuget list source
-          if ($existingSources -match "GitHubPackages") {
-            Write-Host "GitHubPackages source already exists, removing it first..." -ForegroundColor Yellow
-            dotnet nuget remove source "GitHubPackages"
+          if ($existingSources -match "LocalPackages") {
+            Write-Host "LocalPackages source already exists, removing it first..." -ForegroundColor Yellow
+            dotnet nuget remove source "LocalPackages"
           }
 
-          dotnet nuget add source $sourceUrl --name "GitHubPackages" --username "${{ github.repository_owner }}" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
+          dotnet nuget add source $localPackagesPath --name "LocalPackages"
 
           # Uninstall any existing Clean templates to avoid conflicts
           Write-Host "`nUninstalling any existing Clean templates..." -ForegroundColor Yellow
           dotnet new uninstall Umbraco.Community.Templates.Clean 2>&1 | Out-Null
 
-          # Install the Clean template from GitHub Packages
-          Write-Host "`nInstalling Clean template version ${{ steps.version.outputs.version }} from GitHub Packages..." -ForegroundColor Yellow
-          dotnet new install Umbraco.Community.Templates.Clean::${{ steps.version.outputs.version }} --nuget-source $sourceUrl --force
+          # Install the Clean template from local packages
+          Write-Host "`nInstalling Clean template version ${{ steps.version.outputs.version }} from local packages..." -ForegroundColor Yellow
+          dotnet new install Umbraco.Community.Templates.Clean::${{ steps.version.outputs.version }} --nuget-source "LocalPackages" --force
 
           # Create a new project using the template with a period in the name
           Write-Host "`nCreating test project with period in name..." -ForegroundColor Yellow
