@@ -59,9 +59,7 @@ dotnet CLI template for creating new projects. Use `dotnet new umbraco-starter-c
 dotnet new umbraco -n "MyProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
 
 # Add Clean package
-dotnet add "MyProject" package Clean
-
-# Run the project
+dotnet add "MyProject" package Clean# Run the project
 dotnet run --project "MyProject"
 ```
 
@@ -69,7 +67,7 @@ dotnet run --project "MyProject"
 
 ```powershell
 dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 7.0.0-rc1
+dotnet add "MyProject" package Clean.Core --version 7.0.0-preview14
 ```
 
 **For Umbraco 13 (.NET 8):**
