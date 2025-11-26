@@ -177,7 +177,7 @@ All packages are automatically published to **GitHub Packages** (not NuGet.org),
 
 **Package Feed URL**: `https://nuget.pkg.github.com/{owner}/index.json`
 
-See [CONSUMING-GITHUB-PACKAGES.md](CONSUMING-GITHUB-PACKAGES.md) for installation instructions.
+See [general-consuming-packages.md](general-consuming-packages.md) for installation instructions.
 
 ### 4. **Comprehensive Automated Testing**
 
@@ -353,7 +353,7 @@ To install packages from a PR build:
      --nuget-source https://nuget.pkg.github.com/OWNER/index.json
    ```
 
-See [CONSUMING-GITHUB-PACKAGES.md](CONSUMING-GITHUB-PACKAGES.md) for detailed instructions.
+See [general-consuming-packages.md](general-consuming-packages.md) for detailed instructions.
 
 ## Reviewing PR Builds
 
@@ -420,8 +420,8 @@ Each major step displays:
 
 ## Related Documentation
 
-- [VERSIONING-AND-RELEASES.md](VERSIONING-AND-RELEASES.md) - Release process and version strategy
-- [CONSUMING-GITHUB-PACKAGES.md](CONSUMING-GITHUB-PACKAGES.md) - How to consume development packages
+- [workflow-versioning-releases.md](workflow-versioning-releases.md) - Release process and version strategy
+- [general-consuming-packages.md](general-consuming-packages.md) - How to consume development packages
 - [README.md](../README.md) - Project overview and installation
 
 ## Differences from Release Workflow

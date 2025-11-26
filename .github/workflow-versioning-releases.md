@@ -72,7 +72,7 @@ NuGet follows SemVer 2.0 precedence rules:
 - Version format: `{latest-stable}-ci.{build-number}`
 - Example: `7.0.0-ci.123`
 
-See [CONSUMING-GITHUB-PACKAGES.md](CONSUMING-GITHUB-PACKAGES.md) for consumption details.
+See [general-consuming-packages.md](general-consuming-packages.md) for consumption details.
 
 ### NuGet.org (Production)
 
@@ -538,5 +538,5 @@ v7.1.0-rc.2
 - [Semantic Versioning 2.0](https://semver.org/)
 - [NuGet Package Versioning](https://docs.microsoft.com/en-us/nuget/concepts/package-versioning)
 - [GitHub Releases Documentation](https://docs.github.com/en/repositories/releasing-projects-on-github)
-- [Consuming GitHub Packages](CONSUMING-GITHUB-PACKAGES.md)
+- [Consuming GitHub Packages](general-consuming-packages.md)
 - [Umbraco Version Support](https://umbraco.com/products/knowledge-center/long-term-support-and-end-of-life/)

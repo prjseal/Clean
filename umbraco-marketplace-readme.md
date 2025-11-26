@@ -230,7 +230,7 @@ Available APIs:
 
 ## Contributing
 
-Contributions are welcome! This is an open-source project under the MIT license. Check out the [Contributing Guide](https://github.com/prjseal/Clean/blob/main/.github/CONTRIBUTING.md) to get started.
+Contributions are welcome! This is an open-source project under the MIT license. Check out the [Contributing Guide](https://github.com/prjseal/Clean/blob/main/.github/general-contributing.md) to get started.
 
 ## About the Author
 
