@@ -201,6 +201,17 @@ dotnet run --project "MyProject.Blog"
 
 ---
 
+## Getting Started
+
+After installation, you'll need to:
+
+1. **Login to Umbraco**: Navigate to `/umbraco` and login with the credentials you specified (default: admin@example.com / 1234567890)
+2. **Publish the Home Page**: Go to the Content section and publish the home page
+3. **Save Dictionary Items**: Navigate to the Translation section and save at least one dictionary item to initialize translations
+4. **View Your Site**: The frontend should now be accessible at the root URL
+
+---
+
 ## Development and Source Code
 
 **Staying up to date**: The main branch will always be for the latest Long Term Support (LTS) version of Umbraco.
@@ -277,17 +288,6 @@ Explore and test the API endpoints using the built-in Swagger UI:
 **URL**: `/umbraco/swagger/index.html?urls.primaryName=Clean%20starter%20kit`
 
 This provides interactive documentation for all available API endpoints, including request/response schemas and the ability to test endpoints directly from the browser.
-
----
-
-## Getting Started
-
-After installation, you'll need to:
-
-1. **Login to Umbraco**: Navigate to `/umbraco` and login with the credentials you specified (default: admin@example.com / 1234567890)
-2. **Publish the Home Page**: Go to the Content section and publish the home page
-3. **Save Dictionary Items**: Navigate to the Translation section and save at least one dictionary item to initialize translations
-4. **View Your Site**: The frontend should now be accessible at the root URL
 
 ---
 
