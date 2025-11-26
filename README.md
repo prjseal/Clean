@@ -21,7 +21,9 @@ A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a 
 
 Clean supports **Umbraco 13 (LTS)** and **Umbraco 17 (LTS)**. For complete version mapping and support information, see the [Versioning and Releases](.github/VERSIONING-AND-RELEASES.md#version-mapping) documentation.
 
-For detailed information about the package architecture and the different NuGet packages, see the [Package Architecture](.github/PACKAGES.md) documentation.
+## Documentation
+
+For detailed documentation about this package and the repository, please see the [docs](.github/DOCUMENTATION.md).
 
 ## Installation
 
@@ -145,12 +147,6 @@ After installation, you'll need to:
 2. **Publish the Home Page**: Go to the Content section and publish the home page
 3. **Save Dictionary Items**: Navigate to the Translation section and save at least one dictionary item to initialize translations
 4. **View Your Site**: The frontend should now be accessible at the root URL
-
----
-
-## Documentation
-
-For detailed documentation about this package and the repository, please see the [docs](.github/DOCUMENTATION.md).
 
 ---
 
