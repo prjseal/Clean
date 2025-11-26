@@ -26,164 +26,17 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          # Get the release tag (e.g., v7.0.0 or 7.0.0)
-          $tag = "${{ github.event.release.tag_name }}"
-          Write-Host "Release tag: $tag"
-
-          # Remove 'v' prefix if present
-          $version = $tag -replace '^v', ''
-
-          # Validate version format (basic SemVer check)
-          if ($version -notmatch '^\d+\.\d+\.\d+(-[a-zA-Z0-9\.\-]+)?$') {
-            Write-Host "::error::Invalid version format: $version. Expected format: X.Y.Z or X.Y.Z-prerelease" -ForegroundColor Red
-            exit 1
-          }
-
-          Write-Host "Release version: $version" -ForegroundColor Green
-
-          # Determine if this is a prerelease
-          $isPrerelease = "${{ github.event.release.prerelease }}"
-          Write-Host "Is prerelease: $isPrerelease"
-
-          # Output the version for use in subsequent steps
-          echo "version=$version" >> $env:GITHUB_OUTPUT
-          echo "is_prerelease=$isPrerelease" >> $env:GITHUB_OUTPUT
+          ./.github/workflows/powershell/Extract-ReleaseVersion.ps1 -ReleaseTag "${{ github.event.release.tag_name }}" -IsPrerelease "${{ github.event.release.prerelease }}"
 
       - name: Display version info
+        shell: pwsh
         run: |
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Release Version Information" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Release Tag: ${{ github.event.release.tag_name }}" -ForegroundColor Green
-          Write-Host "Version: ${{ steps.version.outputs.version }}" -ForegroundColor Yellow
-          Write-Host "Prerelease: ${{ steps.version.outputs.is_prerelease }}" -ForegroundColor Yellow
-          Write-Host "Release Name: ${{ github.event.release.name }}" -ForegroundColor Green
-          Write-Host "================================================" -ForegroundColor Cyan
+          ./.github/workflows/powershell/Show-VersionInfo.ps1 -ReleaseTag "${{ github.event.release.tag_name }}" -Version "${{ steps.version.outputs.version }}" -IsPrerelease "${{ steps.version.outputs.is_prerelease }}" -ReleaseName "${{ github.event.release.name }}"
 
       - name: Update README files with latest versions
         shell: pwsh
         run: |
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Updating README Files with Latest Versions" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
-          $cleanVersion = "${{ steps.version.outputs.version }}"
-          Write-Host "Clean version: $cleanVersion" -ForegroundColor Green
-
-          # Extract Clean major version (e.g., "7.0.0-rc1" -> 7)
-          if ($cleanVersion -match '^(\d+)\.') {
-            $cleanMajor = [int]$matches[1]
-          } else {
-            Write-Host "⚠️  Could not extract major version from $cleanVersion" -ForegroundColor Yellow
-            exit 0
-          }
-
-          # Map Clean major version to Umbraco major version
-          # Note: Only Clean v4.x (Umbraco 13) and v7.x (Umbraco 17) are actively maintained
-          # Clean v5 (Umbraco 15) and v6 (Umbraco 16) are no longer maintained
-          $umbracoMajorMap = @{
-            4 = 13
-            7 = 17
-          }
-
-          if (-not $umbracoMajorMap.ContainsKey($cleanMajor)) {
-            Write-Host "⚠️  No Umbraco version mapping found for Clean $cleanMajor.x" -ForegroundColor Yellow
-            exit 0
-          }
-
-          $umbracoMajor = $umbracoMajorMap[$cleanMajor]
-          Write-Host "Mapped Clean $cleanMajor.x -> Umbraco $umbracoMajor.x" -ForegroundColor Cyan
-
-          # Read Umbraco version from Clean.csproj
-          $cleanCsprojPath = "template/Clean/Clean.csproj"
-          Write-Host "`nReading Umbraco version from $cleanCsprojPath..." -ForegroundColor Yellow
-
-          $umbracoVersion = $null
-          try {
-            if (-not (Test-Path $cleanCsprojPath)) {
-              Write-Host "⚠️  File not found: $cleanCsprojPath" -ForegroundColor Yellow
-            } else {
-              [xml]$cleanCsproj = Get-Content $cleanCsprojPath
-              $umbracoPackageRef = $cleanCsproj.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Umbraco.Cms.Web.Website" }
-
-              if (-not $umbracoPackageRef) {
-                Write-Host "⚠️  Could not find Umbraco.Cms.Web.Website PackageReference in $cleanCsprojPath" -ForegroundColor Yellow
-              } elseif ([string]::IsNullOrWhiteSpace($umbracoPackageRef.Version)) {
-                Write-Host "⚠️  Umbraco.Cms.Web.Website version is empty" -ForegroundColor Yellow
-              } else {
-                $umbracoVersion = $umbracoPackageRef.Version
-                Write-Host "Found Umbraco version: $umbracoVersion" -ForegroundColor Green
-              }
-            }
-
-            # Update README files
-            $readmeFiles = @(
-              "README.md",
-              "umbraco-marketplace-readme.md",
-              "umbraco-marketplace-readme-clean.md"
-            )
-
-            $umbracoSectionHeader = "## Umbraco $umbracoMajor"
-
-            foreach ($readmeFile in $readmeFiles) {
-              if (-not (Test-Path $readmeFile)) {
-                Write-Host "⚠️  File not found: $readmeFile" -ForegroundColor Yellow
-                continue
-              }
-
-              Write-Host "`nUpdating $readmeFile..." -ForegroundColor Cyan
-              $content = Get-Content $readmeFile -Raw
-              $originalContent = $content
-
-              # Find the section for this Umbraco version
-              # Pattern matches from "## Umbraco X" to the next "## " (at line start) or end of file
-              # Using (?m) for multiline mode and (?s) for dotall mode
-              if ($content -match "(?ms)$umbracoSectionHeader.*?(?=(^## |\z))") {
-                $section = $matches[0]
-                $updatedSection = $section
-
-                # Update Umbraco.Templates version (only if we have it)
-                if ($umbracoVersion) {
-                  $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Templates::\S+", "dotnet new install Umbraco.Templates::$umbracoVersion"
-                }
-
-                # Update Clean package version
-                $updatedSection = $updatedSection -replace "(dotnet add .* package Clean --version )\S+", "`${1}$cleanVersion"
-
-                # Update Clean.Core package version (in warning sections)
-                $updatedSection = $updatedSection -replace "(dotnet add .* package Clean\.Core --version )\S+", "`${1}$cleanVersion"
-
-                # Update Clean template package version
-                $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Community\.Templates\.Clean::\S+", "dotnet new install Umbraco.Community.Templates.Clean::$cleanVersion"
-
-                # Replace the section in the content
-                $content = $content -replace [regex]::Escape($section), $updatedSection
-
-                # Write back to file only if content changed
-                if ($content -ne $originalContent) {
-                  Set-Content -Path $readmeFile -Value $content -NoNewline
-                }
-
-                Write-Host "✅ Updated $readmeFile" -ForegroundColor Green
-                if ($umbracoVersion) {
-                  Write-Host "   - Umbraco.Templates: $umbracoVersion" -ForegroundColor White
-                }
-                Write-Host "   - Clean: $cleanVersion" -ForegroundColor White
-                Write-Host "   - Clean.Core: $cleanVersion" -ForegroundColor White
-                Write-Host "   - Umbraco.Community.Templates.Clean: $cleanVersion" -ForegroundColor White
-              } else {
-                Write-Host "⚠️  Could not find section '$umbracoSectionHeader' in $readmeFile" -ForegroundColor Yellow
-              }
-            }
-
-            Write-Host "`n================================================" -ForegroundColor Cyan
-            Write-Host "README files updated successfully" -ForegroundColor Green
-            Write-Host "================================================" -ForegroundColor Cyan
-
-          } catch {
-            Write-Host "⚠️  Error querying NuGet or updating READMEs: $_" -ForegroundColor Yellow
-            Write-Host "Continuing with release process..." -ForegroundColor Yellow
-          }
+          ./.github/workflows/powershell/Update-ReadmeVersions.ps1 -Version "${{ steps.version.outputs.version }}"
 
       # Documentation: .github/CreateNuGetPackages-Documentation.md
       # This script creates NuGet packages by starting Umbraco, downloading package via API,
@@ -206,194 +59,24 @@ jobs:
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Publishing NuGet Packages to NuGet.org" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
-          # Verify API key is set
-          if ([string]::IsNullOrWhiteSpace($env:NUGET_API_KEY)) {
-            Write-Host "::error::NUGET_API_KEY secret is not set. Please add it to your repository secrets." -ForegroundColor Red
-            Write-Host "To add the secret:" -ForegroundColor Yellow
-            Write-Host "1. Go to https://www.nuget.org/account/apikeys to create an API key" -ForegroundColor Yellow
-            Write-Host "2. Add it to GitHub: Settings -> Secrets and variables -> Actions -> New repository secret" -ForegroundColor Yellow
-            Write-Host "3. Name it 'NUGET_API_KEY' and paste your NuGet API key" -ForegroundColor Yellow
-            exit 1
-          }
-
-          # Get all package files
-          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg" -ErrorAction SilentlyContinue
-
-          if (-not $packages) {
-            Write-Host "::error::No packages found to publish." -ForegroundColor Red
-            exit 1
-          }
-
-          Write-Host "Found $($packages.Count) package(s) to publish:" -ForegroundColor Green
-          foreach ($pkg in $packages) {
-            Write-Host "  - $($pkg.Name)" -ForegroundColor White
-          }
-          Write-Host ""
-
-          # Push each package to NuGet.org
-          $failedPackages = @()
-          foreach ($pkg in $packages) {
-            Write-Host "Publishing $($pkg.Name) to NuGet.org..." -ForegroundColor Cyan
-            dotnet nuget push $pkg.FullName --source https://api.nuget.org/v3/index.json --api-key $env:NUGET_API_KEY --skip-duplicate
-
-            if ($LASTEXITCODE -eq 0) {
-              Write-Host "✅ Successfully published $($pkg.Name)" -ForegroundColor Green
-            } else {
-              Write-Host "❌ Failed to publish $($pkg.Name) (exit code: $LASTEXITCODE)" -ForegroundColor Red
-              $failedPackages += $pkg.Name
-            }
-          }
-
-          Write-Host ""
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Package Publishing Complete" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
-          # Check if any packages failed
-          if ($failedPackages.Count -gt 0) {
-            Write-Host "::error::Failed to publish the following packages:" -ForegroundColor Red
-            foreach ($failedPkg in $failedPackages) {
-              Write-Host "  - $failedPkg" -ForegroundColor Red
-            }
-            exit 1
-          }
-
-          Write-Host "✅ All packages published successfully!" -ForegroundColor Green
+          ./.github/workflows/powershell/Publish-ToNuGet.ps1 -ApiKey $env:NUGET_API_KEY
 
       - name: Add packages to release assets
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Uploading packages to GitHub Release" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
-          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg"
-
-          foreach ($pkg in $packages) {
-            Write-Host "Uploading $($pkg.Name)..." -ForegroundColor Cyan
-            gh release upload "${{ github.event.release.tag_name }}" $pkg.FullName --clobber
-
-            if ($LASTEXITCODE -eq 0) {
-              Write-Host "✅ Uploaded $($pkg.Name)" -ForegroundColor Green
-            } else {
-              Write-Host "⚠️  Failed to upload $($pkg.Name)" -ForegroundColor Yellow
-            }
-          }
+          ./.github/workflows/powershell/Add-ReleaseAssets.ps1 -ReleaseTag "${{ github.event.release.tag_name }}"
 
       - name: Create PR with version updates
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Creating PR with Version Updates" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
-          # Configure git with bot user
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Fetch main branch
-          Write-Host "Fetching main branch..." -ForegroundColor Yellow
-          git fetch origin main
-
-          # Check if there are any changes to commit
-          $gitStatus = git status --porcelain
-          if ([string]::IsNullOrWhiteSpace($gitStatus)) {
-            Write-Host "No changes to commit - versions are already up to date" -ForegroundColor Yellow
-            exit 0
-          }
-
-          # Show what files will be committed
-          Write-Host "`nModified files:" -ForegroundColor Cyan
-          git status --short
-
-          # Create a new branch for the version update
-          $branchName = "release/update-versions-${{ steps.version.outputs.version }}"
-          Write-Host "`nCreating branch: $branchName" -ForegroundColor Yellow
-          git checkout -b $branchName
-
-          # Stage all .csproj and README.md files
-          Write-Host "`nStaging .csproj files..." -ForegroundColor Yellow
-          git add "*.csproj" "**/*.csproj"
-
-          Write-Host "Staging README.md file..." -ForegroundColor Yellow
-          git add "README.md"
-
-          Write-Host "Staging Umbraco marketplace README files..." -ForegroundColor Yellow
-          git add "umbraco-marketplace-readme.md" "umbraco-marketplace-readme-clean.md"
-
-          # Commit with skip ci flag to prevent triggering other workflows
-          $commitMessage = "chore: Update versions to ${{ steps.version.outputs.version }} [skip ci]"
-          Write-Host "`nCommitting changes with message: $commitMessage" -ForegroundColor Yellow
-          git commit -m $commitMessage
-
-          # Push the branch
-          Write-Host "`nPushing branch to origin..." -ForegroundColor Yellow
-          git push -u origin $branchName
-
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ Failed to push branch (exit code: $LASTEXITCODE)" -ForegroundColor Red
-            exit 1
-          }
-
-          Write-Host "✅ Successfully pushed branch $branchName" -ForegroundColor Green
-
-          # Create pull request
-          Write-Host "`nCreating pull request..." -ForegroundColor Yellow
-          $prTitle = "chore: Update versions to ${{ steps.version.outputs.version }}"
-          $prBody = @"
-          ## Summary
-          This PR updates version references in the codebase following the release of version ${{ steps.version.outputs.version }}.
-
-          ## Changes
-          - Updated version references in .csproj files
-          - Updated README.md with the latest version information
-          - Updated Umbraco marketplace README files with the latest version information
-
-          ## Additional Info
-          - Release: [${{ github.event.release.tag_name }}](${{ github.event.release.html_url }})
-          - Prerelease: ${{ steps.version.outputs.is_prerelease }}
-
-          ---
-          *This PR was automatically created by the release workflow.*
-          "@
-
-          gh pr create --title $prTitle --body $prBody --base main --head $branchName
-
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ Successfully created pull request" -ForegroundColor Green
-          } else {
-            Write-Host "❌ Failed to create pull request (exit code: $LASTEXITCODE)" -ForegroundColor Red
-            exit 1
-          }
-
-          Write-Host "================================================" -ForegroundColor Cyan
+          ./.github/workflows/powershell/New-VersionUpdatePullRequest.ps1 -Version "${{ steps.version.outputs.version }}" -IsPrerelease "${{ steps.version.outputs.is_prerelease }}" -ReleaseUrl "${{ github.event.release.html_url }}"
 
       - name: Release Summary
         if: always()
+        shell: pwsh
         run: |
-          Write-Host "================================================" -ForegroundColor Green
-          Write-Host "Release Summary" -ForegroundColor Green
-          Write-Host "================================================" -ForegroundColor Green
-          Write-Host "Version: ${{ steps.version.outputs.version }}" -ForegroundColor Cyan
-          Write-Host "Release Tag: ${{ github.event.release.tag_name }}" -ForegroundColor Cyan
-          Write-Host "Prerelease: ${{ steps.version.outputs.is_prerelease }}" -ForegroundColor Cyan
-          Write-Host "Release URL: ${{ github.event.release.html_url }}" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Green
-
-          # List generated packages
-          $packages = Get-ChildItem -Path ".artifacts/nuget/*.nupkg" -ErrorAction SilentlyContinue
-          if ($packages) {
-            Write-Host "`nPublished Packages:" -ForegroundColor Yellow
-            foreach ($pkg in $packages) {
-              Write-Host "  - $($pkg.Name)" -ForegroundColor White
-              Write-Host "    https://www.nuget.org/packages/$($pkg.BaseName.Split('.')[0])/${{ steps.version.outputs.version }}" -ForegroundColor Gray
-            }
-          }
+          ./.github/workflows/powershell/Show-ReleaseSummary.ps1 -Version "${{ steps.version.outputs.version }}" -ReleaseTag "${{ github.event.release.tag_name }}" -IsPrerelease "${{ steps.version.outputs.is_prerelease }}" -ReleaseUrl "${{ github.event.release.html_url }}"
