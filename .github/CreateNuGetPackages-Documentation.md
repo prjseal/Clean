@@ -100,29 +100,68 @@ This script is a critical component of the CI/CD pipeline and is used by the fol
 
 ### Workflow Dependency Chain
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Pull Request Workflow                        │
-│  (pr-build-packages.yml)                                        │
-├─────────────────────────────────────────────────────────────────┤
-│ 1. Get latest version from NuGet.org                            │
-│ 2. Create CI version (e.g., 7.0.1-ci.123)                       │
-│ 3. → CreateNuGetPackages.ps1 -Version "7.0.1-ci.123"            │
-│ 4. Publish to GitHub Packages                                   │
-│ 5. Test package & template installation                         │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    participant PR as Pull Request Workflow<br/>(pr-build-packages.yml)
+    participant Release as Release Workflow<br/>(release-nuget.yml)
+    participant Script as CreateNuGetPackages.ps1
+    participant Umbraco as Umbraco Project<br/>(Clean.Blog)
+    participant NuGetOrg as NuGet.org API
+    participant GitHubPkg as GitHub Packages
+    participant ReadmeFiles as README Files
 
-┌─────────────────────────────────────────────────────────────────┐
-│                     Release Workflow                             │
-│  (release-nuget.yml)                                            │
-├─────────────────────────────────────────────────────────────────┤
-│ 1. Extract version from release tag                             │
-│ 2. Update README.md and marketplace README files                │
-│ 3. → CreateNuGetPackages.ps1 -Version "7.0.0"                   │
-│ 4. Publish to NuGet.org                                         │
-│ 5. Upload to GitHub release assets                              │
-│ 6. Create PR with version updates                               │
-└─────────────────────────────────────────────────────────────────┘
+    rect rgb(200, 220, 255)
+        Note over PR,GitHubPkg: PR Build Flow - Development Packages
+        PR->>NuGetOrg: Query latest "Clean" version
+        NuGetOrg-->>PR: 7.0.0 (stable)
+        PR->>PR: Calculate CI version<br/>7.0.1-ci.123
+        PR->>Script: Execute with version 7.0.1-ci.123
+        activate Script
+        Script->>Umbraco: Start project (dotnet run)
+        activate Umbraco
+        Umbraco-->>Script: Site ready at localhost:44340
+        Script->>Umbraco: Authenticate (API token)
+        Umbraco-->>Script: Bearer token
+        Script->>Umbraco: Create package via API
+        Umbraco-->>Script: package.zip
+        Script->>Script: Fix BlockList labels (workaround)
+        Script->>Script: Update .csproj versions
+        Script->>Script: Build & pack all projects
+        Script-->>PR: 4 .nupkg files in .artifacts/nuget
+        deactivate Script
+        deactivate Umbraco
+        PR->>GitHubPkg: Publish all packages
+        GitHubPkg-->>PR: Published successfully
+        PR->>PR: Test package installation
+        PR->>PR: Test template installation
+    end
+
+    rect rgb(200, 255, 200)
+        Note over Release,ReadmeFiles: Release Flow - Production Packages
+        Release->>Release: Extract version from tag<br/>(v7.0.0 → 7.0.0)
+        Release->>NuGetOrg: Query latest Umbraco version
+        NuGetOrg-->>Release: 17.0.1
+        Release->>ReadmeFiles: Update with latest versions
+        Release->>Script: Execute with version 7.0.0
+        activate Script
+        Script->>Umbraco: Start project (dotnet run)
+        activate Umbraco
+        Umbraco-->>Script: Site ready at localhost:44340
+        Script->>Umbraco: Authenticate (API token)
+        Umbraco-->>Script: Bearer token
+        Script->>Umbraco: Create package via API
+        Umbraco-->>Script: package.zip
+        Script->>Script: Fix BlockList labels (workaround)
+        Script->>Script: Update .csproj versions
+        Script->>Script: Build & pack all projects
+        Script-->>Release: 4 .nupkg files in .artifacts/nuget
+        deactivate Script
+        deactivate Umbraco
+        Release->>NuGetOrg: Publish all packages
+        NuGetOrg-->>Release: Published successfully
+        Release->>Release: Upload to GitHub release assets
+        Release->>Release: Create PR with version updates
+    end
 ```
 
 ### Not Used By

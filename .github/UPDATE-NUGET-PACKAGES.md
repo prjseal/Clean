@@ -446,108 +446,60 @@ Existing PR: https://github.com/{owner}/{repo}/pull/123
 
 ## Workflow Steps Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ 1. Checkout Repository                                       │
-│    - Full git history (fetch-depth: 0)                      │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 2. Setup .NET 10                                             │
-│    - Installs .NET 10.0.x SDK                                │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 3. Configure Custom NuGet Sources (if provided)             │
-│    - Reads nugetSources input (comma-separated)             │
-│    - Adds each source with dotnet nuget add source          │
-│    - Lists all configured sources for verification          │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 4. Install GitHub CLI                                        │
-│    - Via Chocolatey: choco install gh -y                    │
-│    - Required for PR creation and duplicate detection       │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 5. Update README with Latest Umbraco Versions               │
-│    - Runs UpdateReadmeUmbracoVersion.ps1                    │
-│    - Processes each configured major version                │
-│    - Queries NuGet.org for latest Umbraco.Cms.Web.Website  │
-│    - Respects per-version prerelease flags (e.g., "17-")    │
-│    - Updates dotnet new install commands in README          │
-│    - Outputs: readme_updated, updated_versions              │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 6. Run UpdateThirdPartyPackages.ps1                         │
-│    - Scan for .csproj files                                  │
-│    - Query NuGet.org for latest package versions            │
-│    - Update PackageReference elements                        │
-│    - Clean and build all solutions                           │
-│    - Generate package and build summaries                    │
-│    - Fail workflow if build errors occur                     │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 7. Build Failure Summary (if step 6 fails)                  │
-│    - Display build-summary.txt content                       │
-│    - Show build errors and warnings                          │
-│    - Exit workflow (no PR created)                           │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 8. Check if Any Changes Were Made                           │
-│    - Check README update status from step 5                 │
-│    - Check package-summary.txt for package updates          │
-│    - Exit gracefully if no changes needed                    │
-│    - Display informative "No Changes Needed" message        │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 9. Commit and Push Changes (if not dry run)                 │
-│    - Configure git user: github-actions                     │
-│    - Create branch: update-nuget-packages-{timestamp}       │
-│    - Stage all changes: git add .                            │
-│    - Determine commit message based on what changed:        │
-│      * README only: "Update README... [skip ci]"            │
-│      * Packages only: "Update NuGet packages"               │
-│      * Both: "Update README and NuGet packages"             │
-│    - Commit and push using PAT_TOKEN                         │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 10. Read Package Summary                                     │
-│     - Load .artifacts/package-summary.txt                    │
-│     - Store as workflow output for PR body                   │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 11. Check for Existing Similar PRs                           │
-│     - List open PRs: gh pr list --state open                │
-│     - Filter branches: update-nuget-packages-*               │
-│     - Extract package tables from PR bodies                  │
-│     - Compare with current summary (normalized)              │
-│     - Set skip flag if identical PR exists                   │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 12. Create Pull Request (if not skipped)                    │
-│     - Authenticate with GitHub CLI                           │
-│     - Build dynamic PR body:                                 │
-│       * List what was updated (README/packages)             │
-│       * Include custom NuGet sources if provided            │
-│       * Show package summary table                           │
-│     - Create PR: gh pr create                                │
-│     - Base: main, Head: update-nuget-packages-{timestamp}   │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 13. Summary Output                                           │
-│     - If skipped: Display existing PR link                  │
-│     - If created: Display new PR link                        │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Start([Trigger: Schedule or Manual]) --> Checkout[1. Checkout Repository<br/>fetch-depth: 0]
+    Checkout --> DotNet[2. Setup .NET 10<br/>Installs .NET 10.0.x SDK]
+    DotNet --> CustomSources{3. Custom NuGet<br/>Sources Provided?}
+
+    CustomSources -->|Yes| ConfigSources[Configure Custom Sources<br/>- Parse comma-separated URLs<br/>- Add each with dotnet nuget add source<br/>- List configured sources]
+    CustomSources -->|No| GHCli[4. Install GitHub CLI<br/>choco install gh -y]
+    ConfigSources --> GHCli
+
+    GHCli --> UpdateReadme[5. Update README with Umbraco Versions<br/>- Run UpdateReadmeUmbracoVersion.ps1<br/>- Process each major version<br/>- Query NuGet.org for latest Umbraco.Cms<br/>- Handle per-version prerelease flags]
+
+    UpdateReadme --> UpdatePackages[6. Run UpdateThirdPartyPackages.ps1<br/>- Scan for .csproj files<br/>- Query NuGet for latest versions<br/>- Update PackageReference elements<br/>- Clean and build all solutions]
+
+    UpdatePackages --> BuildCheck{Build<br/>Success?}
+
+    BuildCheck -->|No| BuildFailure[7. Build Failure Summary<br/>- Display build-summary.txt<br/>- Show errors and warnings<br/>- Exit workflow]
+    BuildFailure --> End1([End: Build Failed])
+
+    BuildCheck -->|Yes| CheckChanges[8. Check if Changes Were Made<br/>- Check README update status<br/>- Check package-summary.txt]
+
+    CheckChanges --> HasChanges{Changes<br/>Detected?}
+
+    HasChanges -->|No| NoChanges[Exit Gracefully<br/>Display 'No Changes Needed' message]
+    NoChanges --> End2([End: No Changes])
+
+    HasChanges -->|Yes| DryRun{Dry Run<br/>Mode?}
+
+    DryRun -->|Yes| End3([End: Dry Run Complete])
+    DryRun -->|No| Commit[9. Commit and Push Changes<br/>- Configure git user<br/>- Create branch: update-nuget-packages-timestamp<br/>- Stage all changes<br/>- Determine commit message<br/>- Push using PAT_TOKEN]
+
+    Commit --> ReadSummary[10. Read Package Summary<br/>Load .artifacts/package-summary.txt]
+
+    ReadSummary --> CheckDupes[11. Check for Existing Similar PRs<br/>- List open PRs matching pattern<br/>- Extract package tables from bodies<br/>- Normalize and compare summaries]
+
+    CheckDupes --> DupeCheck{Duplicate PR<br/>Exists?}
+
+    DupeCheck -->|Yes| SkipPR[Display PR Skipped Message<br/>Show existing PR link]
+    SkipPR --> End4([End: PR Skipped])
+
+    DupeCheck -->|No| CreatePR[12. Create Pull Request<br/>- Authenticate with GitHub CLI<br/>- Build dynamic PR body<br/>- Include README/package updates<br/>- Add custom sources if used<br/>- Create PR: main ← update-nuget-packages-timestamp]
+
+    CreatePR --> Summary[13. Summary Output<br/>Display new PR link]
+    Summary --> End5([End: PR Created])
+
+    style BuildFailure fill:#ffcccc
+    style NoChanges fill:#ccffcc
+    style SkipPR fill:#ffffcc
+    style CreatePR fill:#ccffcc
+    style BuildCheck fill:#e6e6fa
+    style HasChanges fill:#e6e6fa
+    style DryRun fill:#e6e6fa
+    style DupeCheck fill:#e6e6fa
+    style CustomSources fill:#e6e6fa
 ```
 
 ## PowerShell Script Details
