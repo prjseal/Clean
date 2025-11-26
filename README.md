@@ -45,7 +45,7 @@ dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --emai
 dotnet sln add "MyProject"
 
 # Add Clean package
-dotnet add "MyProject" package Clean --version 7.0.0-rc4
+dotnet add "MyProject" package Clean --version 7.0.0-preview17
 
 # Run the project
 dotnet run --project "MyProject"
@@ -59,14 +59,14 @@ dotnet run --project "MyProject"
 
 ```powershell
 dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 7.0.0-rc4
+dotnet add "MyProject" package Clean.Core --version 7.0.0-preview17
 ```
 
 ### dotnet Template Method
 
 ```powershell
 # Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::7.0.0-rc4 --force
+dotnet new install Umbraco.Community.Templates.Clean::7.0.0-preview17 --force
 
 # Create a new project using the template
 dotnet new umbraco-starter-clean -n MyProject
