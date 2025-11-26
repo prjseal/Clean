@@ -19,16 +19,9 @@ A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a 
 - **SQLite by Default**: Quick setup with SQLite database for development
 - **No External Dependencies**: Removed dependency on third-party packages like Contentment
 
-## Version Support
+Clean supports **Umbraco 13 (LTS)** and **Umbraco 17 (LTS)**. For complete version mapping and support information, see the [Versioning and Releases](.github/VERSIONING-AND-RELEASES.md#version-mapping) documentation.
 
-| Clean Version | Umbraco Version | .NET Version | Support Type            |
-| ------------- | --------------- | ------------ | ----------------------- |
-| 4.x           | 13              | .NET 8       | LTS (Long Term Support) |
-| 7.x           | 17              | .NET 10      | LTS (Long Term Support) |
-
-**Note**: Clean v5 (Umbraco 15) and v6 (Umbraco 16) are no longer maintained. For older Umbraco versions (9-12), see the [Clean Starter Kit for Umbraco v9](https://github.com/prjseal/Clean-Starter-Kit-for-Umbraco-v9) repository.
-
-For detailed information about the package architecture and the different NuGet packages, see the [Package Architecture documentation](.github/PACKAGES.md).
+For detailed information about the package architecture and the different NuGet packages, see the [Package Architecture](.github/PACKAGES.md) documentation.
 
 ## Installation
 
