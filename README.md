@@ -293,19 +293,7 @@ This provides interactive documentation for all available API endpoints, includi
 
 ## Documentation
 
-This project includes comprehensive documentation to help you work with the Clean starter kit:
-
-### For Contributors and Developers
-
-- **[Contributing Guide](.github/CONTRIBUTING.md)** - How to contribute to the project, code standards, and testing requirements
-- **[PR Workflow](.github/PR-WORKFLOW.md)** - Guidelines for creating and reviewing pull requests
-- **[Versioning and Releases](.github/VERSIONING-AND-RELEASES.md)** - Understanding version numbers and release processes
-
-### Package Management
-
-- **[Update NuGet Packages](.github/UPDATE-NUGET-PACKAGES.md)** - How to update project NuGet package dependencies
-- **[Consuming GitHub Packages](.github/CONSUMING-GITHUB-PACKAGES.md)** - Using packages from GitHub Package Registry
-- **[CreateNuGetPackages Script Documentation](.github/CreateNuGetPackages-Documentation.md)** - Detailed guide for building and publishing NuGet packages
+For detailed documentation about this package and the repository, please see the [docs](DOCUMENTATION.md).
 
 ---
 
