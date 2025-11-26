@@ -150,7 +150,7 @@ After installation, you'll need to:
 
 ## Documentation
 
-For detailed documentation about this package and the repository, please see the [docs](DOCUMENTATION.md).
+For detailed documentation about this package and the repository, please see the [docs](.github/DOCUMENTATION.md).
 
 ---
 
