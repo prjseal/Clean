@@ -47,67 +47,7 @@ jobs:
         if: ${{ github.event.inputs.nugetSources != '' }}
         shell: pwsh
         run: |
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Configuring Custom NuGet Sources" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
-          $sourcesInput = '${{ github.event.inputs.nugetSources }}'
-
-          if ([string]::IsNullOrWhiteSpace($sourcesInput)) {
-            Write-Host "No custom NuGet sources provided." -ForegroundColor Yellow
-            exit 0
-          }
-
-          # Split comma-separated sources and trim whitespace
-          $sources = $sourcesInput -split ',' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-
-          if ($sources.Count -eq 0) {
-            Write-Host "No valid custom NuGet sources provided." -ForegroundColor Yellow
-            exit 0
-          }
-
-          Write-Host "Found $($sources.Count) custom NuGet source(s):" -ForegroundColor Green
-
-          # Add each NuGet source
-          $sourceIndex = 1
-          foreach ($sourceUrl in $sources) {
-            $sourceName = "CustomSource$sourceIndex"
-
-            Write-Host "`nAdding NuGet source:" -ForegroundColor Cyan
-            Write-Host "  Name: $sourceName" -ForegroundColor White
-            Write-Host "  URL:  $sourceUrl" -ForegroundColor White
-
-            try {
-              # Check if source already exists and remove it
-              $existingSources = dotnet nuget list source
-              if ($existingSources -match $sourceName) {
-                Write-Host "  Removing existing source..." -ForegroundColor Yellow
-                dotnet nuget remove source $sourceName
-              }
-
-              # Add the source
-              dotnet nuget add source $sourceUrl --name $sourceName
-
-              if ($LASTEXITCODE -eq 0) {
-                Write-Host "  ✅ Successfully added $sourceName" -ForegroundColor Green
-              } else {
-                Write-Host "  ⚠️  Failed to add $sourceName (exit code: $LASTEXITCODE)" -ForegroundColor Red
-              }
-            }
-            catch {
-              Write-Host "  ⚠️  Error adding source: $($_.Exception.Message)" -ForegroundColor Red
-            }
-
-            $sourceIndex++
-          }
-
-          Write-Host "`n================================================" -ForegroundColor Cyan
-          Write-Host "NuGet Source Configuration Complete" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-
-          # List all configured sources
-          Write-Host "`nAll configured NuGet sources:" -ForegroundColor Yellow
-          dotnet nuget list source
+          ./.github/workflows/powershell/Configure-CustomNuGetSourcesFromInput.ps1 -SourcesInput '${{ github.event.inputs.nugetSources }}'
 
       - name: Install GitHub CLI
         run: |
@@ -117,84 +57,12 @@ jobs:
         id: update-readme
         shell: pwsh
         run: |
-          # Determine which versions to process
-          # For manual runs with input provided, use the input; otherwise use env variable
           $isScheduled = '${{ github.event_name }}' -eq 'schedule'
-          $manualVersionInput = '${{ github.event.inputs.umbracoVersions }}'
-
-          if (-not $isScheduled -and -not [string]::IsNullOrWhiteSpace($manualVersionInput)) {
-            # Manual run with version input provided
-            $versionsString = $manualVersionInput
-            Write-Host "Manual run - using umbracoVersions input: $versionsString" -ForegroundColor Cyan
-          } else {
-            # Scheduled run or manual run without version input - use env variable
-            $versionsString = "${{ env.UMBRACO_MAJOR_VERSIONS }}"
-            if ($isScheduled) {
-              Write-Host "Scheduled run - using UMBRACO_MAJOR_VERSIONS env variable: $versionsString" -ForegroundColor Cyan
-            } else {
-              Write-Host "Manual run (no version input) - using UMBRACO_MAJOR_VERSIONS env variable: $versionsString" -ForegroundColor Cyan
-            }
-          }
-
-          # Parse comma-separated versions into entries and detect hyphen suffix for prerelease intent
-          # Convention: `13` -> stable-only; `17-` -> include prerelease for major 17
-          $rawTokens = $versionsString -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
-
-          $versionEntries = @()
-          foreach ($tok in $rawTokens) {
-            $entry = [PSCustomObject]@{
-              Major = $null
-              IncludePrerelease = $false
-            }
-
-            # If token ends with '-', treat as prerelease-enabled for that major
-            if ($tok.EndsWith('-')) {
-              $entry.Major = $tok.TrimEnd('-').Trim()
-              $entry.IncludePrerelease = $true
-            } else {
-              $entry.Major = $tok
-              $entry.IncludePrerelease = $false
-            }
-
-            if (-not [string]::IsNullOrWhiteSpace($entry.Major)) {
-              $versionEntries += $entry
-            }
-          }
-
-          # Prepare overall values for later steps
-          $anyUpdated = $false
-          $updatedVersions = @()
-
-          Write-Host "Processing Umbraco versions: $($versions -join ', ')" -ForegroundColor Yellow
-          Write-Host ""
-
-          foreach ($entry in $versionEntries) {
-            $version = $entry.Major
-            $prFlag = $entry.IncludePrerelease
-            Write-Host "Processing Umbraco version $version (IncludePrerelease=$prFlag)..." -ForegroundColor Yellow
-            $result = ./.github/workflows/powershell/UpdateReadmeUmbracoVersion.ps1 `
-              -RootPath "${{ github.workspace }}" `
-              -UmbracoMajorVersion $version `
-              -IncludePrerelease:$prFlag
-
-            if ($result.Updated) {
-              $anyUpdated = $true
-              $updatedVersions += $version
-              Write-Host "✅ Umbraco $version section updated" -ForegroundColor Green
-            } else {
-              Write-Host "ℹ️  Umbraco $version section unchanged" -ForegroundColor Yellow
-            }
-            Write-Host ""
-          }
-
-          if ($anyUpdated) {
-            echo "readme_updated=true" >> $env:GITHUB_OUTPUT
-            $versionsText = $updatedVersions -join ','
-            echo "updated_versions=$versionsText" >> $env:GITHUB_OUTPUT
-          } else {
-            echo "readme_updated=false" >> $env:GITHUB_OUTPUT
-            echo "updated_versions=" >> $env:GITHUB_OUTPUT
-          }
+          ./.github/workflows/powershell/Update-ReadmeVersionsMultiple.ps1 `
+            -IsScheduled:$isScheduled `
+            -ManualVersionInput '${{ github.event.inputs.umbracoVersions }}' `
+            -EnvVersions '${{ env.UMBRACO_MAJOR_VERSIONS }}' `
+            -WorkspacePath "${{ github.workspace }}"
 
       - name: Run UpdateThirdPartyPackages script
         id: update-packages
@@ -226,250 +94,68 @@ jobs:
         if: failure() && steps.update-packages.conclusion == 'failure'
         shell: pwsh
         run: |
-          Write-Host "================================================" -ForegroundColor Red
-          Write-Host "❌ UPDATE PACKAGES WORKFLOW FAILED" -ForegroundColor Red
-          Write-Host "================================================" -ForegroundColor Red
-          Write-Host ""
-          Write-Host "The UpdateThirdPartyPackages script encountered build failures." -ForegroundColor Yellow
-          Write-Host ""
-          Write-Host "📋 Build Summary:" -ForegroundColor Cyan
-          $buildSummaryPath = "${{ github.workspace }}\.artifacts\build-summary.txt"
-          if (Test-Path $buildSummaryPath) {
-            $buildSummary = Get-Content $buildSummaryPath -Raw
-            Write-Host $buildSummary
-          } else {
-            Write-Host "Build summary file not found." -ForegroundColor Yellow
-          }
-          Write-Host ""
-          Write-Host "🔍 Check the logs above for detailed error messages." -ForegroundColor Cyan
-          Write-Host "📂 Build logs are saved in .artifacts/logs/ directory." -ForegroundColor Cyan
-          Write-Host ""
-          Write-Host "No PR will be created due to build failures." -ForegroundColor Yellow
-          Write-Host "================================================" -ForegroundColor Red
+          ./.github/workflows/powershell/Show-BuildFailureSummary.ps1 -WorkspacePath "${{ github.workspace }}"
 
       - name: Check if any changes were made
         id: check-changes
         if: success()
         shell: pwsh
         run: |
-          $readmeUpdated = '${{ steps.update-readme.outputs.readme_updated }}' -eq 'true'
-
-          # Check if packages were updated by reading the summary file
-          $summaryPath = "${{ github.workspace }}\.artifacts\package-summary.txt"
-          $packagesUpdated = $false
-          if (Test-Path $summaryPath) {
-            $content = Get-Content $summaryPath -Raw
-            $packagesUpdated = $content -notmatch 'No packages to update'
-          }
-
-          Write-Host "README updated: $readmeUpdated"
-          Write-Host "Packages updated: $packagesUpdated"
-
-          if (-not $readmeUpdated -and -not $packagesUpdated) {
-            Write-Host ""
-            Write-Host "================================================" -ForegroundColor Green
-            Write-Host "✅ No Changes Needed - Workflow Complete" -ForegroundColor Green
-            Write-Host "================================================" -ForegroundColor Green
-            Write-Host ""
-            Write-Host "📋 Summary:" -ForegroundColor Cyan
-            $versions = "${{ env.UMBRACO_MAJOR_VERSIONS }}" -split ',' | ForEach-Object { $_.Trim() }
-            $versionText = if ($versions.Count -eq 1) { "Umbraco $($versions[0])" } else { "Umbraco $($versions -join ' and ')" }
-            Write-Host "  • README: Already up-to-date with latest $versionText version(s)" -ForegroundColor Yellow
-            Write-Host "  • NuGet Packages: All packages are already at their latest versions" -ForegroundColor Yellow
-            Write-Host ""
-            Write-Host "No branch created, no commits made, no PR needed." -ForegroundColor Cyan
-            Write-Host "================================================" -ForegroundColor Green
-
-            echo "has_changes=false" >> $env:GITHUB_OUTPUT
-            exit 0
-          } else {
-            echo "has_changes=true" >> $env:GITHUB_OUTPUT
-          }
+          ./.github/workflows/powershell/Test-WorkflowChanges.ps1 `
+            -ReadmeUpdated "${{ steps.update-readme.outputs.readme_updated }}" `
+            -WorkspacePath "${{ github.workspace }}" `
+            -EnvVersions "${{ env.UMBRACO_MAJOR_VERSIONS }}"
 
       - name: Commit and push changes
         id: commit-and-push
         if: ${{ github.event.inputs.dryRun != 'true' && steps.check-changes.outputs.has_changes == 'true' }}
+        shell: pwsh
         env:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          $branchName = "update-nuget-packages-$(Get-Date -Format 'yyyyMMddHHmmss')"
-          echo "branchName=$branchName" >> $env:GITHUB_OUTPUT
-
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git checkout -b $branchName
-          git add .
-          if (git diff --cached --quiet) {
-            Write-Host "No changes detected. Skipping commit and PR."
-            exit 0
-          }
-
-          # Determine what was updated for commit message
-          $readmeUpdated = '${{ steps.update-readme.outputs.readme_updated }}' -eq 'true'
-          $summaryPath = "${{ github.workspace }}\.artifacts\package-summary.txt"
-          $packagesUpdated = $false
-          if (Test-Path $summaryPath) {
-            $content = Get-Content $summaryPath -Raw
-            $packagesUpdated = $content -notmatch 'No packages to update'
-          }
-
-          # Create appropriate commit message
-          if ($readmeUpdated -and -not $packagesUpdated) {
-            # Only README updated - skip CI builds
-            $updatedVersions = '${{ steps.update-readme.outputs.updated_versions }}' -split ',' | ForEach-Object { $_.Trim() }
-            if ($updatedVersions.Count -eq 1) {
-              $versionText = "Umbraco $($updatedVersions[0])"
-            } else {
-              $versionText = "Umbraco $($updatedVersions -join ' and ')"
-            }
-            $commitMessage = "Update README with latest $versionText version [skip ci]"
-            Write-Host "Only README updated - adding [skip ci] to commit message" -ForegroundColor Cyan
-          } elseif (-not $readmeUpdated -and $packagesUpdated) {
-            # Only packages updated
-            $commitMessage = "Update NuGet packages"
-          } else {
-            # Both updated
-            $commitMessage = "Update README and NuGet packages"
-          }
-
-          git commit -m $commitMessage
-          git push https://x-access-token:$env:PAT_TOKEN@github.com/${{ github.repository }}.git $branchName
+          ./.github/workflows/powershell/Invoke-CommitAndPush.ps1 `
+            -ReadmeUpdated "${{ steps.update-readme.outputs.readme_updated }}" `
+            -UpdatedVersions "${{ steps.update-readme.outputs.updated_versions }}" `
+            -WorkspacePath "${{ github.workspace }}" `
+            -Repository "${{ github.repository }}" `
+            -PatToken $env:PAT_TOKEN
 
       - name: Read package summary
         id: read-summary
+        shell: pwsh
         run: |
-          $summaryPath = "${{ github.workspace }}\.artifacts\package-summary.txt"
-          if (Test-Path $summaryPath) {
-            $content = Get-Content $summaryPath -Raw
-            echo "summary<<EOF" >> $env:GITHUB_OUTPUT
-            echo "$content" >> $env:GITHUB_OUTPUT
-            echo "EOF" >> $env:GITHUB_OUTPUT
-          } else {
-            echo "summary<<EOF" >> $env:GITHUB_OUTPUT
-            echo "No package summary found." >> $env:GITHUB_OUTPUT
-            echo "EOF" >> $env:GITHUB_OUTPUT
-          }
+          ./.github/workflows/powershell/Get-PackageSummary.ps1 -WorkspacePath "${{ github.workspace }}"
 
       - name: Check for existing similar PRs
         id: check-existing-pr
         if: ${{ github.event.inputs.dryRun != 'true' && steps.check-changes.outputs.has_changes == 'true' }}
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           echo $env:GITHUB_TOKEN | gh auth login --with-token
-
-          # Get current package summary from file
-          $summaryPath = "${{ github.workspace }}\.artifacts\package-summary.txt"
-          $currentSummary = Get-Content $summaryPath -Raw
-
-          # List all open PRs with branches matching our pattern
-          $existingPRs = gh pr list --state open --json number,headRefName,body --limit 100 | ConvertFrom-Json
-
-          $skipPR = $false
-          $matchingPR = $null
-
-          foreach ($pr in $existingPRs) {
-            if ($pr.headRefName -like "update-nuget-packages-*") {
-              # Extract the package table from the PR body
-              $prBody = $pr.body
-
-              # Extract content between triple backticks (the package table)
-              if ($prBody -match '(?s)```(.+?)```') {
-                $prPackages = $matches[1].Trim()
-
-                # Compare with current summary (normalize whitespace for comparison)
-                $currentNormalized = $currentSummary.Trim() -replace '\s+', ' '
-                $prNormalized = $prPackages -replace '\s+', ' '
-
-                if ($currentNormalized -eq $prNormalized) {
-                  $skipPR = $true
-                  $matchingPR = $pr.number
-                  Write-Host "Found existing PR #$matchingPR with identical package updates. Skipping PR creation."
-                  break
-                }
-              }
-            }
-          }
-
-          echo "skip=$skipPR" >> $env:GITHUB_OUTPUT
-          echo "existing_pr_number=$matchingPR" >> $env:GITHUB_OUTPUT
+          ./.github/workflows/powershell/Test-ExistingPullRequest.ps1 -WorkspacePath "${{ github.workspace }}"
 
       - name: Create Pull Request
         if: ${{ github.event.inputs.dryRun != 'true' && steps.check-changes.outputs.has_changes == 'true' && steps.check-existing-pr.outputs.skip != 'true' }}
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           echo $env:GITHUB_TOKEN | gh auth login --with-token
-
-          # Create PR body in a file to avoid escaping issues
-          $prBodyFile = "${{ github.workspace }}\.artifacts\pr-body.md"
-
-          # Determine what was updated
-          $readmeUpdated = '${{ steps.update-readme.outputs.readme_updated }}' -eq 'true'
-          $summaryContent = '${{ steps.read-summary.outputs.summary }}'
-          $packagesUpdated = ($summaryContent -notmatch 'No package summary found') -and ($summaryContent -notmatch 'No packages to update')
-
-          # Write PR body content line by line
-          "This PR updates the following:" | Out-File -FilePath $prBodyFile -Encoding UTF8
-          "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-
-          if ($readmeUpdated) {
-            $updatedVersions = '${{ steps.update-readme.outputs.updated_versions }}' -split ',' | ForEach-Object { $_.Trim() }
-            if ($updatedVersions.Count -eq 1) {
-              $versionText = "Umbraco $($updatedVersions[0])"
-            } else {
-              $versionText = "Umbraco $($updatedVersions -join ' and ')"
-            }
-            "- ✅ **README.md** - Updated with latest $versionText version" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          }
-          if ($packagesUpdated) {
-            "- ✅ **NuGet Packages** - Updated to latest versions" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          }
-
-          "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          "**Triggered by:** ${{ github.actor }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-
-          # Add custom NuGet sources if provided
-          $sourcesInput = '${{ github.event.inputs.nugetSources }}'
-          if (-not [string]::IsNullOrWhiteSpace($sourcesInput)) {
-            "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-            "## Custom NuGet Sources" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-            "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-            "This PR was created with custom NuGet sources. The PR build will automatically use these sources:" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-            "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-
-            # Split comma-separated sources and add each as a nuget-source line
-            $sources = $sourcesInput -split ',' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-            foreach ($sourceUrl in $sources) {
-              "nuget-source: $sourceUrl" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-            }
-          }
-
-          if ($packagesUpdated) {
-            "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-            "**IncludePrerelease:** ${{ github.event.inputs.includePrerelease }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-            "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-            "### Updated Packages:" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-            "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-            "${{ steps.read-summary.outputs.summary }}" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-            "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
-          }
-
-          gh pr create `
-            --title "Update NuGet packages" `
-            --body-file $prBodyFile `
-            --base main `
-            --head ${{ steps.commit-and-push.outputs.branchName }}
+          ./.github/workflows/powershell/New-PackageUpdatePullRequest.ps1 `
+            -ReadmeUpdated "${{ steps.update-readme.outputs.readme_updated }}" `
+            -UpdatedVersions "${{ steps.update-readme.outputs.updated_versions }}" `
+            -PackageSummary "${{ steps.read-summary.outputs.summary }}" `
+            -IncludePrerelease "${{ github.event.inputs.includePrerelease }}" `
+            -NuGetSources "${{ github.event.inputs.nugetSources }}" `
+            -BranchName "${{ steps.commit-and-push.outputs.branchName }}" `
+            -WorkspacePath "${{ github.workspace }}"
 
       - name: Summary - PR Skipped
         if: ${{ github.event.inputs.dryRun != 'true' && steps.check-changes.outputs.has_changes == 'true' && steps.check-existing-pr.outputs.skip == 'true' }}
+        shell: pwsh
         run: |
-          Write-Host "================================================" -ForegroundColor Yellow
-          Write-Host "PR CREATION SKIPPED" -ForegroundColor Yellow
-          Write-Host "================================================" -ForegroundColor Yellow
-          Write-Host ""
-          Write-Host "An existing PR (#${{ steps.check-existing-pr.outputs.existing_pr_number }}) already has identical package updates." -ForegroundColor Cyan
-          Write-Host "No need to create a duplicate PR." -ForegroundColor Cyan
-          Write-Host ""
-          Write-Host "Existing PR: https://github.com/${{ github.repository }}/pull/${{ steps.check-existing-pr.outputs.existing_pr_number }}" -ForegroundColor Green
-          Write-Host "================================================" -ForegroundColor Yellow
+          ./.github/workflows/powershell/Show-PullRequestSkippedSummary.ps1 `
+            -ExistingPrNumber "${{ steps.check-existing-pr.outputs.existing_pr_number }}" `
+            -Repository "${{ github.repository }}"
