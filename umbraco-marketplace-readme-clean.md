@@ -63,7 +63,7 @@ dotnet CLI template for creating new projects. Use `dotnet new umbraco-starter-c
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::17.0.0-rc3 --force
+dotnet new install Umbraco.Templates::17.0.0-rc4 --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
@@ -71,7 +71,7 @@ dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --emai
 dotnet sln add "MyProject"
 
 # Add Clean package
-dotnet add "MyProject" package Clean --version 7.0.0-rc1
+dotnet add "MyProject" package Clean --version 7.0.0-rc4
 
 # Run the project
 dotnet run --project "MyProject"
@@ -85,14 +85,14 @@ dotnet run --project "MyProject"
 
 ```powershell
 dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 7.0.0-rc1
+dotnet add "MyProject" package Clean.Core --version 7.0.0-rc4
 ```
 
 ### dotnet Template Method
 
 ```powershell
 # Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::7.0.0-rc1 --force
+dotnet new install Umbraco.Community.Templates.Clean::7.0.0-rc4 --force
 
 # Create a new project using the template
 dotnet new umbraco-starter-clean -n MyProject
