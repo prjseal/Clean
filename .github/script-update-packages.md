@@ -1538,9 +1538,9 @@ on:
 
 ## Related Documentation
 
-- [PR-WORKFLOW.md](PR-WORKFLOW.md) - Pull request build and test automation
-- [VERSIONING-AND-RELEASES.md](VERSIONING-AND-RELEASES.md) - Release process and versioning strategy
-- [CONSUMING-GITHUB-PACKAGES.md](CONSUMING-GITHUB-PACKAGES.md) - Using development packages from GitHub Packages
+- [workflow-pr.md](workflow-pr.md) - Pull request build and test automation
+- [workflow-versioning-releases.md](workflow-versioning-releases.md) - Release process and versioning strategy
+- [general-consuming-packages.md](general-consuming-packages.md) - Using development packages from GitHub Packages
 
 ## Summary
 
