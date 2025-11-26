@@ -7,6 +7,7 @@ Welcome to the comprehensive documentation for the Clean Starter Kit for Umbraco
 ## Table of Contents
 
 - [Getting Started](#getting-started)
+- [Headless CMS and API](#headless-cms-and-api)
 - [For Contributors and Developers](#for-contributors-and-developers)
 - [Package Management](#package-management)
 - [Workflow Documentation](#workflow-documentation)
@@ -16,9 +17,18 @@ Welcome to the comprehensive documentation for the Clean Starter Kit for Umbraco
 
 ## Getting Started
 
-New to Clean Starter Kit? Start with the main README:
+New to Clean Starter Kit? Start with these essential guides:
 
 - **[README](README.md)** - Installation instructions, features overview, and quick start guide
+- **[Package Architecture](.github/PACKAGES.md)** - Understanding the NuGet packages, dependencies, and migration path
+
+---
+
+## Headless CMS and API
+
+Documentation for using Clean as a headless CMS with API endpoints:
+
+- **[Headless/API Implementation](.github/HEADLESS-API.md)** - Delivery API setup, Next.js revalidation configuration, API endpoints, and Swagger documentation
 
 ---
 
