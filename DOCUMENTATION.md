@@ -17,9 +17,10 @@ Welcome to the comprehensive documentation for the Clean Starter Kit for Umbraco
 
 ## Getting Started
 
-New to Clean Starter Kit? Start with the main README:
+New to Clean Starter Kit? Start with these essential guides:
 
 - **[README](README.md)** - Installation instructions, features overview, and quick start guide
+- **[Package Architecture](.github/PACKAGES.md)** - Understanding the NuGet packages, dependencies, and migration path
 
 ---
 
