@@ -98,27 +98,23 @@ jobs:
           $cleanCsprojPath = "template/Clean/Clean.csproj"
           Write-Host "`nReading Umbraco version from $cleanCsprojPath..." -ForegroundColor Yellow
 
+          $umbracoVersion = $null
           try {
             if (-not (Test-Path $cleanCsprojPath)) {
               Write-Host "⚠️  File not found: $cleanCsprojPath" -ForegroundColor Yellow
-              exit 0
+            } else {
+              [xml]$cleanCsproj = Get-Content $cleanCsprojPath
+              $umbracoPackageRef = $cleanCsproj.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Umbraco.Cms.Web.Website" }
+
+              if (-not $umbracoPackageRef) {
+                Write-Host "⚠️  Could not find Umbraco.Cms.Web.Website PackageReference in $cleanCsprojPath" -ForegroundColor Yellow
+              } elseif ([string]::IsNullOrWhiteSpace($umbracoPackageRef.Version)) {
+                Write-Host "⚠️  Umbraco.Cms.Web.Website version is empty" -ForegroundColor Yellow
+              } else {
+                $umbracoVersion = $umbracoPackageRef.Version
+                Write-Host "Found Umbraco version: $umbracoVersion" -ForegroundColor Green
+              }
             }
-
-            [xml]$cleanCsproj = Get-Content $cleanCsprojPath
-            $umbracoPackageRef = $cleanCsproj.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq "Umbraco.Cms.Web.Website" }
-
-            if (-not $umbracoPackageRef) {
-              Write-Host "⚠️  Could not find Umbraco.Cms.Web.Website PackageReference in $cleanCsprojPath" -ForegroundColor Yellow
-              exit 0
-            }
-
-            $umbracoVersion = $umbracoPackageRef.Version
-            if ([string]::IsNullOrWhiteSpace($umbracoVersion)) {
-              Write-Host "⚠️  Umbraco.Cms.Web.Website version is empty" -ForegroundColor Yellow
-              exit 0
-            }
-
-            Write-Host "Found Umbraco version: $umbracoVersion" -ForegroundColor Green
 
             # Update README files
             $readmeFiles = @(
@@ -140,12 +136,16 @@ jobs:
               $originalContent = $content
 
               # Find the section for this Umbraco version
-              if ($content -match "(?s)$umbracoSectionHeader.*?(?=(##|\z))") {
+              # Pattern matches from "## Umbraco X" to the next "## " (at line start) or end of file
+              # Using (?m) for multiline mode and (?s) for dotall mode
+              if ($content -match "(?ms)$umbracoSectionHeader.*?(?=(^## |\z))") {
                 $section = $matches[0]
                 $updatedSection = $section
 
-                # Update Umbraco.Templates version
-                $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Templates::\S+", "dotnet new install Umbraco.Templates::$umbracoVersion"
+                # Update Umbraco.Templates version (only if we have it)
+                if ($umbracoVersion) {
+                  $updatedSection = $updatedSection -replace "dotnet new install Umbraco\.Templates::\S+", "dotnet new install Umbraco.Templates::$umbracoVersion"
+                }
 
                 # Update Clean package version
                 $updatedSection = $updatedSection -replace "(dotnet add .* package Clean --version )\S+", "`${1}$cleanVersion"
@@ -165,7 +165,9 @@ jobs:
                 }
 
                 Write-Host "✅ Updated $readmeFile" -ForegroundColor Green
-                Write-Host "   - Umbraco.Templates: $umbracoVersion" -ForegroundColor White
+                if ($umbracoVersion) {
+                  Write-Host "   - Umbraco.Templates: $umbracoVersion" -ForegroundColor White
+                }
                 Write-Host "   - Clean: $cleanVersion" -ForegroundColor White
                 Write-Host "   - Clean.Core: $cleanVersion" -ForegroundColor White
                 Write-Host "   - Umbraco.Community.Templates.Clean: $cleanVersion" -ForegroundColor White
