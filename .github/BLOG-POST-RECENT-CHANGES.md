@@ -10,6 +10,73 @@ For those just joining us, **Clean** is a fully-featured starter kit for Umbraco
 
 Version 7 brings full support for **Umbraco 17 LTS on .NET 10**, while we continue to support **Umbraco 13 (.NET 8)** for those on the previous LTS version. Whether you're upgrading or starting fresh, Clean makes it painless.
 
+## The Journey: From Starter Kit to Platform
+
+Before we dive into what's new, let's talk about how we got here. Clean didn't start as a sophisticated multi-version platform with automated everything. It began as a simple blog starter theme. What you're looking at now is the result of over 100 commits of deliberate evolution—transforming a good idea into an enterprise-grade development platform.
+
+### The Automation Revolution
+
+One of the biggest transformations has been in how we build and release Clean. We've gone from manual package creation (the "remember to do all these steps" approach) to **three fully automated GitHub Actions workflows** that handle everything:
+
+**Pull Request Testing**: Every PR automatically builds test packages, installs them into fresh Umbraco instances, and uses Playwright to navigate the resulting sites—capturing screenshots for visual regression testing. It's like having a robot QA team that never sleeps.
+
+**Automated Releases**: Tag a release, and the workflow kicks off. It extracts version numbers, updates documentation, builds packages in dependency order, publishes to NuGet, and even creates a PR to commit the version updates back to main. What used to take an hour now takes minutes, and it never forgets a step.
+
+**Daily Dependency Updates**: The repository checks for Umbraco package updates every morning, validates builds succeed, and creates PRs with beautiful ASCII tables showing what changed. Because nobody wants to manually check for updates.
+
+The real game-changer? **Custom NuGet source support**. Testing Clean against an Umbraco release candidate before it hits NuGet.org? Just add a line to your PR description. The workflow parses it and configures everything automatically. It's the kind of feature that makes you wonder how you ever lived without it.
+
+### Solving Multi-Version Support (Without Losing Your Mind)
+
+Here's a problem: Umbraco releases new major versions regularly. Do you support only the latest and alienate users on LTS versions? Or maintain separate branches for each version and double your workload?
+
+We chose option three: **intelligent version mapping from a single branch**. The repository automatically maps Clean versions to Umbraco versions:
+- Clean 4.x → Umbraco 13 (.NET 8)
+- Clean 7.x → Umbraco 17 (.NET 10)
+
+When you create a release, the automation reads the Clean version, knows which Umbraco version it targets, and updates the appropriate documentation sections. One codebase, multiple versions, zero manual coordination. It's version management done right.
+
+### The Package Architecture Evolution
+
+Early on, we hit a classic problem: users would install Clean, customize views and styles, then run `dotnet restore` and watch their changes get overwritten. Ouch.
+
+The solution was splitting Clean into **four modular packages**:
+1. **Clean** - The complete starter kit (use this for initial setup)
+2. **Clean.Core** - Just the code, no views (switch here after setup)
+3. **Clean.Headless** - API and headless functionality
+4. **Umbraco.Community.Templates.Clean** - The `dotnet new` template
+
+Now you can get all the starter content initially, then switch to Clean.Core to prevent updates from clobbering your work. It's documented, automated, and battle-tested.
+
+### Documentation That Actually Helps
+
+Remember that 290-line README that was basically a novel? We broke it into **11 specialized documentation files** in the `.github` folder:
+- Contributing guidelines
+- Release workflows
+- Package creation deep-dives
+- Version strategy
+- Headless API documentation
+- And more...
+
+Each file focuses on one topic. Need to know how to contribute? There's a guide. Want to understand the release process? There's a guide. Wondering why we have a BlockList label workaround? (There's a story there—Umbraco bug #20801.) There's a guide for that too, complete with removal instructions for when Umbraco fixes it.
+
+The README is now a hub—a jumping-off point that gets you started quickly and links to deeper resources when you need them.
+
+### Quality Gates Everywhere
+
+Modern Clean doesn't just build packages; it **validates** them. Every PR runs three complete installation tests using Playwright browser automation. The daily update workflow won't create a PR if builds fail—no more broken dependency updates making it through. We even extract and display build errors in pretty ASCII tables because life's too short for cryptic error messages.
+
+And those BlockList labels that Glombek improved? We automatically fix an Umbraco packaging bug that strips them out. The fix runs during package creation, includes before/after console output so you can see exactly what changed, and is designed for easy removal when Umbraco ships the fix.
+
+### What This Means for You
+
+All this infrastructure means you're not just getting a starter kit—you're getting a **professionally maintained platform** with:
+- Automated testing on every change
+- Daily security and feature updates
+- Multi-version support without branch hell
+- Documentation that doesn't require a PhD to understand
+- Quality gates that catch problems before they ship
+
 ## What's New in Version 7?
 
 Beyond the Umbraco 17 compatibility, we've been busy making Clean better in every way. Here's what's changed:
@@ -49,16 +116,28 @@ If you've ever handed off an Umbraco site to a content editor and watched them s
 
 It's the kind of contribution that might not make headlines, but makes everyone's day-to-day work just a little bit better. Thanks, Joe!
 
-## A Quick Note on Clean's Architecture
+## Quick Start: Which Package Do I Need?
 
-If you're wondering how Clean is structured, here's a quick sidebar: Clean is actually four NuGet packages working together:
+Since Clean uses a modular architecture, here's the TL;DR:
 
-1. **Clean** - The full starter kit (use this for initial setup)
-2. **Clean.Core** - The core library (switch to this after setup)
-3. **Clean.Headless** - API and headless functionality
-4. **Umbraco.Community.Templates.Clean** - The `dotnet new` template
+**Starting from scratch?** Use the template:
+```bash
+dotnet new install Umbraco.Community.Templates.Clean
+dotnet new clean -n MyBlog
+```
 
-Pro tip: After you get set up, switch from the `Clean` package to `Clean.Core`. This prevents your custom views and assets from getting steamrolled during updates. Learn from our mistakes so you don't have to make your own!
+**Adding to an existing Umbraco project?** Install the main package:
+```bash
+dotnet add package Clean --version 7.0.0
+```
+
+**Already using Clean?** Switch to Clean.Core after initial setup to prevent your customizations from being overwritten:
+```bash
+dotnet remove package Clean
+dotnet add package Clean.Core
+```
+
+See the `PACKAGES.md` documentation for the complete migration guide.
 
 ## What's Next?
 
@@ -66,24 +145,25 @@ Version 7 is just the beginning. We're actively looking for contributors (hint, 
 
 **Clean 7.0.0** is available now, fully compatible with **Umbraco 17 LTS on .NET 10**. If you're on Umbraco 13, we've got version 4.x for you. We follow semantic versioning, so you'll always know which version of Clean works with your Umbraco installation.
 
-## Try It Out
+## Ready to Dive In?
 
-Getting started is ridiculously easy:
+Clean 7.0.0 is available now on NuGet and ready for Umbraco 17 LTS. Whether you prefer the `dotnet new` template or adding packages to an existing project, you'll be up and running in minutes.
 
-```bash
-dotnet new install Umbraco.Community.Templates.Clean
-dotnet new clean -n MyAwesomeBlog
-```
+**Resources to get you started:**
+- 📦 [NuGet Package](https://nuget.org/packages/Clean)
+- 📚 [Complete Documentation](https://github.com/prjseal/Clean)
+- 🎥 [Video Walkthrough](https://youtube.com) - See it in action
+- 💬 [GitHub Discussions](https://github.com/prjseal/Clean/discussions) - Ask questions, share ideas
 
-Or if you prefer the traditional route, just install the `Clean` NuGet package into your Umbraco project.
-
-Want to see it in action? There's a video walkthrough on YouTube, and the full documentation is now (finally) easy to navigate at [github.com/prjseal/Clean](https://github.com/prjseal/Clean).
+The documentation is now organized around what you're trying to accomplish—getting started, going headless, contributing, or diving into the technical details. Pick your path and go.
 
 ## The Bottom Line
 
-Building with Umbraco should be fun, not frustrating. Whether you're shipping a traditional blog or building a headless CMS for your Next.js app, Clean gets you there faster. And now with better docs and a more polished editor experience, it's easier than ever.
+Version 7 represents more than just Umbraco 17 compatibility—it's the culmination of a transformation from a simple starter kit into a professionally maintained, battle-tested platform. The automation infrastructure, quality gates, multi-version support, and comprehensive documentation mean you're building on solid ground.
 
-Questions? Issues? Want to contribute? Head over to the repo. We're friendly, we promise.
+Building with Umbraco should be fun, not frustrating. Whether you're shipping a traditional blog or building a headless CMS for your Next.js app, Clean gets you there faster. And with automated testing, daily updates, and a community of contributors making it better every day, you're in good hands.
+
+Questions? Issues? Want to contribute? Head over to the [repo](https://github.com/prjseal/Clean). We're friendly, we promise.
 
 ---
 
