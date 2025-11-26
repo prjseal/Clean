@@ -19,7 +19,7 @@ A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a 
 - **SQLite by Default**: Quick setup with SQLite database for development
 - **No External Dependencies**: Removed dependency on third-party packages like Contentment
 
-Clean supports **Umbraco 13 (LTS)** and **Umbraco 17 (LTS)**. For complete version mapping and support information, see the [Versioning and Releases](.github/VERSIONING-AND-RELEASES.md#version-mapping) documentation.
+Clean targets **Umbraco 17 (LTS)**. For complete version mapping for previous versions, see the [Versioning and Releases](.github/VERSIONING-AND-RELEASES.md#version-mapping) documentation.
 
 For detailed information about the package architecture and the different NuGet packages, see the [Package Architecture](.github/PACKAGES.md) documentation.
 
