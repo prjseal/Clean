@@ -227,106 +227,62 @@ The workflow uploads the following artifacts for every PR:
 
 Here's the complete sequence:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ 1. Checkout Repository                                       │
-│    - Fetches full git history for versioning                │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 2. Setup .NET 10                                             │
-│    - Installs .NET 10 SDK for building                       │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 3. Configure Custom NuGet Sources (if specified in PR)      │
-│    - Reads PR description for nuget-source: lines           │
-│    - Adds custom sources to NuGet configuration             │
-│    - Lists all configured sources                            │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 4. Get Latest NuGet Version & Create Build Version          │
-│    - Queries NuGet.org API for latest "Clean" version       │
-│    - Falls back to .csproj files if API unavailable         │
-│    - Parses semantic versioning                              │
-│    - Creates CI version: {base}-ci.{build-number}           │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 5. Display Version Info                                      │
-│    - Shows base version, build number, and full version     │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 6. Run CreateNuGetPackages Script                           │
-│    - Builds all 4 packages with CI version number            │
-│    - Outputs to .artifacts/nuget/ directory                  │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 7. Upload NuGet Packages as Artifacts                        │
-│    - Makes packages downloadable from Actions tab           │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 8. Publish to GitHub Packages                                │
-│    - Adds GitHub Packages as NuGet source                    │
-│    - Pushes each package to feed                             │
-│    - Uses GITHUB_TOKEN for authentication                    │
-│    - Tracks failed packages and fails build if any fail      │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 9. Test Package Installation                                 │
-│    - Configures GitHub Packages source                       │
-│    - Creates fresh Umbraco project                           │
-│    - Installs Clean package from GitHub Packages            │
-│    - Starts site and waits for ready (max 180s)             │
-│    - Installs Playwright and Chromium                        │
-│    - Runs automated browser tests                            │
-│    - Takes screenshots of 10+ pages                          │
-│    - Stops site and cleans up                                │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 10. Upload Package Test Screenshots                          │
-│     - Uploads all screenshots as workflow artifact          │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 11. Test Template Installation                               │
-│     - Configures GitHub Packages source                      │
-│     - Installs Clean template from GitHub Packages          │
-│     - Creates project: dotnet new umbraco-starter-clean     │
-│     - Starts site and waits for ready (max 180s)            │
-│     - Installs Playwright and Chromium                       │
-│     - Runs automated browser tests                           │
-│     - Takes screenshots of 10+ pages                         │
-│     - Stops site and cleans up                               │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 12. Upload Template Test Screenshots                         │
-│     - Uploads all screenshots as workflow artifact          │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 13. Test Template with Period in Name                        │
-│     - Tests Issue #11 fix with Company.Website name         │
-│     - Same test process as step 11                           │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 14. Upload Period Name Test Screenshots                      │
-│     - Uploads all screenshots as workflow artifact          │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 15. Build Summary                                            │
-│     - Displays version, PR number, branch, and packages     │
-│     - Shows link to GitHub Packages                          │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Start([PR Opened/Updated]) --> Checkout[1. Checkout Repository<br/>Fetch full git history]
+    Checkout --> DotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+
+    DotNet --> CheckPR{3. Custom NuGet<br/>Sources in PR?}
+    CheckPR -->|Yes| ConfigSources[Configure Custom Sources<br/>- Parse nuget-source: lines from PR<br/>- Add to NuGet config<br/>- List configured sources]
+    CheckPR -->|No| GetVersion[4. Get Latest NuGet Version]
+    ConfigSources --> GetVersion
+
+    GetVersion --> VersionCalc[Create CI Build Version<br/>- Query NuGet.org for latest Clean<br/>- Parse semantic version<br/>- Create: base-ci.build-number]
+    VersionCalc --> DisplayVer[5. Display Version Info<br/>Show base, build number, full version]
+
+    DisplayVer --> BuildPkgs[6. Run CreateNuGetPackages Script<br/>- Build all 4 packages<br/>- Output to .artifacts/nuget/]
+    BuildPkgs --> UploadArtifacts[7. Upload NuGet Packages as Artifacts<br/>Available in Actions tab]
+
+    UploadArtifacts --> Publish[8. Publish to GitHub Packages<br/>- Add GitHub Packages source<br/>- Push each package<br/>- Track failures]
+
+    Publish --> PublishCheck{All Packages<br/>Published?}
+    PublishCheck -->|No| PublishFail[Fail Build<br/>Display failed packages]
+    PublishFail --> End1([End: Publish Failed])
+
+    PublishCheck -->|Yes| TestPkg[9. Test Package Installation<br/>- Create fresh Umbraco project<br/>- Install Clean from GitHub Packages<br/>- Start site max 180s<br/>- Install Playwright + Chromium]
+
+    TestPkg --> PlaywrightPkg[Run Browser Tests - Package<br/>- Navigate home page<br/>- Discover internal links<br/>- Visit up to 10 pages<br/>- Test Umbraco login<br/>- Capture screenshots]
+
+    PlaywrightPkg --> UploadPkgScreens[10. Upload Package Test Screenshots<br/>Save as workflow artifact]
+
+    UploadPkgScreens --> TestTemplate[11. Test Template Installation<br/>- Install Clean template<br/>- Create project: dotnet new umbraco-starter-clean<br/>- Start site max 180s<br/>- Install Playwright + Chromium]
+
+    TestTemplate --> PlaywrightTemplate[Run Browser Tests - Template<br/>- Navigate home page<br/>- Discover internal links<br/>- Visit up to 10 pages<br/>- Test Umbraco login<br/>- Capture screenshots]
+
+    PlaywrightTemplate --> UploadTemplateScreens[12. Upload Template Screenshots<br/>Save as workflow artifact]
+
+    UploadTemplateScreens --> TestPeriod[13. Test Template with Period in Name<br/>Issue #11 Fix Verification<br/>- Create project: Company.Website<br/>- Start site max 180s<br/>- Run browser tests]
+
+    TestPeriod --> PlaywrightPeriod[Run Browser Tests - Period Name<br/>- Navigate home page<br/>- Discover internal links<br/>- Visit up to 10 pages<br/>- Test Umbraco login<br/>- Capture screenshots]
+
+    PlaywrightPeriod --> UploadPeriodScreens[14. Upload Period Name Screenshots<br/>Save as workflow artifact]
+
+    UploadPeriodScreens --> Summary[15. Build Summary<br/>- Display version, PR number, branch<br/>- List generated packages<br/>- Show GitHub Packages link]
+
+    Summary --> End2([End: Success])
+
+    style PublishFail fill:#ffcccc
+    style Summary fill:#ccffcc
+    style End2 fill:#ccffcc
+    style End1 fill:#ffcccc
+    style PublishCheck fill:#e6e6fa
+    style CheckPR fill:#e6e6fa
+    style PlaywrightPkg fill:#ffe6cc
+    style PlaywrightTemplate fill:#ffe6cc
+    style PlaywrightPeriod fill:#ffe6cc
+    style TestPkg fill:#e6f3ff
+    style TestTemplate fill:#e6f3ff
+    style TestPeriod fill:#e6f3ff
 ```
 
 ## Technical Details
