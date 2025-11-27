@@ -13,6 +13,9 @@
 .PARAMETER PackageSource
     Optional package source to use: 'nuget' or 'github-packages'. Defaults to 'nuget'.
 
+.PARAMETER UmbracoTemplateSource
+    Optional Umbraco template source: 'nuget' or 'nightly-feed'. Defaults to 'nuget'.
+
 .PARAMETER UmbracoVersion
     Optional specific Umbraco version to test. If not provided, uses latest stable version.
 
@@ -27,6 +30,9 @@
 
 .EXAMPLE
     .\Test-LatestNuGetPackages.ps1 -WorkspacePath "/workspace" -PackageSource "github-packages"
+
+.EXAMPLE
+    .\Test-LatestNuGetPackages.ps1 -WorkspacePath "/workspace" -UmbracoTemplateSource "nightly-feed"
 #>
 
 param(
@@ -36,6 +42,10 @@ param(
     [Parameter(Mandatory = $false)]
     [ValidateSet('nuget', 'github-packages')]
     [string]$PackageSource = 'nuget',
+
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('nuget', 'nightly-feed')]
+    [string]$UmbracoTemplateSource = 'nuget',
 
     [Parameter(Mandatory = $false)]
     [string]$UmbracoVersion,
@@ -49,14 +59,41 @@ Write-Host "Testing NuGet Packages" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 
 $packageSourceDisplay = if ($PackageSource -eq 'github-packages') { "GitHub Packages" } else { "NuGet.org" }
-Write-Host "Package Source: $packageSourceDisplay" -ForegroundColor Cyan
+Write-Host "Clean Package Source: $packageSourceDisplay" -ForegroundColor Cyan
+
+$templateSourceDisplay = if ($UmbracoTemplateSource -eq 'nightly-feed') { "Umbraco Nightly Feed (MyGet)" } else { "NuGet.org" }
+Write-Host "Umbraco Template Source: $templateSourceDisplay" -ForegroundColor Cyan
 
 # Get Umbraco version (use provided or fetch latest)
 if ([string]::IsNullOrWhiteSpace($UmbracoVersion)) {
-    Write-Host "`nFetching latest Umbraco.Cms version from NuGet..." -ForegroundColor Yellow
-    $umbracoResponse = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/umbraco.cms/index.json"
-    $umbracoVersion = $umbracoResponse.versions | Where-Object { $_ -notmatch '-' } | Select-Object -Last 1
-    Write-Host "Latest Umbraco version: $umbracoVersion" -ForegroundColor Green
+    if ($UmbracoTemplateSource -eq 'nightly-feed') {
+        Write-Host "`nFetching latest Umbraco.Cms version from MyGet nightly feed..." -ForegroundColor Yellow
+        try {
+            $nightlyFeedUrl = "https://www.myget.org/f/umbracoprereleases/api/v3/index.json"
+            $serviceIndex = Invoke-RestMethod -Uri $nightlyFeedUrl
+            $packageBaseAddress = ($serviceIndex.resources | Where-Object { $_.'@type' -eq 'PackageBaseAddress/3.0.0' }).'@id'
+
+            if ($packageBaseAddress) {
+                $versionsUrl = "${packageBaseAddress}umbraco.cms/index.json"
+                $umbracoResponse = Invoke-RestMethod -Uri $versionsUrl
+                # Get latest version (including pre-releases)
+                $umbracoVersion = $umbracoResponse.versions | Select-Object -Last 1
+                Write-Host "Latest Umbraco version from nightly feed: $umbracoVersion" -ForegroundColor Green
+            } else {
+                Write-Host "Could not determine latest version from nightly feed, please specify version manually" -ForegroundColor Yellow
+                exit 1
+            }
+        } catch {
+            Write-Host "Error fetching from nightly feed: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Please specify version manually using -UmbracoVersion parameter" -ForegroundColor Yellow
+            exit 1
+        }
+    } else {
+        Write-Host "`nFetching latest Umbraco.Cms version from NuGet..." -ForegroundColor Yellow
+        $umbracoResponse = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/umbraco.cms/index.json"
+        $umbracoVersion = $umbracoResponse.versions | Where-Object { $_ -notmatch '-' } | Select-Object -Last 1
+        Write-Host "Latest Umbraco version: $umbracoVersion" -ForegroundColor Green
+    }
 } else {
     $umbracoVersion = $UmbracoVersion
     Write-Host "`nUsing specified Umbraco version: $umbracoVersion" -ForegroundColor Green
@@ -130,7 +167,14 @@ Set-Location $testDir
 
 # Install Umbraco templates
 Write-Host "`nInstalling Umbraco templates version $umbracoVersion..." -ForegroundColor Yellow
-dotnet new install Umbraco.Templates@$umbracoVersion --force
+
+if ($UmbracoTemplateSource -eq 'nightly-feed') {
+    $nightlyFeedUrl = "https://www.myget.org/f/umbracoprereleases/api/v3/index.json"
+    Write-Host "Using Umbraco nightly feed: $nightlyFeedUrl" -ForegroundColor Yellow
+    dotnet new install Umbraco.Templates@$umbracoVersion --add-source $nightlyFeedUrl --force
+} else {
+    dotnet new install Umbraco.Templates@$umbracoVersion --force
+}
 
 # Create Umbraco project
 Write-Host "`nCreating test Umbraco project..." -ForegroundColor Yellow

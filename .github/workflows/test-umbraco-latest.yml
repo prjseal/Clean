@@ -11,6 +11,14 @@ on:
           - nuget
           - github-packages
         default: nuget
+      umbraco-template-source:
+        description: 'Umbraco template source'
+        required: false
+        type: choice
+        options:
+          - nuget
+          - nightly-feed
+        default: nuget
       umbraco-version:
         description: 'Umbraco version to test (leave blank for latest)'
         required: false
@@ -55,6 +63,9 @@ jobs:
           }
           if ("${{ inputs.package-source }}" -ne "") {
             $params.PackageSource = "${{ inputs.package-source }}"
+          }
+          if ("${{ inputs.umbraco-template-source }}" -ne "") {
+            $params.UmbracoTemplateSource = "${{ inputs.umbraco-template-source }}"
           }
           if ("${{ inputs.umbraco-version }}" -ne "") {
             $params.UmbracoVersion = "${{ inputs.umbraco-version }}"
