@@ -2,6 +2,15 @@ name: Test Umbraco with Latest Clean Package
 
 on:
   workflow_dispatch:
+    inputs:
+      umbraco-version:
+        description: 'Umbraco version to test (leave blank for latest)'
+        required: false
+        type: string
+      clean-version:
+        description: 'Clean package version to test (leave blank for latest)'
+        required: false
+        type: string
   schedule:
     # Run every Monday at 9:00 AM UTC
     - cron: '0 9 * * 1'
@@ -30,7 +39,16 @@ jobs:
         id: test-packages
         shell: pwsh
         run: |
-          ./.github/workflows/powershell/Test-LatestNuGetPackages.ps1 -WorkspacePath "${{ github.workspace }}"
+          $params = @{
+            WorkspacePath = "${{ github.workspace }}"
+          }
+          if ("${{ inputs.umbraco-version }}" -ne "") {
+            $params.UmbracoVersion = "${{ inputs.umbraco-version }}"
+          }
+          if ("${{ inputs.clean-version }}" -ne "") {
+            $params.CleanVersion = "${{ inputs.clean-version }}"
+          }
+          ./.github/workflows/powershell/Test-LatestNuGetPackages.ps1 @params
 
       - name: Upload Screenshots
         if: always()

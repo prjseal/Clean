@@ -10,30 +10,55 @@
 .PARAMETER WorkspacePath
     The GitHub workspace path
 
+.PARAMETER UmbracoVersion
+    Optional specific Umbraco version to test. If not provided, uses latest stable version.
+
+.PARAMETER CleanVersion
+    Optional specific Clean package version to test. If not provided, uses latest stable version.
+
 .EXAMPLE
     .\Test-LatestNuGetPackages.ps1 -WorkspacePath "/workspace"
+
+.EXAMPLE
+    .\Test-LatestNuGetPackages.ps1 -WorkspacePath "/workspace" -UmbracoVersion "15.0.0" -CleanVersion "7.0.0"
 #>
 
 param(
     [Parameter(Mandatory = $true)]
-    [string]$WorkspacePath
+    [string]$WorkspacePath,
+
+    [Parameter(Mandatory = $false)]
+    [string]$UmbracoVersion,
+
+    [Parameter(Mandatory = $false)]
+    [string]$CleanVersion
 )
 
 Write-Host "================================================" -ForegroundColor Cyan
-Write-Host "Testing Latest NuGet Packages" -ForegroundColor Cyan
+Write-Host "Testing NuGet Packages" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 
-# Get latest Umbraco version from NuGet
-Write-Host "`nFetching latest Umbraco.Cms version from NuGet..." -ForegroundColor Yellow
-$umbracoResponse = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/umbraco.cms/index.json"
-$umbracoVersion = $umbracoResponse.versions | Where-Object { $_ -notmatch '-' } | Select-Object -Last 1
-Write-Host "Latest Umbraco version: $umbracoVersion" -ForegroundColor Green
+# Get Umbraco version (use provided or fetch latest)
+if ([string]::IsNullOrWhiteSpace($UmbracoVersion)) {
+    Write-Host "`nFetching latest Umbraco.Cms version from NuGet..." -ForegroundColor Yellow
+    $umbracoResponse = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/umbraco.cms/index.json"
+    $umbracoVersion = $umbracoResponse.versions | Where-Object { $_ -notmatch '-' } | Select-Object -Last 1
+    Write-Host "Latest Umbraco version: $umbracoVersion" -ForegroundColor Green
+} else {
+    $umbracoVersion = $UmbracoVersion
+    Write-Host "`nUsing specified Umbraco version: $umbracoVersion" -ForegroundColor Green
+}
 
-# Get latest Clean package version from NuGet
-Write-Host "`nFetching latest Clean package version from NuGet..." -ForegroundColor Yellow
-$cleanResponse = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/clean/index.json"
-$cleanVersion = $cleanResponse.versions | Where-Object { $_ -notmatch '-' } | Select-Object -Last 1
-Write-Host "Latest Clean version: $cleanVersion" -ForegroundColor Green
+# Get Clean package version (use provided or fetch latest)
+if ([string]::IsNullOrWhiteSpace($CleanVersion)) {
+    Write-Host "`nFetching latest Clean package version from NuGet..." -ForegroundColor Yellow
+    $cleanResponse = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/clean/index.json"
+    $cleanVersion = $cleanResponse.versions | Where-Object { $_ -notmatch '-' } | Select-Object -Last 1
+    Write-Host "Latest Clean version: $cleanVersion" -ForegroundColor Green
+} else {
+    $cleanVersion = $CleanVersion
+    Write-Host "`nUsing specified Clean version: $cleanVersion" -ForegroundColor Green
+}
 
 # Save versions to GitHub output if running in GitHub Actions
 if ($env:GITHUB_OUTPUT) {
@@ -200,7 +225,7 @@ if ($playwrightExitCode -ne 0) {
 }
 
 Write-Host "`n================================================" -ForegroundColor Cyan
-Write-Host "Latest NuGet Package Testing Complete" -ForegroundColor Cyan
+Write-Host "NuGet Package Testing Complete" -ForegroundColor Cyan
 Write-Host "Umbraco Version: $umbracoVersion" -ForegroundColor Green
 Write-Host "Clean Package Version: $cleanVersion" -ForegroundColor Green
 Write-Host "================================================" -ForegroundColor Cyan
