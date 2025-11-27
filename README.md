@@ -27,6 +27,14 @@ For detailed information about the package architecture and the different NuGet 
 
 For detailed documentation about this package and the repository, please see the [docs](.github/clean-documentation.md).
 
+### GitHub Workflows and Automation
+
+The project uses automated workflows for continuous integration and deployment:
+
+- **[PR Build Workflow](.github/workflow-pr.md)** - Automated testing and package publishing for pull requests
+- **[Release Workflow](.github/workflow-versioning-releases.md)** - Automated release process and version management
+- **[Update Packages Workflow](.github/workflow-update-nuget-packages.md)** - Automated dependency updates
+
 ## Installation
 
 ### Prerequisites

@@ -162,6 +162,13 @@ On some systems, you may need to specify the protocol version:
 
 GitHub Packages are public for public repositories, but authentication is still required to consume them. This is a GitHub limitation, not specific to this package.
 
+## Related Documentation
+
+- [PR Workflow](workflow-pr.md) - Explains when and how development packages are published
+- [Contributing Guide](general-contributing.md) - Guidelines for contributing to the project
+- [Package Architecture](clean-packages.md) - Understanding the different NuGet packages
+- [Clean Documentation](clean-documentation.md) - Comprehensive documentation index
+
 ## Questions or Issues?
 
 If you encounter problems consuming packages from GitHub Packages, please open an issue at:

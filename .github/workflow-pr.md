@@ -421,7 +421,9 @@ Each major step displays:
 ## Related Documentation
 
 - [workflow-versioning-releases.md](workflow-versioning-releases.md) - Release process and version strategy
+- [workflow-update-nuget-packages.md](workflow-update-nuget-packages.md) - Automated package updates
 - [general-consuming-packages.md](general-consuming-packages.md) - How to consume development packages
+- [general-contributing.md](general-contributing.md) - Contributing guidelines and development workflow
 - [README.md](../README.md) - Project overview and installation
 
 ## Differences from Release Workflow

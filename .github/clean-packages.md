@@ -95,3 +95,14 @@ The recommended workflow is:
 2. **First Run**: Run the project, publish content, save dictionary items
 3. **Switch Packages**: Change from `Clean` to `Clean.Core` to protect your customizations
 4. **Future Updates**: Continue using `Clean.Core` for updates without losing customizations
+
+---
+
+## Related Documentation
+
+- [README](../README.md) - Installation instructions and quick start guide
+- [Headless/API Implementation](clean-headless-api.md) - Information about Clean.Headless package features
+- [Clean Documentation](clean-documentation.md) - Comprehensive documentation index
+- [Contributing Guide](general-contributing.md) - Guidelines for contributing to the packages
+- [Consuming GitHub Packages](general-consuming-packages.md) - Using development versions of packages
+- [PR Workflow](workflow-pr.md) - How packages are built and tested in CI/CD

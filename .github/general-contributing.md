@@ -397,6 +397,15 @@ When contributing:
 - [Umbraco Content Delivery API](https://docs.umbraco.com/umbraco-cms/reference/content-delivery-api)
 - [uSync Documentation](https://docs.jumoo.co.uk/usync/)
 
+### Project Documentation
+
+- [Clean Documentation](clean-documentation.md) - Comprehensive documentation index
+- [PR Workflow](workflow-pr.md) - Automated PR build and testing process
+- [Release Workflow](workflow-versioning-releases.md) - Version management and releases
+- [Update Packages Workflow](workflow-update-nuget-packages.md) - Automated dependency updates
+- [Package Architecture](clean-packages.md) - Understanding the NuGet packages
+- [Consuming GitHub Packages](general-consuming-packages.md) - Using development packages
+
 ### Project Links
 
 - [GitHub Repository](https://github.com/prjseal/Clean)
