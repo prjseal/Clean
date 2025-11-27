@@ -17,7 +17,6 @@ A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a 
 - **OpenAPI Documentation**: Swagger UI for exploring and testing API endpoints
 - **Multi-version Support**: NuGet packages for Compatible with Umbraco 13 and 17 (.NET 8 and .NET 10)
 - **SQLite by Default**: Quick setup with SQLite database for development
-- **No External Dependencies**: Removed dependency on third-party packages like Contentment
 
 Clean targets **Umbraco 17 (LTS)**. For complete version mapping for previous versions, see the [Versioning and Releases](.github/workflow-versioning-releases.md#version-mapping) documentation.
 
@@ -91,8 +90,9 @@ dotnet run --project "MyProject.Blog"
 
 # Login with admin@example.com and 1234567890
 # Save and publish the home page and save one of the dictionary items in the translation section
-# The site should now be running and visible on the front end
-```
+# The site should now be running and visible on the front 
+
+> **✨ Note**: As of version 7.0.0, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
 
 ## Umbraco 13 (LTS)
 
@@ -144,8 +144,6 @@ dotnet run --project "MyProject.Blog"
 # Save and publish the home page and save one of the dictionary items in the translation section
 # The site should now be running and visible on the front end
 ```
-
-> **✨ Note**: As of version 7.0.0-rc4, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
 
 ---
 
