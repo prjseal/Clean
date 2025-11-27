@@ -540,3 +540,56 @@ v7.1.0-rc.2
 - [GitHub Releases Documentation](https://docs.github.com/en/repositories/releasing-projects-on-github)
 - [Consuming GitHub Packages](general-consuming-packages.md)
 - [Umbraco Version Support](https://umbraco.com/products/knowledge-center/long-term-support-and-end-of-life/)
+
+## Workflow Steps
+
+The release workflow is triggered when a GitHub release is published and performs the following sequence:
+
+```mermaid
+flowchart TD
+    Start([GitHub Release Published]) --> Checkout[1. Checkout Repository<br/>Fetch full git history]
+    Checkout --> DotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+    
+    DotNet --> ExtractVersion[3. Extract Release Version<br/>Parse tag, validate SemVer<br/>Remove 'v' prefix]
+    ExtractVersion --> ShowVersion[4. Display Version Info<br/>Show tag, version, prerelease status]
+    
+    ShowVersion --> UpdateREADME[5. Update README Files<br/>Map Clean version to Umbraco<br/>Update installation commands]
+    
+    UpdateREADME --> CreatePackages[6. Create NuGet Packages<br/>Start Umbraco<br/>Download package via API<br/>Fix BlockList labels<br/>Update .csproj versions<br/>Build in dependency order]
+    
+    CreatePackages --> UploadArtifacts[7. Upload Package Artifacts<br/>Save .nupkg files to workflow]
+    
+    UploadArtifacts --> PublishNuGet[8. Publish to NuGet.org<br/>Push all packages<br/>Track failures]
+    
+    PublishNuGet --> PublishSuccess{All Packages<br/>Published?}
+    PublishSuccess -->|No| End1([End: Publish Failed])
+    
+    PublishSuccess -->|Yes| AddAssets[9. Add Packages to Release<br/>Upload .nupkg to GitHub release]
+    
+    AddAssets --> CreatePR[10. Create Version Update PR<br/>Commit .csproj and README changes<br/>Create PR to main]
+    
+    CreatePR --> Summary[11. Release Summary<br/>Display version, packages, links<br/>Always runs]
+    
+    Summary --> End2([End: Success])
+    
+    style End1 fill:#ffcccc
+    style Summary fill:#ccffcc
+    style End2 fill:#ccffcc
+    style PublishSuccess fill:#e6e6fa
+```
+
+## Scripts Used
+
+The release workflow uses the following PowerShell scripts:
+
+| Script | Purpose | Documentation |
+|--------|---------|---------------|
+| Extract-ReleaseVersion.ps1 | Extracts and validates version from release tag | [Link](script-extract-release-version.md) |
+| Show-VersionInfo.ps1 | Displays formatted version information | [Link](script-show-version-info.md) |
+| Update-ReadmeVersions.ps1 | Updates README files with version info | [Link](script-update-readme-versions.md) |
+| CreateNuGetPackages.ps1 | Creates all NuGet packages | [Link](script-create-nuget-packages.md) |
+| Publish-ToNuGet.ps1 | Publishes packages to NuGet.org | [Link](script-publish-to-nuget.md) |
+| Add-ReleaseAssets.ps1 | Uploads packages to GitHub release | [Link](script-add-release-assets.md) |
+| New-VersionUpdatePullRequest.ps1 | Creates PR with version updates | [Link](script-new-version-update-pull-request.md) |
+| Show-ReleaseSummary.ps1 | Displays final release summary | [Link](script-show-release-summary.md) |
+
