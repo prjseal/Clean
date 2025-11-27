@@ -470,3 +470,86 @@ The PR workflow provides:
 - ✅ Artifact preservation for reviewer inspection
 
 This ensures high quality and prevents regressions before code reaches production.
+
+## Workflow Steps
+
+The PR build workflow is triggered when a pull request is opened or updated targeting the main branch, and performs the following sequence:
+
+```mermaid
+flowchart TD
+    Start([Pull Request to Main]) --> Checkout[1. Checkout Repository<br/>Checkout PR head SHA<br/>Fetch full git history]
+    Checkout --> DotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+    
+    DotNet --> CustomSources[3. Configure Custom NuGet Sources<br/>Parse PR description<br/>Add custom sources if present]
+    
+    CustomSources --> GetVersion[4. Get Build Version<br/>Query NuGet.org for latest<br/>Generate CI version]
+    
+    GetVersion --> ShowVersion[5. Display Version Info<br/>Show base version, build number, full version]
+    
+    ShowVersion --> CreatePackages[6. Create NuGet Packages<br/>Start Umbraco<br/>Download package via API<br/>Fix BlockList labels<br/>Update .csproj versions<br/>Build in dependency order]
+    
+    CreatePackages --> UploadArtifacts[7. Upload Package Artifacts<br/>Save .nupkg files to workflow]
+    
+    UploadArtifacts --> PublishGH[8. Publish to GitHub Packages<br/>Push all packages<br/>Skip duplicates]
+    
+    PublishGH --> TestPackage[9. Test Package Installation<br/>Create Umbraco project<br/>Install Clean package<br/>Start site<br/>Run Playwright tests]
+    
+    TestPackage --> UploadPkgScreenshots[10. Upload Package Test Screenshots<br/>Save screenshots as artifacts<br/>Always runs]
+    
+    UploadPkgScreenshots --> TestTemplate[11. Test Template Installation<br/>Install template<br/>Create project from template<br/>Start site<br/>Run Playwright tests]
+    
+    TestTemplate --> UploadTplScreenshots[12. Upload Template Screenshots<br/>Save screenshots as artifacts<br/>Always runs]
+    
+    UploadTplScreenshots --> TestPeriod[13. Test Period Name Template<br/>Verify Issue #11 fix<br/>Create project: Company.Website<br/>Run same tests]
+    
+    TestPeriod --> UploadPeriodScreenshots[14. Upload Period Test Screenshots<br/>Save screenshots as artifacts<br/>Always runs]
+    
+    UploadPeriodScreenshots --> Summary[15. Build Summary<br/>Display version, packages, links<br/>Always runs]
+    
+    Summary --> End([End: Success])
+    
+    style TestPackage fill:#e6f3ff
+    style TestTemplate fill:#e6f3ff
+    style TestPeriod fill:#e6f3ff
+    style Summary fill:#ccffcc
+```
+
+## Scripts Used
+
+The PR build workflow uses the following PowerShell scripts:
+
+| Script | Purpose | Documentation |
+|--------|---------|---------------|
+| Configure-CustomNuGetSources.ps1 | Parses PR description for custom NuGet sources | [Link](script-configure-custom-nuget-sources.md) |
+| Get-BuildVersion.ps1 | Queries NuGet.org and generates CI build version | [Link](script-get-build-version.md) |
+| Show-BuildVersionInfo.ps1 | Displays formatted version information | [Link](script-show-build-version-info.md) |
+| CreateNuGetPackages.ps1 | Creates all NuGet packages | [Link](script-create-nuget-packages.md) |
+| Publish-ToGitHubPackages.ps1 | Publishes packages to GitHub Packages | [Link](script-publish-to-github-packages.md) |
+| Test-PackageInstallation.ps1 | Tests Clean package installation end-to-end | [Link](script-test-package-installation.md) |
+| Test-TemplateInstallation.ps1 | Tests Clean template installation end-to-end | [Link](script-test-template-installation.md) |
+| Show-BuildSummary.ps1 | Displays final build summary | [Link](script-show-build-summary.md) |
+
+## Testing Strategy
+
+The workflow implements comprehensive testing:
+
+### 1. Package Installation Test
+
+**What**: Tests installing Clean package into existing Umbraco project  
+**How**: Creates Umbraco project, installs Clean package, starts site  
+**Validates**: Package installation, site functionality, backoffice integration
+
+### 2. Template Installation Test
+
+**What**: Tests using Clean template to create new project  
+**How**: Installs template, creates project, starts site  
+**Validates**: Template installation, project generation, site functionality
+
+### 3. Period Name Test (Issue #11)
+
+**What**: Tests template with period in project name  
+**How**: Creates project named "Company.Website"  
+**Validates**: Fix for Issue #11 works correctly
+
+All tests use Playwright for automated browser testing and generate screenshots for visual verification.
+
