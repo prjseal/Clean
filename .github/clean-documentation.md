@@ -19,8 +19,8 @@ Welcome to the comprehensive documentation for the Clean Starter Kit for Umbraco
 
 New to Clean Starter Kit? Start with these essential guides:
 
-- **[README](README.md)** - Installation instructions, features overview, and quick start guide
-- **[Package Architecture](.github/clean-packages.md)** - Understanding the NuGet packages, dependencies, and migration path
+- **[README](../README.md)** - Installation instructions, features overview, and quick start guide
+- **[Package Architecture](clean-packages.md)** - Understanding the NuGet packages, dependencies, and migration path
 
 ---
 
@@ -28,7 +28,7 @@ New to Clean Starter Kit? Start with these essential guides:
 
 Documentation for using Clean as a headless CMS with API endpoints:
 
-- **[Headless/API Implementation](.github/clean-headless-api.md)** - Delivery API setup, Next.js revalidation configuration, API endpoints, and Swagger documentation
+- **[Headless/API Implementation](clean-headless-api.md)** - Delivery API setup, Next.js revalidation configuration, API endpoints, and Swagger documentation
 
 ---
 
@@ -38,15 +38,15 @@ Documentation for those who want to contribute to the Clean Starter Kit project:
 
 ### Contributing
 
-- **[Contributing Guide](.github/general-contributing.md)** - Code standards, testing requirements, and how to submit contributions to the project
+- **[Contributing Guide](general-contributing.md)** - Code standards, testing requirements, and how to submit contributions to the project
 
 ### Pull Requests
 
-- **[PR Workflow](.github/workflow-pr.md)** - Guidelines for creating and reviewing pull requests, including automated workflows and testing procedures
+- **[PR Workflow](workflow-pr.md)** - Guidelines for creating and reviewing pull requests, including automated workflows and testing procedures
 
 ### Versioning and Releases
 
-- **[Versioning and Releases](.github/workflow-versioning-releases.md)** - Understanding version numbers, release processes, and how Clean versions map to Umbraco versions
+- **[Versioning and Releases](workflow-versioning-releases.md)** - Understanding version numbers, release processes, and how Clean versions map to Umbraco versions
 
 ---
 
@@ -56,15 +56,15 @@ Documentation for managing NuGet packages and dependencies:
 
 ### Updating Dependencies
 
-- **[Update NuGet Packages](.github/script-update-packages.md)** - How to update project NuGet package dependencies and keep your dependencies up to date
+- **[Update NuGet Packages](script-update-packages.md)** - How to update project NuGet package dependencies and keep your dependencies up to date
 
 ### GitHub Package Registry
 
-- **[Consuming GitHub Packages](.github/general-consuming-packages.md)** - Using packages from GitHub Package Registry for testing pre-release versions
+- **[Consuming GitHub Packages](general-consuming-packages.md)** - Using packages from GitHub Package Registry for testing pre-release versions
 
 ### Building Packages
 
-- **[CreateNuGetPackages Script Documentation](.github/script-create-packages.md)** - Detailed guide for building and publishing NuGet packages, including the automated package creation process
+- **[CreateNuGetPackages Script Documentation](script-create-packages.md)** - Detailed guide for building and publishing NuGet packages, including the automated package creation process
 
 ---
 
@@ -74,7 +74,15 @@ Documentation related to GitHub Actions workflows and automation:
 
 ### PR Build Workflow
 
-- **[PR Workflow](.github/workflow-pr.md)** - Automated build and testing process for pull requests, including package validation
+- **[PR Workflow](workflow-pr.md)** - Automated build and testing process for pull requests, including package validation
+
+### Update Packages Workflow
+
+- **[Update NuGet Packages](workflow-update-nuget-packages.md)** - Automated workflow for updating NuGet packages and Umbraco versions
+
+### Release Workflow
+
+- **[Versioning and Releases](workflow-versioning-releases.md)** - Understanding version numbers, release processes, and how Clean versions map to Umbraco versions
 
 ---
 
@@ -84,7 +92,7 @@ Technical documentation for specific issues and workarounds:
 
 ### BlockList Label Workaround
 
-- **[BlockList Label Workaround](.github/clean-blocklist-workaround.md)** - Documentation for the temporary workaround for Umbraco BlockList label export issue (#20801)
+- **[BlockList Label Workaround](clean-blocklist-workaround.md)** - Documentation for the temporary workaround for Umbraco BlockList label export issue (#20801)
 
 ---
 
@@ -118,7 +126,7 @@ If you can't find what you're looking for in the documentation:
 
 ## Contributing to Documentation
 
-Found an error or want to improve the documentation? Contributions are welcome! Please see the [Contributing Guide](.github/general-contributing.md) for information on how to submit documentation improvements.
+Found an error or want to improve the documentation? Contributions are welcome! Please see the [Contributing Guide](general-contributing.md) for information on how to submit documentation improvements.
 
 ---
 
