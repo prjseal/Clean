@@ -3,6 +3,14 @@ name: Test Umbraco with Latest Clean Package
 on:
   workflow_dispatch:
     inputs:
+      package-source:
+        description: 'Package source to use'
+        required: false
+        type: choice
+        options:
+          - nuget
+          - github-packages
+        default: nuget
       umbraco-version:
         description: 'Umbraco version to test (leave blank for latest)'
         required: false
@@ -20,6 +28,7 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: read
+      packages: read
 
     steps:
       - name: Checkout repository
@@ -38,9 +47,14 @@ jobs:
       - name: Test Latest NuGet Packages
         id: test-packages
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $params = @{
             WorkspacePath = "${{ github.workspace }}"
+          }
+          if ("${{ inputs.package-source }}" -ne "") {
+            $params.PackageSource = "${{ inputs.package-source }}"
           }
           if ("${{ inputs.umbraco-version }}" -ne "") {
             $params.UmbracoVersion = "${{ inputs.umbraco-version }}"

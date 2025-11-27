@@ -3,12 +3,15 @@
     Tests latest Clean package from NuGet with latest Umbraco version.
 
 .DESCRIPTION
-    This script tests installing the latest Clean package from NuGet.org with
+    This script tests installing the latest Clean package from NuGet.org or GitHub Packages with
     the latest stable Umbraco version, creates an Umbraco project, installs Clean,
     starts the site, and runs Playwright tests to verify functionality.
 
 .PARAMETER WorkspacePath
     The GitHub workspace path
+
+.PARAMETER PackageSource
+    Optional package source to use: 'nuget' or 'github-packages'. Defaults to 'nuget'.
 
 .PARAMETER UmbracoVersion
     Optional specific Umbraco version to test. If not provided, uses latest stable version.
@@ -21,11 +24,18 @@
 
 .EXAMPLE
     .\Test-LatestNuGetPackages.ps1 -WorkspacePath "/workspace" -UmbracoVersion "15.0.0" -CleanVersion "7.0.0"
+
+.EXAMPLE
+    .\Test-LatestNuGetPackages.ps1 -WorkspacePath "/workspace" -PackageSource "github-packages"
 #>
 
 param(
     [Parameter(Mandatory = $true)]
     [string]$WorkspacePath,
+
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('nuget', 'github-packages')]
+    [string]$PackageSource = 'nuget',
 
     [Parameter(Mandatory = $false)]
     [string]$UmbracoVersion,
@@ -37,6 +47,9 @@ param(
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host "Testing NuGet Packages" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
+
+$packageSourceDisplay = if ($PackageSource -eq 'github-packages') { "GitHub Packages" } else { "NuGet.org" }
+Write-Host "Package Source: $packageSourceDisplay" -ForegroundColor Cyan
 
 # Get Umbraco version (use provided or fetch latest)
 if ([string]::IsNullOrWhiteSpace($UmbracoVersion)) {
@@ -51,10 +64,51 @@ if ([string]::IsNullOrWhiteSpace($UmbracoVersion)) {
 
 # Get Clean package version (use provided or fetch latest)
 if ([string]::IsNullOrWhiteSpace($CleanVersion)) {
-    Write-Host "`nFetching latest Clean package version from NuGet..." -ForegroundColor Yellow
-    $cleanResponse = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/clean/index.json"
-    $cleanVersion = $cleanResponse.versions | Where-Object { $_ -notmatch '-' } | Select-Object -Last 1
-    Write-Host "Latest Clean version: $cleanVersion" -ForegroundColor Green
+    if ($PackageSource -eq 'nuget') {
+        Write-Host "`nFetching latest Clean package version from NuGet..." -ForegroundColor Yellow
+        $cleanResponse = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/clean/index.json"
+        $cleanVersion = $cleanResponse.versions | Where-Object { $_ -notmatch '-' } | Select-Object -Last 1
+        Write-Host "Latest Clean version: $cleanVersion" -ForegroundColor Green
+    } else {
+        Write-Host "`nFetching latest Clean package version from GitHub Packages..." -ForegroundColor Yellow
+        # For GitHub Packages, we'll need to query using NuGet API with authentication
+        # Extract repository owner from current repository
+        $repoOwner = if ($env:GITHUB_REPOSITORY) {
+            $env:GITHUB_REPOSITORY.Split('/')[0]
+        } else {
+            "prjseal"
+        }
+
+        try {
+            $headers = @{}
+            if ($env:GITHUB_TOKEN) {
+                $headers['Authorization'] = "Bearer $env:GITHUB_TOKEN"
+            }
+            $ghPackagesUrl = "https://nuget.pkg.github.com/$repoOwner/index.json"
+            $serviceIndex = Invoke-RestMethod -Uri $ghPackagesUrl -Headers $headers
+            $searchQueryService = $serviceIndex.resources | Where-Object { $_.'@type' -eq 'SearchQueryService' } | Select-Object -First 1
+
+            if ($searchQueryService) {
+                $searchUrl = $searchQueryService.'@id' + "?q=Clean&prerelease=false"
+                $searchResult = Invoke-RestMethod -Uri $searchUrl -Headers $headers
+                $cleanPackage = $searchResult.data | Where-Object { $_.id -eq 'Clean' } | Select-Object -First 1
+                if ($cleanPackage -and $cleanPackage.version) {
+                    $cleanVersion = $cleanPackage.version
+                    Write-Host "Latest Clean version from GitHub Packages: $cleanVersion" -ForegroundColor Green
+                } else {
+                    Write-Host "Could not find Clean package in GitHub Packages, will need to specify version" -ForegroundColor Yellow
+                    exit 1
+                }
+            } else {
+                Write-Host "Could not determine latest version from GitHub Packages, please specify version manually" -ForegroundColor Yellow
+                exit 1
+            }
+        } catch {
+            Write-Host "Error fetching from GitHub Packages: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Please specify version manually using -CleanVersion parameter" -ForegroundColor Yellow
+            exit 1
+        }
+    }
 } else {
     $cleanVersion = $CleanVersion
     Write-Host "`nUsing specified Clean version: $cleanVersion" -ForegroundColor Green
@@ -84,9 +138,41 @@ dotnet new sln --name "TestLatestSolution"
 dotnet new umbraco --force -n "TestLatestProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
 dotnet sln add "TestLatestProject"
 
-# Install Clean package from NuGet
-Write-Host "`nInstalling Clean package version $cleanVersion from NuGet..." -ForegroundColor Yellow
-dotnet add "TestLatestProject" package Clean --version $cleanVersion
+# Configure package source
+if ($PackageSource -eq 'github-packages') {
+    Write-Host "`nConfiguring GitHub Packages as NuGet source..." -ForegroundColor Yellow
+
+    # Extract repository owner
+    $repoOwner = if ($env:GITHUB_REPOSITORY) {
+        $env:GITHUB_REPOSITORY.Split('/')[0]
+    } else {
+        "prjseal"
+    }
+
+    $ghPackagesUrl = "https://nuget.pkg.github.com/$repoOwner/index.json"
+
+    # Check if source already exists
+    $existingSources = dotnet nuget list source
+    if ($existingSources -match "GitHubPackages") {
+        Write-Host "GitHubPackages source already exists, removing it first..." -ForegroundColor Yellow
+        dotnet nuget remove source "GitHubPackages"
+    }
+
+    # Add GitHub Packages source
+    dotnet nuget add source $ghPackagesUrl --name "GitHubPackages" --username "github" --password "$env:GITHUB_TOKEN" --store-password-in-clear-text
+
+    Write-Host "GitHub Packages source configured successfully" -ForegroundColor Green
+}
+
+# Install Clean package
+$sourceMessage = if ($PackageSource -eq 'github-packages') { "GitHub Packages" } else { "NuGet" }
+Write-Host "`nInstalling Clean package version $cleanVersion from $sourceMessage..." -ForegroundColor Yellow
+
+if ($PackageSource -eq 'github-packages') {
+    dotnet add "TestLatestProject" package Clean --version $cleanVersion --source "GitHubPackages"
+} else {
+    dotnet add "TestLatestProject" package Clean --version $cleanVersion
+}
 
 # Start the site in background
 Write-Host "`nStarting Umbraco site..." -ForegroundColor Yellow
