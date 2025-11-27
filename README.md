@@ -91,6 +91,7 @@ dotnet run --project "MyProject.Blog"
 # Login with admin@example.com and 1234567890
 # Save and publish the home page and save one of the dictionary items in the translation section
 # The site should now be running and visible on the front 
+``` 
 
 > **✨ Note**: As of version 7.0.0, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
 
