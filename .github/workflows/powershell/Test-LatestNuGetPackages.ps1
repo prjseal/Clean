@@ -108,7 +108,6 @@ if ([string]::IsNullOrWhiteSpace($CleanVersion)) {
         Write-Host "Latest Clean version: $cleanVersion" -ForegroundColor Green
     } else {
         Write-Host "`nFetching latest Clean package version from GitHub Packages..." -ForegroundColor Yellow
-        # For GitHub Packages, we'll need to query using NuGet API with authentication
         # Extract repository owner from current repository
         $repoOwner = if ($env:GITHUB_REPOSITORY) {
             $env:GITHUB_REPOSITORY.Split('/')[0]
@@ -121,23 +120,31 @@ if ([string]::IsNullOrWhiteSpace($CleanVersion)) {
             if ($env:GITHUB_TOKEN) {
                 $headers['Authorization'] = "Bearer $env:GITHUB_TOKEN"
             }
+
             $ghPackagesUrl = "https://nuget.pkg.github.com/$repoOwner/index.json"
             $serviceIndex = Invoke-RestMethod -Uri $ghPackagesUrl -Headers $headers
-            $searchQueryService = $serviceIndex.resources | Where-Object { $_.'@type' -eq 'SearchQueryService' } | Select-Object -First 1
+            $packageBaseAddress = ($serviceIndex.resources | Where-Object { $_.'@type' -match 'PackageBaseAddress' }).'@id'
 
-            if ($searchQueryService) {
-                $searchUrl = $searchQueryService.'@id' + "?q=Clean&prerelease=false"
-                $searchResult = Invoke-RestMethod -Uri $searchUrl -Headers $headers
-                $cleanPackage = $searchResult.data | Where-Object { $_.id -eq 'Clean' } | Select-Object -First 1
-                if ($cleanPackage -and $cleanPackage.version) {
-                    $cleanVersion = $cleanPackage.version
-                    Write-Host "Latest Clean version from GitHub Packages: $cleanVersion" -ForegroundColor Green
+            if ($packageBaseAddress) {
+                # Try to fetch versions for the Clean package
+                $versionsUrl = "${packageBaseAddress}clean/index.json"
+                Write-Host "Querying: $versionsUrl" -ForegroundColor Gray
+
+                $cleanResponse = Invoke-RestMethod -Uri $versionsUrl -Headers $headers
+
+                # Get latest version, preferring stable versions
+                $stableVersions = $cleanResponse.versions | Where-Object { $_ -notmatch '-' }
+                if ($stableVersions) {
+                    $cleanVersion = $stableVersions | Select-Object -Last 1
+                    Write-Host "Latest stable Clean version from GitHub Packages: $cleanVersion" -ForegroundColor Green
                 } else {
-                    Write-Host "Could not find Clean package in GitHub Packages, will need to specify version" -ForegroundColor Yellow
-                    exit 1
+                    # If no stable versions, get the latest including pre-release
+                    $cleanVersion = $cleanResponse.versions | Select-Object -Last 1
+                    Write-Host "Latest Clean version from GitHub Packages (pre-release): $cleanVersion" -ForegroundColor Green
                 }
             } else {
-                Write-Host "Could not determine latest version from GitHub Packages, please specify version manually" -ForegroundColor Yellow
+                Write-Host "Could not find PackageBaseAddress in GitHub Packages service index" -ForegroundColor Yellow
+                Write-Host "Please specify version manually using -CleanVersion parameter" -ForegroundColor Yellow
                 exit 1
             }
         } catch {
