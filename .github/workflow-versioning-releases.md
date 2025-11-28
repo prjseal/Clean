@@ -38,7 +38,7 @@ MAJOR.MINOR.PATCH[-PRERELEASE]
 
 | Type | Format | Example | When to Use |
 |------|--------|---------|-------------|
-| **CI Build** | `X.Y.Z-ci.N` | `7.0.0-ci.123` | Automatic on every PR |
+| **CI Build** | `X.Y.Z-ci.NNNNNNN` | `7.0.0-ci.0000123` | Automatic on every PR |
 | **Stable Release** | `X.Y.Z` | `7.0.0` | Production-ready release |
 | **Release Candidate** | `X.Y.Z-rc.N` | `7.0.0-rc.1` | Near-final testing |
 | **Beta** | `X.Y.Z-beta.N` | `7.0.0-beta.1` | Feature-complete testing |
@@ -49,10 +49,10 @@ MAJOR.MINOR.PATCH[-PRERELEASE]
 NuGet follows SemVer 2.0 precedence rules:
 
 ```
-1.0.0-alpha.1 < 1.0.0-beta.1 < 1.0.0-rc.1 < 1.0.0 < 1.0.1-ci.1
+1.0.0-alpha.1 < 1.0.0-beta.1 < 1.0.0-rc.1 < 1.0.0 < 1.0.1-ci.0000001
 ```
 
-**Important**: CI builds (`-ci.N`) sort **after** stable releases, ensuring they don't interfere with production package resolution.
+**Important**: CI builds (`-ci.NNNNNNN`) sort **after** stable releases, ensuring they don't interfere with production package resolution.
 
 ## Package Feeds
 
@@ -69,8 +69,8 @@ NuGet follows SemVer 2.0 precedence rules:
 
 **Automatic Publishing**:
 - Every PR to `main` branch
-- Version format: `{latest-stable}-ci.{build-number}`
-- Example: `7.0.0-ci.123`
+- Version format: `{latest-stable}-ci.{ci-build-number}` (7-digit zero-padded)
+- Example: `7.0.0-ci.0000123`
 
 See [general-consuming-packages.md](general-consuming-packages.md) for consumption details.
 
@@ -278,15 +278,15 @@ The Clean packages maintain version alignment with Umbraco CMS:
 
 **Process**:
 1. Query NuGet.org for latest stable version
-2. Append `-ci.{build-number}` to create build version
+2. Append `-ci.{ci-build-number}` (7-digit zero-padded) to create build version
 3. Run `.github/workflows/powershell/CreateNuGetPackages.ps1` with version
 4. Publish to GitHub Packages
 5. Upload artifacts
 
 **Example Versions**:
 - Latest on NuGet.org: `7.0.0`
-- PR #45, Build #123: `7.0.0-ci.123`
-- PR #46, Build #124: `7.0.0-ci.124`
+- PR #45, Build #123: `7.0.0-ci.0000123`
+- PR #46, Build #124: `7.0.0-ci.0000124`
 
 **When to Use**:
 - Testing changes before merging
@@ -388,7 +388,7 @@ gh run view --log
 **Problem**: Multiple PRs create packages with same version.
 
 **Example**:
-- PR #45 and PR #46 both use `7.0.0-ci.123`
+- PR #45 and PR #46 both use `7.0.0-ci.0000123`
 
 **Why This Happens**:
 - Both PRs triggered at similar times
@@ -529,8 +529,8 @@ v7.0.0-rc.1
 v7.1.0-rc.2
 
 # CI builds (automatic)
-7.0.0-ci.123
-7.0.0-ci.124
+7.0.0-ci.0000123
+7.0.0-ci.0000124
 ```
 
 ## Additional Resources

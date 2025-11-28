@@ -188,10 +188,10 @@ Processing package: Clean
     Found next page, continuing...
     Fetched 50 versions (Total so far: 150)
   Found 95 CI version(s) out of 150 total versions
-    Deleting version: 7.0.1-ci.42 (ID: 123456)
-    ✓ Deleted: 7.0.1-ci.42
-    Deleting version: 7.0.1-ci.43 (ID: 123457)
-    ✓ Deleted: 7.0.1-ci.43
+    Deleting version: 7.0.1-ci.0000042 (ID: 123456)
+    ✓ Deleted: 7.0.1-ci.0000042
+    Deleting version: 7.0.1-ci.0000043 (ID: 123457)
+    ✓ Deleted: 7.0.1-ci.0000043
     ...
   Summary for Clean: 95 deleted, 0 failed
 ```
