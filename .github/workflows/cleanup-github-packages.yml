@@ -51,11 +51,40 @@ jobs:
             Write-Host "Processing package: $packageName" -ForegroundColor Cyan
 
             try {
-              # Get all versions of the package
-              $versionsUrl = "https://api.github.com/users/$owner/packages/nuget/$packageName/versions"
+              # Get all versions of the package (with pagination support)
+              $versionsUrl = "https://api.github.com/users/$owner/packages/nuget/$packageName/versions?per_page=100"
               Write-Host "  Fetching versions from: $versionsUrl" -ForegroundColor Gray
 
-              $versions = Invoke-RestMethod -Uri $versionsUrl -Headers $headers -ErrorAction Stop
+              $allVersions = @()
+              $currentUrl = $versionsUrl
+
+              # Handle pagination - GitHub API returns 30 items by default, max 100 per page
+              while ($currentUrl) {
+                $response = Invoke-WebRequest -Uri $currentUrl -Headers $headers -ErrorAction Stop
+                $pageVersions = $response.Content | ConvertFrom-Json
+                $allVersions += $pageVersions
+
+                Write-Host "    Fetched $($pageVersions.Count) versions (Total so far: $($allVersions.Count))" -ForegroundColor Gray
+
+                # Check for next page in Link header
+                $linkHeader = $response.Headers['Link']
+                $currentUrl = $null
+
+                if ($linkHeader) {
+                  # Parse Link header to find 'next' URL
+                  # Format: <url>; rel="next", <url>; rel="last"
+                  $links = $linkHeader -split ','
+                  foreach ($link in $links) {
+                    if ($link -match '<([^>]+)>;\s*rel="next"') {
+                      $currentUrl = $matches[1]
+                      Write-Host "    Found next page, continuing..." -ForegroundColor Gray
+                      break
+                    }
+                  }
+                }
+              }
+
+              $versions = $allVersions
 
               if ($versions.Count -eq 0) {
                 Write-Host "  No versions found for $packageName" -ForegroundColor Yellow
