@@ -193,6 +193,25 @@ dotnet new sln --name "TestLatestSolution"
 dotnet new umbraco --force -n "TestLatestProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
 dotnet sln add "TestLatestProject"
 
+# Configure MyGet nightly feed as NuGet source if needed
+if ($UmbracoTemplateSource -eq 'nightly-feed') {
+    Write-Host "`nConfiguring MyGet nightly feed as NuGet source..." -ForegroundColor Yellow
+
+    $nightlyFeedUrl = "https://www.myget.org/f/umbracoprereleases/api/v3/index.json"
+
+    # Check if source already exists
+    $existingSources = dotnet nuget list source
+    if ($existingSources -match "UmbracoNightly") {
+        Write-Host "UmbracoNightly source already exists, removing it first..." -ForegroundColor Yellow
+        dotnet nuget remove source "UmbracoNightly"
+    }
+
+    # Add MyGet nightly feed source
+    dotnet nuget add source $nightlyFeedUrl --name "UmbracoNightly"
+
+    Write-Host "MyGet nightly feed source configured successfully" -ForegroundColor Green
+}
+
 # Configure package source
 $ghPackagesUrl = $null
 if ($PackageSource -eq 'github-packages') {
