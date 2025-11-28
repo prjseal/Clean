@@ -35,7 +35,10 @@ Write-Host "================================================" -ForegroundColor C
 Write-Host "GitHub Packages CI Versions Cleanup" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host "Repository Owner: $RepositoryOwner" -ForegroundColor Yellow
-Write-Host "Target: Versions containing '-ci'" -ForegroundColor Yellow
+Write-Host "Target Pattern: Versions containing '-ci'" -ForegroundColor Yellow
+Write-Host "Supports both formats:" -ForegroundColor Gray
+Write-Host "  - Legacy: X.Y.Z-ci.N" -ForegroundColor Gray
+Write-Host "  - Current: X.Y.Z-ci.bNNNNNNN (SemVer-compliant)" -ForegroundColor Gray
 Write-Host ""
 
 foreach ($packageName in $Packages) {
@@ -83,33 +86,75 @@ foreach ($packageName in $Packages) {
             continue
         }
 
+        Write-Host "  Total versions retrieved: $($versions.Count)" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "  Sample of all versions (first 10):" -ForegroundColor Gray
+        $versions | Select-Object -First 10 | ForEach-Object {
+            $isCi = $_.name -match '-ci'
+            $marker = if ($isCi) { "CI" } else { "  " }
+            Write-Host "    [$marker] $($_.name) (ID: $($_.id))" -ForegroundColor $(if ($isCi) { "Yellow" } else { "Gray" })
+        }
+        if ($versions.Count -gt 10) {
+            Write-Host "    ... and $($versions.Count - 10) more" -ForegroundColor Gray
+        }
+        Write-Host ""
+
         # Filter for CI versions only (versions containing "-ci")
+        Write-Host "  Filtering for CI versions (pattern: '-ci')..." -ForegroundColor Gray
         $ciVersions = $versions | Where-Object { $_.name -match '-ci' }
 
         if ($ciVersions.Count -eq 0) {
-            Write-Host "  No CI versions found for $packageName (Total versions: $($versions.Count))" -ForegroundColor Yellow
+            Write-Host "  ✓ No CI versions found for $packageName" -ForegroundColor Green
+            Write-Host "    All $($versions.Count) version(s) are stable/release versions" -ForegroundColor Gray
             Write-Host ""
             continue
         }
 
-        Write-Host "  Found $($ciVersions.Count) CI version(s) out of $($versions.Count) total versions" -ForegroundColor Green
+        Write-Host "  ✓ Found $($ciVersions.Count) CI version(s) out of $($versions.Count) total versions" -ForegroundColor Green
+
+        # Analyze format distribution
+        $legacyFormat = $ciVersions | Where-Object { $_.name -match '-ci\.\d+$' }
+        $newFormat = $ciVersions | Where-Object { $_.name -match '-ci\.b\d+$' }
+
+        Write-Host "    Format breakdown:" -ForegroundColor Gray
+        if ($legacyFormat.Count -gt 0) {
+            Write-Host "      - Legacy format (X.Y.Z-ci.N): $($legacyFormat.Count)" -ForegroundColor Gray
+        }
+        if ($newFormat.Count -gt 0) {
+            Write-Host "      - New format (X.Y.Z-ci.bNNNNNNN): $($newFormat.Count)" -ForegroundColor Gray
+        }
+        Write-Host ""
 
         # Delete each CI version
         $deleteCount = 0
         $failCount = 0
+        $deletedLegacy = 0
+        $deletedNew = 0
+
+        Write-Host "  Starting deletion of $($ciVersions.Count) CI versions..." -ForegroundColor Cyan
+        $counter = 0
 
         foreach ($version in $ciVersions) {
+            $counter++
             $versionId = $version.id
             $versionName = $version.name
+            $isNewFormat = $versionName -match '-ci\.b\d+$'
+            $formatLabel = if ($isNewFormat) { "NEW" } else { "OLD" }
 
             try {
                 $deleteUrl = "https://api.github.com/users/$RepositoryOwner/packages/nuget/$packageName/versions/$versionId"
-                Write-Host "    Deleting version: $versionName (ID: $versionId)" -ForegroundColor Yellow
+                Write-Host "    [$counter/$($ciVersions.Count)] [$formatLabel] Deleting: $versionName (ID: $versionId)" -ForegroundColor Yellow
 
                 Invoke-RestMethod -Uri $deleteUrl -Method DELETE -Headers $headers -ErrorAction Stop | Out-Null
 
                 Write-Host "    ✓ Deleted: $versionName" -ForegroundColor Green
                 $deleteCount++
+
+                if ($isNewFormat) {
+                    $deletedNew++
+                } else {
+                    $deletedLegacy++
+                }
 
                 # Small delay to avoid rate limiting
                 Start-Sleep -Milliseconds 100
@@ -120,7 +165,20 @@ foreach ($packageName in $Packages) {
             }
         }
 
-        Write-Host "  Summary for $packageName : $deleteCount deleted, $failCount failed" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "  ═══════════════════════════════════════════" -ForegroundColor Cyan
+        Write-Host "  Summary for $packageName" -ForegroundColor Cyan
+        Write-Host "  ═══════════════════════════════════════════" -ForegroundColor Cyan
+        Write-Host "    Total deleted: $deleteCount" -ForegroundColor Green
+        if ($deletedLegacy -gt 0) {
+            Write-Host "      - Legacy format: $deletedLegacy" -ForegroundColor Gray
+        }
+        if ($deletedNew -gt 0) {
+            Write-Host "      - New format: $deletedNew" -ForegroundColor Gray
+        }
+        if ($failCount -gt 0) {
+            Write-Host "    Failed: $failCount" -ForegroundColor Red
+        }
         Write-Host ""
 
     } catch {
@@ -133,11 +191,14 @@ foreach ($packageName in $Packages) {
     }
 }
 
-Write-Host "================================================" -ForegroundColor Cyan
-Write-Host "CI Versions Cleanup Complete" -ForegroundColor Cyan
-Write-Host "================================================" -ForegroundColor Cyan
+Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "    CI Versions Cleanup Complete" -ForegroundColor Cyan
+Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Note: Only CI versions (containing '-ci') were deleted." -ForegroundColor Green
-Write-Host "Stable/release versions remain intact." -ForegroundColor Green
-Write-Host "Package containers remain intact." -ForegroundColor Green
-Write-Host "You can still publish new versions to these packages." -ForegroundColor Green
+Write-Host "✓ Cleanup Summary:" -ForegroundColor Green
+Write-Host "  - Only CI versions (containing '-ci') were deleted" -ForegroundColor Gray
+Write-Host "  - Both legacy (X.Y.Z-ci.N) and new (X.Y.Z-ci.bNNNNNNN) formats handled" -ForegroundColor Gray
+Write-Host "  - Stable/release versions remain intact" -ForegroundColor Gray
+Write-Host "  - Package containers remain intact" -ForegroundColor Gray
+Write-Host "  - You can still publish new versions to these packages" -ForegroundColor Gray
+Write-Host ""

@@ -177,7 +177,10 @@ The script produces detailed console output during execution:
 GitHub Packages CI Versions Cleanup
 ================================================
 Repository Owner: prjseal
-Target: Versions containing '-ci'
+Target Pattern: Versions containing '-ci'
+Supports both formats:
+  - Legacy: X.Y.Z-ci.N
+  - Current: X.Y.Z-ci.bNNNNNNN (SemVer-compliant)
 ```
 
 ### Processing Each Package
@@ -187,13 +190,37 @@ Processing package: Clean
     Fetched 100 versions (Total so far: 100)
     Found next page, continuing...
     Fetched 50 versions (Total so far: 150)
-  Found 95 CI version(s) out of 150 total versions
-    Deleting version: 7.0.1-ci.42 (ID: 123456)
-    ✓ Deleted: 7.0.1-ci.42
-    Deleting version: 7.0.1-ci.43 (ID: 123457)
-    ✓ Deleted: 7.0.1-ci.43
+  Total versions retrieved: 150
+
+  Sample of all versions (first 10):
+    [CI] 7.0.1-ci.b0000215 (ID: 789012)
+    [CI] 7.0.1-ci.b0000214 (ID: 789011)
+    [CI] 7.0.1-ci.0000213 (ID: 789010)
+    [  ] 7.0.0 (ID: 123450)
+    [  ] 7.0.0-rc.1 (ID: 123449)
+    ... and 140 more
+
+  Filtering for CI versions (pattern: '-ci')...
+  ✓ Found 95 CI version(s) out of 150 total versions
+    Format breakdown:
+      - Legacy format (X.Y.Z-ci.N): 42
+      - New format (X.Y.Z-ci.bNNNNNNN): 53
+
+  Starting deletion of 95 CI versions...
+    [1/95] [NEW] Deleting: 7.0.1-ci.b0000215 (ID: 789012)
+    ✓ Deleted: 7.0.1-ci.b0000215
+    [2/95] [NEW] Deleting: 7.0.1-ci.b0000214 (ID: 789011)
+    ✓ Deleted: 7.0.1-ci.b0000214
+    [3/95] [OLD] Deleting: 7.0.1-ci.0000213 (ID: 789010)
+    ✓ Deleted: 7.0.1-ci.0000213
     ...
-  Summary for Clean: 95 deleted, 0 failed
+
+  ═══════════════════════════════════════════
+  Summary for Clean
+  ═══════════════════════════════════════════
+    Total deleted: 95
+      - Legacy format: 42
+      - New format: 53
 ```
 
 ### Package Not Found
@@ -207,19 +234,32 @@ Processing package: NonExistentPackage
 Processing package: Clean.Core
   Fetching versions from: https://api.github.com/users/prjseal/packages/nuget/clean.core/versions?per_page=100
     Fetched 5 versions (Total so far: 5)
-  No CI versions found for Clean.Core (Total versions: 5)
+  Total versions retrieved: 5
+
+  Sample of all versions (first 10):
+    [  ] 7.0.0 (ID: 123450)
+    [  ] 7.0.0-rc.1 (ID: 123449)
+    [  ] 6.0.0 (ID: 123448)
+    [  ] 5.0.0 (ID: 123447)
+    [  ] 4.0.0 (ID: 123446)
+
+  Filtering for CI versions (pattern: '-ci')...
+  ✓ No CI versions found for Clean.Core
+    All 5 version(s) are stable/release versions
 ```
 
 ### Completion Summary
 ```
-================================================
-CI Versions Cleanup Complete
-================================================
+═══════════════════════════════════════════════════
+    CI Versions Cleanup Complete
+═══════════════════════════════════════════════════
 
-Note: Only CI versions (containing '-ci') were deleted.
-Stable/release versions remain intact.
-Package containers remain intact.
-You can still publish new versions to these packages.
+✓ Cleanup Summary:
+  - Only CI versions (containing '-ci') were deleted
+  - Both legacy (X.Y.Z-ci.N) and new (X.Y.Z-ci.bNNNNNNN) formats handled
+  - Stable/release versions remain intact
+  - Package containers remain intact
+  - You can still publish new versions to these packages
 ```
 
 ## Key Features
@@ -370,10 +410,16 @@ $env:GITHUB_TOKEN = "your-token-here"
 
 1. **Test with small package first**: Start with a package that has few versions to verify behavior
 2. **Check package list**: Review GitHub Packages UI before running to see what will be deleted
-3. **Monitor output**: Watch the console output to ensure expected versions are being deleted
+3. **Monitor output**: The script provides verbose logging including:
+   - Version samples showing which are CI vs. stable
+   - Format breakdown (legacy vs. new SemVer-compliant format)
+   - Progress counter showing deletion status ([N/total])
+   - Detailed summary showing deletions by format
 4. **Handle failures**: The script logs failures but continues; review the summary to identify issues
 5. **Rate limit awareness**: For packages with 1000+ CI versions, the cleanup may take 2-3 minutes
+6. **Version format compatibility**: The script automatically detects and handles both legacy (`X.Y.Z-ci.N`) and new (`X.Y.Z-ci.bNNNNNNN`) CI version formats
 
 ## Version History
 
+- **v1.1**: Enhanced logging with version samples, format breakdown, progress counters, and detailed summaries
 - **v1.0**: Initial version with pagination support and selective CI version deletion

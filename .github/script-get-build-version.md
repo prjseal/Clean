@@ -73,8 +73,9 @@ flowchart TD
    - This ensures CI builds don't interfere with stable releases
 
 4. **Build Version Format**
-   - Format: `{base}-ci.{buildNumber}`
-   - Example: `7.0.1-ci.123`
+   - Format: `{base}-ci.b{ci-build-number}` (7-digit zero-padded with 'b' prefix)
+   - Example: `7.0.1-ci.b0000123`
+   - The 'b' prefix makes it SemVer-compliant (alphanumeric identifier allows leading zeros)
    - Sorts after stable, before next version
 
 5. **Fallback Mechanism**
@@ -87,7 +88,7 @@ flowchart TD
 ### GitHub Actions Output
 
 ```
-version=7.0.1-ci.123
+version=7.0.1-ci.b0000123
 base_version=7.0.1
 ```
 
@@ -101,7 +102,7 @@ Latest version found: 7.0.0
   Version number: 7.0.0
   Is prerelease: False
   Base version for builds: 7.0.1
-Build version: 7.0.1-ci.123
+Build version: 7.0.1-ci.b0000123
 ```
 
 **Latest is Prerelease**:
@@ -113,7 +114,7 @@ Latest version found: 7.0.0-rc.1
   Is prerelease: True
   Base version for builds: 7.0.0
 Latest is prerelease, using base version without suffix
-Build version: 7.0.0-ci.123
+Build version: 7.0.0-ci.b0000123
 ```
 
 **Fallback to .csproj**:
@@ -123,7 +124,7 @@ Falling back to version from .csproj files...
 Checking Clean.Blog.csproj...
 ✓ Found version in Clean.Blog.csproj: 7.0.0
   Using base version: 7.0.0
-Using fallback version: 7.0.0-ci.123
+Using fallback version: 7.0.0-ci.b0000123
 ```
 
 ## Usage Examples
@@ -154,11 +155,11 @@ Using fallback version: 7.0.0-ci.123
 The script ensures CI builds sort correctly:
 
 ```
-7.0.0          (stable release)
-7.0.1-ci.1     (CI build - next version)
-7.0.1-ci.2     (CI build - next version)
-7.0.1-ci.123   (CI build - next version)
-7.0.1          (next stable release)
+7.0.0                (stable release)
+7.0.1-ci.b0000001    (CI build - next version)
+7.0.1-ci.b0000002    (CI build - next version)
+7.0.1-ci.b0000123    (CI build - next version)
+7.0.1                (next stable release)
 ```
 
 **Why this matters**:
