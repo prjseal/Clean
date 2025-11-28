@@ -1,4 +1,4 @@
-# Test Umbraco with Latest Clean Package Workflow Documentation
+# Scheduled - Test Umbraco with Latest Clean Package Workflow Documentation
 
 This document describes the automated testing workflow that validates the Clean package with various versions of Umbraco from different sources, ensuring compatibility and functionality.
 
@@ -23,7 +23,7 @@ The workflow triggers in two ways:
 
 ### 1. Manual Trigger (workflow_dispatch)
 
-Navigate to **Actions** tab → Select **"Test Umbraco with Latest Clean Package"** → Click **"Run workflow"**
+Navigate to **Actions** tab → Select **"Scheduled - Test Umbraco with Latest Clean Package"** → Click **"Run workflow"**
 
 Configure test parameters:
 - **Package source**: Choose between `nuget` or `github-packages`

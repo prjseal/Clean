@@ -1,4 +1,4 @@
-name: Test Umbraco with Latest Clean Package
+name: Scheduled - Test Umbraco with Latest Clean Package
 
 on:
   workflow_dispatch:
