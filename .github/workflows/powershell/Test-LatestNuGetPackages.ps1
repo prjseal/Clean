@@ -127,6 +127,10 @@ if ([string]::IsNullOrWhiteSpace($CleanVersion)) {
 
             if ($packageBaseAddress) {
                 # Try to fetch versions for the Clean package
+                # Ensure there's a trailing slash on the base address
+                if (-not $packageBaseAddress.EndsWith('/')) {
+                    $packageBaseAddress += '/'
+                }
                 $versionsUrl = "${packageBaseAddress}clean/index.json"
                 Write-Host "Querying: $versionsUrl" -ForegroundColor Gray
 
