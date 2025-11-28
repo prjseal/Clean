@@ -123,7 +123,7 @@ while (-not $siteStarted) {
 # Install Node.js dependencies for Playwright
 Write-Host "`nInstalling Playwright..." -ForegroundColor Yellow
 npm init -y
-npm install --save-dev playwright
+npm install --save-dev playwright xml2js
 
 # Install Playwright browsers
 Write-Host "Installing Playwright browsers..." -ForegroundColor Yellow
