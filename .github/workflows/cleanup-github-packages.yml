@@ -1,10 +1,10 @@
-name: Cleanup GitHub Packages
+name: Cleanup GitHub Packages (CI Versions)
 
 on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type "DELETE ALL VERSIONS" to confirm deletion'
+        description: 'Type "DELETE CI VERSIONS" to confirm deletion'
         required: true
         type: string
 
@@ -18,15 +18,15 @@ jobs:
       - name: Validate confirmation
         shell: pwsh
         run: |
-          if ("${{ inputs.confirm }}" -ne "DELETE ALL VERSIONS") {
+          if ("${{ inputs.confirm }}" -ne "DELETE CI VERSIONS") {
             Write-Host "Confirmation text does not match. Workflow cancelled." -ForegroundColor Red
             Write-Host "You entered: ${{ inputs.confirm }}" -ForegroundColor Yellow
-            Write-Host "Required: DELETE ALL VERSIONS" -ForegroundColor Yellow
+            Write-Host "Required: DELETE CI VERSIONS" -ForegroundColor Yellow
             exit 1
           }
-          Write-Host "Confirmation validated. Proceeding with package cleanup..." -ForegroundColor Green
+          Write-Host "Confirmation validated. Proceeding with CI versions cleanup..." -ForegroundColor Green
 
-      - name: Delete all package versions
+      - name: Delete CI package versions
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -41,9 +41,10 @@ jobs:
           }
 
           Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "GitHub Packages Cleanup" -ForegroundColor Cyan
+          Write-Host "GitHub Packages CI Versions Cleanup" -ForegroundColor Cyan
           Write-Host "================================================" -ForegroundColor Cyan
           Write-Host "Repository Owner: $owner" -ForegroundColor Yellow
+          Write-Host "Target: Versions containing '-ci'" -ForegroundColor Yellow
           Write-Host ""
 
           foreach ($packageName in $packages) {
@@ -62,13 +63,22 @@ jobs:
                 continue
               }
 
-              Write-Host "  Found $($versions.Count) version(s)" -ForegroundColor Green
+              # Filter for CI versions only (versions containing "-ci")
+              $ciVersions = $versions | Where-Object { $_.name -match '-ci' }
 
-              # Delete each version
+              if ($ciVersions.Count -eq 0) {
+                Write-Host "  No CI versions found for $packageName (Total versions: $($versions.Count))" -ForegroundColor Yellow
+                Write-Host ""
+                continue
+              }
+
+              Write-Host "  Found $($ciVersions.Count) CI version(s) out of $($versions.Count) total versions" -ForegroundColor Green
+
+              # Delete each CI version
               $deleteCount = 0
               $failCount = 0
 
-              foreach ($version in $versions) {
+              foreach ($version in $ciVersions) {
                 $versionId = $version.id
                 $versionName = $version.name
 
@@ -104,8 +114,10 @@ jobs:
           }
 
           Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Cleanup Complete" -ForegroundColor Cyan
+          Write-Host "CI Versions Cleanup Complete" -ForegroundColor Cyan
           Write-Host "================================================" -ForegroundColor Cyan
           Write-Host ""
-          Write-Host "Note: Package containers remain intact." -ForegroundColor Green
+          Write-Host "Note: Only CI versions (containing '-ci') were deleted." -ForegroundColor Green
+          Write-Host "Stable/release versions remain intact." -ForegroundColor Green
+          Write-Host "Package containers remain intact." -ForegroundColor Green
           Write-Host "You can still publish new versions to these packages." -ForegroundColor Green
