@@ -247,7 +247,8 @@ if ($PackageSource -eq 'github-packages') {
     # Use the full URL instead of source name to avoid path resolution issues
     dotnet add "TestLatestProject" package Clean --version $cleanVersion --source $ghPackagesUrl
 } else {
-    dotnet add "TestLatestProject" package Clean --version $cleanVersion
+    # Explicitly specify NuGet.org source to avoid searching MyGet feed
+    dotnet add "TestLatestProject" package Clean --version $cleanVersion --source "https://api.nuget.org/v3/index.json"
 }
 
 # Start the site in background
