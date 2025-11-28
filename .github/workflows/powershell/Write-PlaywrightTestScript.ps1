@@ -135,36 +135,35 @@ const path = require('path');
       try {
         console.log(`Clicking on tree item: ${itemName}...`);
 
-        // Try multiple selectors for tree items
-        const treeItemSelectors = [
-          `[data-element="tree-item-${itemName}"]`,
-          `a[title="${itemName}"]`,
-          `.umb-tree-item:has-text("${itemName}")`,
-          `text=${itemName}`
-        ];
+        // Primary selector using Umbraco's data-element attribute
+        const primarySelector = `[data-element="tree-item-${itemName}"]`;
 
         let clicked = false;
-        for (const selector of treeItemSelectors) {
-          try {
-            await page.click(selector, { timeout: 5000 });
-            clicked = true;
-            break;
-          } catch (e) {
-            // Try next selector
-            continue;
-          }
-        }
 
-        if (!clicked) {
-          console.log(`Could not find tree item: ${itemName}, trying alternative approach...`);
-          // Try to find and click by text content
-          const elements = await page.$$('a, button, div[role="button"]');
-          for (const element of elements) {
-            const text = await element.textContent();
-            if (text && text.trim().toLowerCase() === itemName.toLowerCase()) {
-              await element.click();
+        // Try primary selector first
+        try {
+          await page.click(primarySelector, { timeout: 5000 });
+          clicked = true;
+          console.log(`Clicked on ${itemName} using data-element selector`);
+        } catch (e) {
+          console.log(`Primary selector failed, trying fallback selectors...`);
+
+          // Fallback selectors
+          const fallbackSelectors = [
+            `[data-element="tree-item-${itemName}"] a`,
+            `a[title="${itemName}"]`,
+            `.umb-tree-item:has-text("${itemName}")`,
+            `text=${itemName}`
+          ];
+
+          for (const selector of fallbackSelectors) {
+            try {
+              await page.click(selector, { timeout: 3000 });
               clicked = true;
+              console.log(`Clicked on ${itemName} using fallback selector`);
               break;
+            } catch (e) {
+              continue;
             }
           }
         }
@@ -199,34 +198,38 @@ const path = require('path');
     // Try to expand the Home node to see child pages
     console.log('Attempting to expand Home node...');
     try {
-      // Look for expand/collapse buttons near Home
-      const expandSelectors = [
-        '[data-element="tree-item-Home"] button[aria-label*="expand"]',
-        '[data-element="tree-item-Home"] .umb-tree-item__expand',
-        '[title="Home"] ~ button',
-        '.umb-tree-item:has-text("Home") button.umb-tree-item__expand'
-      ];
+      // Click on the uui-symbol-expand element within the Home tree item
+      // Based on Umbraco's data-element attributes for tree navigation
+      const expandSelector = '[data-element="tree-item-Home"] [data-element="tree-item-expand"]';
 
-      let expanded = false;
-      for (const selector of expandSelectors) {
-        try {
-          await page.click(selector, { timeout: 3000 });
-          expanded = true;
-          console.log('Home node expanded');
-          await page.waitForTimeout(1000);
-          break;
-        } catch (e) {
-          continue;
+      try {
+        await page.click(expandSelector, { timeout: 5000 });
+        console.log('Home node expanded using uui-symbol-expand');
+        await page.waitForTimeout(1000);
+      } catch (e) {
+        console.log('Could not find expand element, trying alternative selectors...');
+
+        // Fallback selectors
+        const fallbackSelectors = [
+          '[data-element="tree-item-Home"] uui-symbol-expand',
+          '[data-element="tree-item-Home"] button[aria-label*="expand"]',
+          '[data-element="tree-item-Home"] .umb-tree-item__expand'
+        ];
+
+        let expanded = false;
+        for (const selector of fallbackSelectors) {
+          try {
+            await page.click(selector, { timeout: 3000 });
+            expanded = true;
+            console.log('Home node expanded using fallback selector');
+            await page.waitForTimeout(1000);
+            break;
+          } catch (e) {
+            continue;
+          }
         }
-      }
 
-      if (!expanded) {
-        // Alternative: double-click on Home might expand it
-        console.log('Trying double-click to expand...');
-        try {
-          await page.dblclick('text=Home', { timeout: 3000 });
-          await page.waitForTimeout(1000);
-        } catch (e) {
+        if (!expanded) {
           console.log('Could not expand Home node automatically');
         }
       }
@@ -235,16 +238,26 @@ const path = require('path');
       console.log('Looking for child pages under Home...');
       const childPages = await page.evaluate(() => {
         const items = [];
-        // Try to find child tree items
-        const treeItems = document.querySelectorAll('.umb-tree-item, [class*="tree-item"]');
+
+        // Look for elements with data-element attribute starting with "tree-item-"
+        const treeItems = document.querySelectorAll('[data-element^="tree-item-"]');
+
         treeItems.forEach(item => {
-          const text = item.textContent.trim();
-          // Exclude Home itself and empty items
-          if (text && text !== 'Home' && text.length > 0 && text.length < 100) {
-            items.push(text);
+          const dataElement = item.getAttribute('data-element');
+          if (dataElement && dataElement !== 'tree-item-Home') {
+            // Extract the page name from data-element attribute
+            const pageName = dataElement.replace('tree-item-', '');
+
+            // Also check if this item is visible (has non-zero dimensions)
+            const rect = item.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0 && pageName.length > 0) {
+              items.push(pageName);
+            }
           }
         });
-        return items;
+
+        // Remove duplicates
+        return [...new Set(items)];
       });
 
       console.log(`Found ${childPages.length} potential child pages`);
