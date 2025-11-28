@@ -22,6 +22,7 @@ $testScript = @'
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { parseStringPromise } = require('xml2js');
 
 (async () => {
   const browser = await chromium.launch();
@@ -38,64 +39,12 @@ const path = require('path');
   const baseUrl = process.env.SITE_URL;
   console.log('Testing site at:', baseUrl);
 
-  // Navigate to home page first to discover links
   try {
-    console.log('Navigating to home page...');
-    await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
-
-    // Take screenshot of home page
-    await page.screenshot({
-      path: path.join(screenshotsDir, '01-home.png'),
-      fullPage: true
-    });
-    console.log('Screenshot saved: 01-home.png');
-
-    // Find all internal links on the page
-    const links = await page.evaluate((baseUrl) => {
-      const anchors = Array.from(document.querySelectorAll('a[href]'));
-      return anchors
-        .map(a => a.href)
-        .filter(href => {
-          try {
-            const url = new URL(href);
-            const baseUrlObj = new URL(baseUrl);
-            return url.hostname === baseUrlObj.hostname &&
-                   !href.includes('/umbraco') &&
-                   !href.includes('#') &&
-                   !href.includes('javascript:');
-          } catch {
-            return false;
-          }
-        })
-        .filter((value, index, self) => self.indexOf(value) === index);
-    }, baseUrl);
-
-    console.log('Found ' + links.length + ' internal links to test');
-
-    // Visit each discovered link
-    let counter = 2;
-    for (const link of links.slice(0, 10)) {
-      try {
-        console.log('Navigating to:', link);
-        await page.goto(link, { waitUntil: 'networkidle', timeout: 30000 });
-
-        const screenshotName = counter.toString().padStart(2, '0') + '-' +
-          link.replace(baseUrl, '').replace(/[^a-z0-9]/gi, '-').substring(0, 50) + '.png';
-
-        await page.screenshot({
-          path: path.join(screenshotsDir, screenshotName),
-          fullPage: true
-        });
-        console.log('Screenshot saved:', screenshotName);
-        counter++;
-      } catch (error) {
-        console.error('Error visiting', link, ':', error.message);
-      }
-    }
-
     // Test Umbraco login page
     console.log('Navigating to Umbraco login...');
     await page.goto(baseUrl + '/umbraco', { waitUntil: 'networkidle', timeout: 30000 });
+
+    let counter = 1;
     await page.screenshot({
       path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-login.png'),
       fullPage: true
@@ -130,147 +79,148 @@ const path = require('path');
     await page.click(contentSelector);
     await page.waitForTimeout(2000);
 
-    // Function to click on a tree item and take screenshot
-    async function clickTreeItemAndScreenshot(itemName, screenshotCounter) {
+    // Find element with text "Home" and click it
+    console.log('Looking for element with text "Home"...');
+
+    // Try multiple selectors to find Home element
+    const homeSelectors = [
+      'text=Home',
+      '[title="Home"]',
+      '[data-element="tree-item-Home"]',
+      'a:has-text("Home")',
+      '*:has-text("Home")'
+    ];
+
+    let homeClicked = false;
+    for (const selector of homeSelectors) {
       try {
-        console.log(`Clicking on tree item: ${itemName}...`);
-
-        // Primary selector using Umbraco's data-element attribute
-        const primarySelector = `[data-element="tree-item-${itemName}"]`;
-
-        let clicked = false;
-
-        // Try primary selector first
-        try {
-          await page.click(primarySelector, { timeout: 5000 });
-          clicked = true;
-          console.log(`Clicked on ${itemName} using data-element selector`);
-        } catch (e) {
-          console.log(`Primary selector failed, trying fallback selectors...`);
-
-          // Fallback selectors
-          const fallbackSelectors = [
-            `[data-element="tree-item-${itemName}"] a`,
-            `a[title="${itemName}"]`,
-            `.umb-tree-item:has-text("${itemName}")`,
-            `text=${itemName}`
-          ];
-
-          for (const selector of fallbackSelectors) {
-            try {
-              await page.click(selector, { timeout: 3000 });
-              clicked = true;
-              console.log(`Clicked on ${itemName} using fallback selector`);
-              break;
-            } catch (e) {
-              continue;
-            }
-          }
-        }
-
-        if (!clicked) {
-          console.log(`Warning: Could not click on ${itemName}`);
-          return screenshotCounter;
-        }
-
-        // Wait 5 seconds before taking screenshot
-        console.log(`Waiting 5 seconds before taking screenshot...`);
-        await page.waitForTimeout(5000);
-
-        // Take screenshot
-        const screenshotName = screenshotCounter.toString().padStart(2, '0') +
-          `-content-${itemName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`;
-        await page.screenshot({
-          path: path.join(screenshotsDir, screenshotName),
-          fullPage: true
-        });
-        console.log(`Screenshot saved: ${screenshotName}`);
-        return screenshotCounter + 1;
-      } catch (error) {
-        console.error(`Error processing ${itemName}:`, error.message);
-        return screenshotCounter;
+        await page.click(selector, { timeout: 3000 });
+        homeClicked = true;
+        console.log(`Found and clicked Home using selector: ${selector}`);
+        break;
+      } catch (e) {
+        continue;
       }
     }
 
-    // Click on Home page first
-    counter = await clickTreeItemAndScreenshot('Home', counter);
+    if (!homeClicked) {
+      throw new Error('Could not find Home element');
+    }
 
-    // Try to expand the Home node to see child pages
-    console.log('Attempting to expand Home node...');
+    // Wait for URL to update
+    await page.waitForTimeout(2000);
+
+    // Get the current URL
+    const currentUrl = page.url();
+    console.log('Current URL after clicking Home:', currentUrl);
+
+    // Extract the key from the URL - typical Umbraco URL pattern: /umbraco#/content/content/edit/{key}
+    const urlMatch = currentUrl.match(/\/content\/edit\/([a-f0-9-]{36})/i);
+    let baseContentKey = null;
+
+    if (urlMatch) {
+      baseContentKey = urlMatch[1];
+      console.log('Extracted key from URL:', baseContentKey);
+    } else {
+      console.log('Warning: Could not extract key from URL, will try to construct URL pattern');
+    }
+
+    // Read and parse usync content files to get published content keys
+    console.log('Reading usync content files...');
+    const usyncContentPath = path.join(__dirname, 'template', 'Clean.Blog', 'uSync', 'v17', 'Content');
+
+    let contentFiles = [];
     try {
-      // Click on the uui-symbol-expand element within the Home tree item
-      // Based on Umbraco's data-element attributes for tree navigation
-      const expandSelector = '[data-element="tree-item-Home"] [data-element="tree-item-expand"]';
-
-      try {
-        await page.click(expandSelector, { timeout: 5000 });
-        console.log('Home node expanded using uui-symbol-expand');
-        await page.waitForTimeout(1000);
-      } catch (e) {
-        console.log('Could not find expand element, trying alternative selectors...');
-
-        // Fallback selectors
-        const fallbackSelectors = [
-          '[data-element="tree-item-Home"] uui-symbol-expand',
-          '[data-element="tree-item-Home"] button[aria-label*="expand"]',
-          '[data-element="tree-item-Home"] .umb-tree-item__expand'
-        ];
-
-        let expanded = false;
-        for (const selector of fallbackSelectors) {
-          try {
-            await page.click(selector, { timeout: 3000 });
-            expanded = true;
-            console.log('Home node expanded using fallback selector');
-            await page.waitForTimeout(1000);
-            break;
-          } catch (e) {
-            continue;
-          }
-        }
-
-        if (!expanded) {
-          console.log('Could not expand Home node automatically');
-        }
-      }
-
-      // Get all visible tree items that are children of Home
-      console.log('Looking for child pages under Home...');
-      const childPages = await page.evaluate(() => {
-        const items = [];
-
-        // Look for elements with data-element attribute starting with "tree-item-"
-        const treeItems = document.querySelectorAll('[data-element^="tree-item-"]');
-
-        treeItems.forEach(item => {
-          const dataElement = item.getAttribute('data-element');
-          if (dataElement && dataElement !== 'tree-item-Home') {
-            // Extract the page name from data-element attribute
-            const pageName = dataElement.replace('tree-item-', '');
-
-            // Also check if this item is visible (has non-zero dimensions)
-            const rect = item.getBoundingClientRect();
-            if (rect.width > 0 && rect.height > 0 && pageName.length > 0) {
-              items.push(pageName);
-            }
-          }
-        });
-
-        // Remove duplicates
-        return [...new Set(items)];
-      });
-
-      console.log(`Found ${childPages.length} potential child pages`);
-
-      // Click on each child page
-      for (const pageName of childPages) {
-        if (pageName && pageName.trim()) {
-          counter = await clickTreeItemAndScreenshot(pageName.trim(), counter);
-        }
-      }
-
+      contentFiles = fs.readdirSync(usyncContentPath).filter(f => f.endsWith('.config'));
+      console.log(`Found ${contentFiles.length} content config files`);
     } catch (error) {
-      console.error('Error expanding or processing child pages:', error.message);
+      console.error('Error reading usync content directory:', error.message);
+      throw error;
+    }
+
+    const publishedContent = [];
+
+    // Parse each content file
+    for (const file of contentFiles) {
+      try {
+        const filePath = path.join(usyncContentPath, file);
+        const xmlContent = fs.readFileSync(filePath, 'utf8');
+
+        // Parse XML
+        const result = await parseStringPromise(xmlContent);
+
+        if (result && result.Content) {
+          const key = result.Content.$.Key;
+          const alias = result.Content.$.Alias;
+          const published = result.Content.Info &&
+                          result.Content.Info[0] &&
+                          result.Content.Info[0].Published &&
+                          result.Content.Info[0].Published[0] &&
+                          result.Content.Info[0].Published[0].$.Default === 'true';
+
+          if (published) {
+            console.log(`\n=== Published Content Item ===`);
+            console.log(`File: ${file}`);
+            console.log(`Alias: ${alias}`);
+            console.log(`Key: ${key}`);
+            console.log(`XML Preview: ${xmlContent.substring(0, 200)}...`);
+
+            publishedContent.push({
+              key: key,
+              alias: alias,
+              file: file
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`Error parsing ${file}:`, error.message);
+      }
+    }
+
+    console.log(`\n\nFound ${publishedContent.length} published content items`);
+    console.log('Published content keys:', publishedContent.map(c => `${c.alias}: ${c.key}`).join('\n'));
+
+    // Now visit each content item by replacing the key in the URL
+    if (baseContentKey || currentUrl.includes('/content/')) {
+      for (const content of publishedContent) {
+        try {
+          console.log(`\n--- Processing: ${content.alias} (${content.key}) ---`);
+
+          // Construct the URL
+          let contentUrl;
+          if (baseContentKey) {
+            // Replace the key in the original URL
+            contentUrl = currentUrl.replace(baseContentKey, content.key);
+          } else {
+            // Try to construct URL from pattern
+            contentUrl = `${baseUrl}/umbraco#/content/content/edit/${content.key}`;
+          }
+
+          console.log(`Navigating to: ${contentUrl}`);
+          await page.goto(contentUrl, { waitUntil: 'networkidle', timeout: 30000 });
+
+          // Wait 5 seconds
+          console.log('Waiting 5 seconds before screenshot...');
+          await page.waitForTimeout(5000);
+
+          // Take screenshot
+          const screenshotName = counter.toString().padStart(2, '0') +
+            `-content-${content.alias.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`;
+
+          await page.screenshot({
+            path: path.join(screenshotsDir, screenshotName),
+            fullPage: true
+          });
+
+          console.log(`Screenshot saved: ${screenshotName}`);
+          counter++;
+
+        } catch (error) {
+          console.error(`Error processing ${content.alias}:`, error.message);
+        }
+      }
+    } else {
+      console.error('Could not determine URL pattern for content items');
     }
 
   } catch (error) {
