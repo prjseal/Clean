@@ -176,24 +176,7 @@ if (Test-Path $testDir) {
 New-Item -ItemType Directory -Path $testDir | Out-Null
 Set-Location $testDir
 
-# Install Umbraco templates
-Write-Host "`nInstalling Umbraco templates version $umbracoVersion..." -ForegroundColor Yellow
-
-if ($UmbracoTemplateSource -eq 'nightly-feed') {
-    $nightlyFeedUrl = "https://www.myget.org/f/umbracoprereleases/api/v3/index.json"
-    Write-Host "Using Umbraco nightly feed: $nightlyFeedUrl" -ForegroundColor Yellow
-    dotnet new install Umbraco.Templates@$umbracoVersion --add-source $nightlyFeedUrl --force
-} else {
-    dotnet new install Umbraco.Templates@$umbracoVersion --force
-}
-
-# Create Umbraco project
-Write-Host "`nCreating test Umbraco project..." -ForegroundColor Yellow
-dotnet new sln --name "TestLatestSolution"
-dotnet new umbraco --force -n "TestLatestProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
-dotnet sln add "TestLatestProject"
-
-# Configure MyGet nightly feed as NuGet source if needed
+# Configure MyGet nightly feed as NuGet source if needed (BEFORE creating project)
 if ($UmbracoTemplateSource -eq 'nightly-feed') {
     Write-Host "`nConfiguring MyGet nightly feed as NuGet source..." -ForegroundColor Yellow
 
@@ -211,6 +194,23 @@ if ($UmbracoTemplateSource -eq 'nightly-feed') {
 
     Write-Host "MyGet nightly feed source configured successfully" -ForegroundColor Green
 }
+
+# Install Umbraco templates
+Write-Host "`nInstalling Umbraco templates version $umbracoVersion..." -ForegroundColor Yellow
+
+if ($UmbracoTemplateSource -eq 'nightly-feed') {
+    $nightlyFeedUrl = "https://www.myget.org/f/umbracoprereleases/api/v3/index.json"
+    Write-Host "Using Umbraco nightly feed: $nightlyFeedUrl" -ForegroundColor Yellow
+    dotnet new install Umbraco.Templates@$umbracoVersion --add-source $nightlyFeedUrl --force
+} else {
+    dotnet new install Umbraco.Templates@$umbracoVersion --force
+}
+
+# Create Umbraco project
+Write-Host "`nCreating test Umbraco project..." -ForegroundColor Yellow
+dotnet new sln --name "TestLatestSolution"
+dotnet new umbraco --force -n "TestLatestProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890" --development-database-type SQLite
+dotnet sln add "TestLatestProject"
 
 # Configure package source
 $ghPackagesUrl = $null
@@ -239,6 +239,62 @@ if ($PackageSource -eq 'github-packages') {
     Write-Host "GitHub Packages source configured successfully" -ForegroundColor Green
 }
 
+# ============================================================================
+# Explicit restore with all configured sources
+# This prevents NuGet from hanging when searching for packages across sources
+# ============================================================================
+Write-Host "`n================================================" -ForegroundColor Cyan
+Write-Host "Restoring Project with All Configured Sources" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
+
+$allSourcesOutput = dotnet nuget list source
+$sourceUrls = @()
+
+# Parse the output to extract source URLs
+foreach ($line in $allSourcesOutput) {
+    # Match URLs (http/https)
+    if ($line -match '^\s+(https?://\S+)') {
+        $url = $matches[1].Trim()
+        $sourceUrls += $url
+        Write-Host "  Found source: $url" -ForegroundColor Cyan
+    }
+}
+
+if ($sourceUrls.Count -eq 0) {
+    Write-Host "  Warning: No NuGet sources found, using default behavior" -ForegroundColor Yellow
+} else {
+    Write-Host "`nFound $($sourceUrls.Count) NuGet source(s)" -ForegroundColor Green
+}
+
+# Explicitly restore the project with all configured sources
+if ($sourceUrls.Count -gt 0) {
+    $restoreArgs = @("restore", "TestLatestProject/TestLatestProject.csproj")
+    foreach ($sourceUrl in $sourceUrls) {
+        $restoreArgs += "--source"
+        $restoreArgs += $sourceUrl
+    }
+
+    Write-Host "`nRunning: dotnet $($restoreArgs -join ' ')" -ForegroundColor Yellow
+    & dotnet $restoreArgs
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Restore failed with exit code $LASTEXITCODE" -ForegroundColor Red
+        exit 1
+    } else {
+        Write-Host "Restore completed successfully" -ForegroundColor Green
+    }
+} else {
+    Write-Host "`nRunning: dotnet restore TestLatestProject/TestLatestProject.csproj" -ForegroundColor Yellow
+    dotnet restore TestLatestProject/TestLatestProject.csproj
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Restore failed with exit code $LASTEXITCODE" -ForegroundColor Red
+        exit 1
+    }
+}
+
+Write-Host "================================================`n" -ForegroundColor Cyan
+
 # Install Clean package
 $sourceMessage = if ($PackageSource -eq 'github-packages') { "GitHub Packages" } else { "NuGet" }
 Write-Host "`nInstalling Clean package version $cleanVersion from $sourceMessage..." -ForegroundColor Yellow
@@ -247,7 +303,8 @@ if ($PackageSource -eq 'github-packages') {
     # Use the full URL instead of source name to avoid path resolution issues
     dotnet add "TestLatestProject" package Clean --version $cleanVersion --source $ghPackagesUrl
 } else {
-    dotnet add "TestLatestProject" package Clean --version $cleanVersion
+    # Explicitly specify NuGet.org source to avoid searching MyGet feed
+    dotnet add "TestLatestProject" package Clean --version $cleanVersion --source "https://api.nuget.org/v3/index.json"
 }
 
 # Start the site in background
