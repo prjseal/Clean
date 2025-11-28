@@ -33,6 +33,8 @@ The project uses automated workflows for continuous integration and deployment:
 - **[PR Build Workflow](.github/workflow-pr.md)** - Automated testing and package publishing for pull requests
 - **[Release Workflow](.github/workflow-versioning-releases.md)** - Automated release process and version management
 - **[Update Packages Workflow](.github/workflow-update-nuget-packages.md)** - Automated dependency updates
+- **[Test Umbraco Latest Workflow](.github/workflow-test-umbraco-latest.md)** - Automated testing with latest Umbraco versions
+- **[Cleanup GitHub Packages Workflow](.github/workflow-cleanup-github-packages.md)** - Automated cleanup of old CI packages
 
 ## Installation
 
