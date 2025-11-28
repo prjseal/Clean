@@ -3,28 +3,28 @@ name: Scheduled - Test Umbraco with Latest Clean Package
 on:
   workflow_dispatch:
     inputs:
-      package-source:
-        description: 'Package source to use'
-        required: false
-        type: choice
-        options:
-          - nuget
-          - github-packages
-        default: nuget
-      umbraco-template-source:
-        description: 'Umbraco template source'
+      umbraco-source:
+        description: 'Umbraco source'
         required: false
         type: choice
         options:
           - nuget
           - nightly-feed
         default: nuget
+      package-source:
+        description: 'Package source'
+        required: false
+        type: choice
+        options:
+          - nuget
+          - github-packages
+        default: nuget
       umbraco-version:
         description: 'Umbraco version to test (leave blank for latest)'
         required: false
         type: string
-      clean-version:
-        description: 'Clean package version to test (leave blank for latest)'
+      package-version:
+        description: 'Package version to test (leave blank for latest)'
         required: false
         type: string
   schedule:
@@ -61,17 +61,17 @@ jobs:
           $params = @{
             WorkspacePath = "${{ github.workspace }}"
           }
+          if ("${{ inputs.umbraco-source }}" -ne "") {
+            $params.UmbracoTemplateSource = "${{ inputs.umbraco-source }}"
+          }
           if ("${{ inputs.package-source }}" -ne "") {
             $params.PackageSource = "${{ inputs.package-source }}"
-          }
-          if ("${{ inputs.umbraco-template-source }}" -ne "") {
-            $params.UmbracoTemplateSource = "${{ inputs.umbraco-template-source }}"
           }
           if ("${{ inputs.umbraco-version }}" -ne "") {
             $params.UmbracoVersion = "${{ inputs.umbraco-version }}"
           }
-          if ("${{ inputs.clean-version }}" -ne "") {
-            $params.CleanVersion = "${{ inputs.clean-version }}"
+          if ("${{ inputs.package-version }}" -ne "") {
+            $params.CleanVersion = "${{ inputs.package-version }}"
           }
           ./.github/workflows/powershell/Test-LatestNuGetPackages.ps1 @params
 
