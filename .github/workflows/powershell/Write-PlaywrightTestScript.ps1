@@ -101,6 +101,44 @@ const path = require('path');
       fullPage: true
     });
     console.log('Screenshot saved: umbraco-login.png');
+    counter++;
+
+    // Login to Umbraco
+    console.log('Logging into Umbraco...');
+
+    // Wait for the login form to be ready
+    await page.waitForSelector('input[type="email"], input[name="username"]', { timeout: 30000 });
+
+    // Fill in the login credentials
+    const emailInput = await page.$('input[type="email"]') || await page.$('input[name="username"]');
+    const passwordInput = await page.$('input[type="password"]') || await page.$('input[name="password"]');
+
+    if (emailInput && passwordInput) {
+      await emailInput.fill('admin@example.com');
+      await passwordInput.fill('1234567890');
+
+      // Click the login button
+      const loginButton = await page.$('button[type="submit"]') || await page.$('button:has-text("Log in")');
+      if (loginButton) {
+        await loginButton.click();
+        console.log('Login form submitted');
+
+        // Wait 10 seconds
+        console.log('Waiting 10 seconds...');
+        await page.waitForTimeout(10000);
+
+        // Take screenshot after login
+        await page.screenshot({
+          path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-logged-in.png'),
+          fullPage: true
+        });
+        console.log('Screenshot saved: umbraco-logged-in.png');
+      } else {
+        console.log('Could not find login button');
+      }
+    } else {
+      console.log('Could not find login form fields');
+    }
 
   } catch (error) {
     console.error('Error during testing:', error);
