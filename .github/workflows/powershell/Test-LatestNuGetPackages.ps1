@@ -194,6 +194,7 @@ dotnet new umbraco --force -n "TestLatestProject" --friendly-name "Administrator
 dotnet sln add "TestLatestProject"
 
 # Configure package source
+$ghPackagesUrl = $null
 if ($PackageSource -eq 'github-packages') {
     Write-Host "`nConfiguring GitHub Packages as NuGet source..." -ForegroundColor Yellow
 
@@ -224,7 +225,8 @@ $sourceMessage = if ($PackageSource -eq 'github-packages') { "GitHub Packages" }
 Write-Host "`nInstalling Clean package version $cleanVersion from $sourceMessage..." -ForegroundColor Yellow
 
 if ($PackageSource -eq 'github-packages') {
-    dotnet add "TestLatestProject" package Clean --version $cleanVersion --source "GitHubPackages"
+    # Use the full URL instead of source name to avoid path resolution issues
+    dotnet add "TestLatestProject" package Clean --version $cleanVersion --source $ghPackagesUrl
 } else {
     dotnet add "TestLatestProject" package Clean --version $cleanVersion
 }
