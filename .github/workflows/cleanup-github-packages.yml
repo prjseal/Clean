@@ -31,7 +31,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $packages = @("Clean", "Clean.Blur", "Clean.Core", "Clean.RichText")
+          $packages = @("Umbraco.Community.Templates.Clean", "Clean", "Clean.Core", "Clean.Headless")
           $owner = "${{ github.repository_owner }}"
 
           $headers = @{
