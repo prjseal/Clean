@@ -1,0 +1,111 @@
+name: Cleanup GitHub Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "DELETE ALL VERSIONS" to confirm deletion'
+        required: true
+        type: string
+
+jobs:
+  cleanup-packages:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+
+    steps:
+      - name: Validate confirmation
+        shell: pwsh
+        run: |
+          if ("${{ inputs.confirm }}" -ne "DELETE ALL VERSIONS") {
+            Write-Host "Confirmation text does not match. Workflow cancelled." -ForegroundColor Red
+            Write-Host "You entered: ${{ inputs.confirm }}" -ForegroundColor Yellow
+            Write-Host "Required: DELETE ALL VERSIONS" -ForegroundColor Yellow
+            exit 1
+          }
+          Write-Host "Confirmation validated. Proceeding with package cleanup..." -ForegroundColor Green
+
+      - name: Delete all package versions
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $packages = @("Clean", "Clean.Blur", "Clean.Core", "Clean.RichText")
+          $owner = "${{ github.repository_owner }}"
+
+          $headers = @{
+            "Authorization" = "Bearer $env:GITHUB_TOKEN"
+            "Accept" = "application/vnd.github+json"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          }
+
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "GitHub Packages Cleanup" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Repository Owner: $owner" -ForegroundColor Yellow
+          Write-Host ""
+
+          foreach ($packageName in $packages) {
+            Write-Host "Processing package: $packageName" -ForegroundColor Cyan
+
+            try {
+              # Get all versions of the package
+              $versionsUrl = "https://api.github.com/users/$owner/packages/nuget/$packageName/versions"
+              Write-Host "  Fetching versions from: $versionsUrl" -ForegroundColor Gray
+
+              $versions = Invoke-RestMethod -Uri $versionsUrl -Headers $headers -ErrorAction Stop
+
+              if ($versions.Count -eq 0) {
+                Write-Host "  No versions found for $packageName" -ForegroundColor Yellow
+                Write-Host ""
+                continue
+              }
+
+              Write-Host "  Found $($versions.Count) version(s)" -ForegroundColor Green
+
+              # Delete each version
+              $deleteCount = 0
+              $failCount = 0
+
+              foreach ($version in $versions) {
+                $versionId = $version.id
+                $versionName = $version.name
+
+                try {
+                  $deleteUrl = "https://api.github.com/users/$owner/packages/nuget/$packageName/versions/$versionId"
+                  Write-Host "    Deleting version: $versionName (ID: $versionId)" -ForegroundColor Yellow
+
+                  Invoke-RestMethod -Uri $deleteUrl -Method DELETE -Headers $headers -ErrorAction Stop | Out-Null
+
+                  Write-Host "    ✓ Deleted: $versionName" -ForegroundColor Green
+                  $deleteCount++
+
+                  # Small delay to avoid rate limiting
+                  Start-Sleep -Milliseconds 100
+
+                } catch {
+                  Write-Host "    ✗ Failed to delete version $versionName : $($_.Exception.Message)" -ForegroundColor Red
+                  $failCount++
+                }
+              }
+
+              Write-Host "  Summary for $packageName : $deleteCount deleted, $failCount failed" -ForegroundColor Cyan
+              Write-Host ""
+
+            } catch {
+              if ($_.Exception.Response.StatusCode -eq 404) {
+                Write-Host "  Package '$packageName' not found (may not exist yet)" -ForegroundColor Yellow
+              } else {
+                Write-Host "  Error processing package '$packageName': $($_.Exception.Message)" -ForegroundColor Red
+              }
+              Write-Host ""
+            }
+          }
+
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host "Cleanup Complete" -ForegroundColor Cyan
+          Write-Host "================================================" -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "Note: Package containers remain intact." -ForegroundColor Green
+          Write-Host "You can still publish new versions to these packages." -ForegroundColor Green
