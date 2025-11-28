@@ -26,10 +26,10 @@ The workflow triggers in two ways:
 Navigate to **Actions** tab → Select **"Scheduled - Test Umbraco with Latest Clean Package"** → Click **"Run workflow"**
 
 Configure test parameters:
+- **Umbraco source**: Choose between `nuget` or `nightly-feed`
 - **Package source**: Choose between `nuget` or `github-packages`
-- **Umbraco template source**: Choose between `nuget` or `nightly-feed`
 - **Umbraco version**: Specify exact version or leave blank for latest
-- **Clean version**: Specify exact version or leave blank for latest
+- **Package version**: Specify exact version or leave blank for latest
 
 ### 2. Scheduled Execution
 
@@ -163,17 +163,7 @@ flowchart TD
 
 All input parameters are optional with sensible defaults:
 
-### package-source
-
-**Type**: Choice (radio button)
-**Options**: `nuget` (default), `github-packages`
-**Description**: Source to download Clean package from
-
-**Use Cases**:
-- `nuget`: Test with official published releases
-- `github-packages`: Test with CI builds from pull requests
-
-### umbraco-template-source
+### umbraco-source
 
 **Type**: Choice (radio button)
 **Options**: `nuget` (default), `nightly-feed`
@@ -184,6 +174,16 @@ All input parameters are optional with sensible defaults:
 - `nightly-feed`: Test with upcoming Umbraco pre-releases from MyGet
 
 **MyGet Feed**: `https://www.myget.org/f/umbracoprereleases/api/v3/index.json`
+
+### package-source
+
+**Type**: Choice (radio button)
+**Options**: `nuget` (default), `github-packages`
+**Description**: Source to download Clean package from
+
+**Use Cases**:
+- `nuget`: Test with official published releases
+- `github-packages`: Test with CI builds from pull requests
 
 ### umbraco-version
 
@@ -196,7 +196,7 @@ All input parameters are optional with sensible defaults:
 - `15.0.0`: Test with Umbraco 15.0.0
 - `16.0.0-rc2`: Test with specific release candidate
 
-### clean-version
+### package-version
 
 **Type**: String
 **Default**: Empty (uses latest)
@@ -257,10 +257,10 @@ The workflow uses the following PowerShell scripts:
 
 **Configuration**:
 ```yaml
+umbraco-source: nuget
 package-source: nuget
-umbraco-template-source: nuget
 umbraco-version: (blank)
-clean-version: (blank)
+package-version: (blank)
 ```
 
 **Result**: Tests latest stable Umbraco with latest stable Clean from NuGet.org
@@ -269,10 +269,10 @@ clean-version: (blank)
 
 **Configuration**:
 ```yaml
+umbraco-source: nightly-feed
 package-source: nuget
-umbraco-template-source: nightly-feed
 umbraco-version: (blank)
-clean-version: (blank)
+package-version: (blank)
 ```
 
 **Result**: Tests latest Umbraco nightly build with latest stable Clean
@@ -281,10 +281,10 @@ clean-version: (blank)
 
 **Configuration**:
 ```yaml
+umbraco-source: nuget
 package-source: github-packages
-umbraco-template-source: nuget
 umbraco-version: (blank)
-clean-version: 7.0.1-ci.42
+package-version: 7.0.1-ci.42
 ```
 
 **Result**: Tests specific Clean CI build against latest stable Umbraco
@@ -293,10 +293,10 @@ clean-version: 7.0.1-ci.42
 
 **Configuration**:
 ```yaml
+umbraco-source: nuget
 package-source: nuget
-umbraco-template-source: nuget
 umbraco-version: 15.0.0
-clean-version: 7.0.0
+package-version: 7.0.0
 ```
 
 **Result**: Tests exact version combination for regression testing
@@ -305,10 +305,10 @@ clean-version: 7.0.0
 
 **Configuration**:
 ```yaml
+umbraco-source: nightly-feed
 package-source: nuget
-umbraco-template-source: nightly-feed
 umbraco-version: 16.0.0-rc2
-clean-version: 7.0.0
+package-version: 7.0.0
 ```
 
 **Result**: Validates Clean compatibility with upcoming Umbraco release
@@ -318,8 +318,8 @@ clean-version: 7.0.0
 ### Weekly Monday Testing
 
 The workflow runs automatically every Monday at 9:00 AM UTC with default settings:
+- **Umbraco source**: NuGet
 - **Package source**: NuGet
-- **Umbraco template source**: NuGet
 - **Versions**: Latest stable versions
 
 This ensures continuous validation that Clean works with the latest Umbraco releases.
