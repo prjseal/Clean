@@ -93,8 +93,9 @@ try {
     Write-Host "  Is prerelease: $($sortedVersions[0].IsPrerelease)"
     Write-Host "  Base version for builds: $baseVersionString"
 
-    # Create zero-padded 7-digit ci-build-number
-    $ciBuildNumber = $BuildNumber.PadLeft(7, '0')
+    # Create zero-padded 7-digit ci-build-number with 'b' prefix for SemVer compliance
+    # (SemVer prohibits leading zeros in numeric identifiers, so we make it alphanumeric)
+    $ciBuildNumber = "b" + $BuildNumber.PadLeft(7, '0')
 
     # Create build version: {baseVersionString}-ci.{ci-build-number}
     $buildVersion = "$baseVersionString-ci.$ciBuildNumber"
@@ -140,8 +141,9 @@ catch {
         Write-Host "⚠ Could not find version in any .csproj file, using default: $fallbackVersion"
     }
 
-    # Create zero-padded 7-digit ci-build-number
-    $ciBuildNumber = $BuildNumber.PadLeft(7, '0')
+    # Create zero-padded 7-digit ci-build-number with 'b' prefix for SemVer compliance
+    # (SemVer prohibits leading zeros in numeric identifiers, so we make it alphanumeric)
+    $ciBuildNumber = "b" + $BuildNumber.PadLeft(7, '0')
     $buildVersion = "$fallbackVersion-ci.$ciBuildNumber"
     Write-Host "Using fallback version: $buildVersion"
     echo "version=$buildVersion" >> $env:GITHUB_OUTPUT
