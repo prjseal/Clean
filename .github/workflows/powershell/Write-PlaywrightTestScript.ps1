@@ -45,7 +45,10 @@ const fs = require('fs');
 const path = require('path');
 
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({
+    headless: false,
+    args: ['--start-maximized']
+  }).;
   const context = await browser.newContext({
     ignoreHTTPSErrors: true
   });
@@ -87,7 +90,7 @@ const path = require('path');
     await page.goto(baseUrl + '/umbraco', { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     let counter = 1;
-    await page.screenshot({
+    await page.locator('uui-app').screenshot({
       path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-login.png'),
       fullPage: true
     });
