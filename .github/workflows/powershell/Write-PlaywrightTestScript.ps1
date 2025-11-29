@@ -105,11 +105,14 @@ const path = require('path');
           console.log('--- Content Item ' + (i + 1) + '/' + contentKeys.length + ' ---');
           console.log('Key: ' + contentKey);
 
-          // Construct the URL for this content item
-          const contentUrl = baseUrl + '/umbraco#/content/content/edit/' + contentKey;
-          console.log('Navigating to: ' + contentUrl);
+          // Navigate to content item by changing the hash (SPA navigation)
+          const hashPath = '/content/content/edit/' + contentKey;
+          console.log('Navigating to: ' + baseUrl + '/umbraco#' + hashPath);
 
-          await page.goto(contentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          // Change the window location hash to trigger SPA navigation
+          await page.evaluate((hash) => {
+            window.location.hash = hash;
+          }, hashPath);
 
           // Wait 5 seconds for content to fully load
           console.log('Waiting 5 seconds for content to load...');
