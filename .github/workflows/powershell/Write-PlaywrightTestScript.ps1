@@ -64,7 +64,7 @@ const path = require('path');
   try {
     // Test Umbraco login page
     console.log('Navigating to Umbraco login...');
-    await page.goto(baseUrl + '/umbraco', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(baseUrl + '/umbraco', { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     let counter = 1;
     await page.screenshot({
@@ -80,9 +80,9 @@ const path = require('path');
     await page.fill('input[name="password"]', '1234567890');
     await page.click('button[type="submit"]');
 
-    // Wait for navigation after login
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
-    await page.waitForTimeout(3000);
+    // Wait for navigation after login (just wait for DOM, not full network idle)
+    console.log('Waiting for Umbraco to load after login...');
+    await page.waitForTimeout(5000);
 
     // Take screenshot after login
     await page.screenshot({
@@ -109,7 +109,7 @@ const path = require('path');
           const contentUrl = baseUrl + '/umbraco#/content/content/edit/' + contentKey;
           console.log('Navigating to: ' + contentUrl);
 
-          await page.goto(contentUrl, { waitUntil: 'networkidle', timeout: 30000 });
+          await page.goto(contentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
           // Wait 5 seconds for content to fully load
           console.log('Waiting 5 seconds for content to load...');
