@@ -12,6 +12,9 @@
 .PARAMETER ContentKeys
     Optional array of content keys (GUIDs) to screenshot in Umbraco
 
+.PARAMETER DataTypeKeys
+    Optional array of data type keys (GUIDs) to screenshot in Umbraco
+
 .EXAMPLE
     .\Write-PlaywrightTestScript.ps1 -OutputPath "test.js"
 
@@ -25,10 +28,16 @@ param(
 
     [Parameter(Mandatory = $false)]
     [string[]]$ContentKeys = @()
+
+    [Parameter(Mandatory = $false)]
+    [string[]]$ContentKeys = @()
 )
 
 # Convert ContentKeys to JSON for the JavaScript script
 $contentKeysJson = $ContentKeys | ConvertTo-Json -Compress
+
+# Convert DataTypeKeys to JSON for the JavaScript script
+$dataTypeKeysJson = $DataTypeKeys | ConvertTo-Json -Compress
 
 $testScript = @"
 const { chromium } = require('playwright');
@@ -59,6 +68,17 @@ const path = require('path');
     console.log('Content keys loaded:', contentKeys.length);
   } catch (error) {
     console.error('Error parsing content keys:', error.message);
+  }
+
+  // Get data type keys from environment variable (passed as JSON)
+  const dataTypeKeysJson = process.env.DATATYPE_KEYS || '[]';
+  let dataTypeKeys = [];
+
+  try {
+    dataTypeKeys = JSON.parse(dataTypeKeysJson);
+    console.log('Data type keys loaded:', dataTypeKeys.length);
+  } catch (error) {
+    console.error('Error parsing data type keys:', error.message);
   }
 
   try {
