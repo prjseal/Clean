@@ -111,6 +111,7 @@ const path = require('path');
 
           // Try multiple URL patterns for different Umbraco versions
           const urlPatterns = [
+            baseUrl + '/umbraco/section/content/workspace/document/edit/' + contentKey + '/invariant',
             baseUrl + '/umbraco/section/content/workspace/document-edit/' + contentKey,
             baseUrl + '/umbraco/content/edit/' + contentKey,
             baseUrl + '/umbraco#/content/content/edit/' + contentKey
@@ -145,8 +146,19 @@ const path = require('path');
             console.log('WARNING: Could not navigate to content item, screenshot may show default page');
           }
 
+          // Wait for loading spinner to disappear
+          console.log('Waiting for page to finish loading...');
+          try {
+            // Wait for common Umbraco loading indicators to disappear
+            await page.waitForSelector('.umb-load-indicator', { state: 'hidden', timeout: 15000 }).catch(() => {});
+            await page.waitForSelector('[data-element="editor-container"]', { state: 'visible', timeout: 5000 }).catch(() => {});
+            console.log('Loading indicators cleared');
+          } catch (e) {
+            console.log('Could not detect loading indicators, continuing with fixed wait...');
+          }
+
           // Additional wait for content to load
-          console.log('Waiting 5 seconds for content to fully load...');
+          console.log('Waiting 5 seconds for content to fully render...');
           await page.waitForTimeout(5000);
 
           // Log final URL before screenshot
