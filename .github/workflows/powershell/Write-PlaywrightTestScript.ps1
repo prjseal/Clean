@@ -98,7 +98,7 @@ const path = require('path');
       console.log('Processing ' + contentKeys.length + ' content items');
       console.log('================================================\n');
 
-      for (let i = 0; i < contentKeys.length; i++) {
+      for (let i = 0; i < 1; i++) {
         const contentKey = contentKeys[i];
 
         try {
