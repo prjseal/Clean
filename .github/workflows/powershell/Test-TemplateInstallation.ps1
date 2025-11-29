@@ -129,13 +129,27 @@ npm install --save-dev playwright
 Write-Host "Installing Playwright browsers..." -ForegroundColor Yellow
 npx playwright install chromium
 
+# Extract content keys from uSync files
+Write-Host "`nExtracting content keys from uSync files..." -ForegroundColor Yellow
+$contentKeys = & "$WorkspacePath\.github\workflows\powershell\Get-UsyncKeys.ps1" `
+    -WorkspacePath $WorkspacePath `
+    -UsyncFileType "Content" `
+    -PublishedOnly
+
+if ($contentKeys.Count -eq 0) {
+    Write-Host "WARNING: No content keys found in uSync files" -ForegroundColor Yellow
+}
+
 # Create Playwright test script
 Write-Host "`nCreating Playwright test script..." -ForegroundColor Yellow
-& "$WorkspacePath\.github\workflows\powershell\Write-PlaywrightTestScript.ps1" -OutputPath "$testDir\$ProjectName\test.js"
+& "$WorkspacePath\.github\workflows\powershell\Write-PlaywrightTestScript.ps1" `
+    -OutputPath "$testDir\$ProjectName\test.js" `
+    -ContentKeys $contentKeys
 
 # Run Playwright tests
 Write-Host "`nRunning Playwright tests..." -ForegroundColor Yellow
 $env:SITE_URL = "$siteUrl"
+$env:CONTENT_KEYS = ($contentKeys | ConvertTo-Json -Compress)
 node test.js
 
 # Stop the site process

@@ -9,16 +9,28 @@
 .PARAMETER OutputPath
     The path where the test script should be written
 
+.PARAMETER ContentKeys
+    Optional array of content keys (GUIDs) to screenshot in Umbraco
+
 .EXAMPLE
     .\Write-PlaywrightTestScript.ps1 -OutputPath "test.js"
+
+.EXAMPLE
+    .\Write-PlaywrightTestScript.ps1 -OutputPath "test.js" -ContentKeys @("guid1", "guid2")
 #>
 
 param(
     [Parameter(Mandatory = $true)]
-    [string]$OutputPath
+    [string]$OutputPath,
+
+    [Parameter(Mandatory = $false)]
+    [string[]]$ContentKeys = @()
 )
 
-$testScript = @'
+# Convert ContentKeys to JSON for the JavaScript script
+$contentKeysJson = $ContentKeys | ConvertTo-Json -Compress
+
+$testScript = @"
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -38,69 +50,28 @@ const path = require('path');
   const baseUrl = process.env.SITE_URL;
   console.log('Testing site at:', baseUrl);
 
-  // Navigate to home page first to discover links
+  // Get content keys from environment variable (passed as JSON)
+  const contentKeysJson = process.env.CONTENT_KEYS || '[]';
+  let contentKeys = [];
+
   try {
-    console.log('Navigating to home page...');
-    await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
+    contentKeys = JSON.parse(contentKeysJson);
+    console.log('Content keys loaded:', contentKeys.length);
+  } catch (error) {
+    console.error('Error parsing content keys:', error.message);
+  }
 
-    // Take screenshot of home page
-    await page.screenshot({
-      path: path.join(screenshotsDir, '01-home.png'),
-      fullPage: true
-    });
-    console.log('Screenshot saved: 01-home.png');
-
-    // Find all internal links on the page
-    const links = await page.evaluate((baseUrl) => {
-      const anchors = Array.from(document.querySelectorAll('a[href]'));
-      return anchors
-        .map(a => a.href)
-        .filter(href => {
-          try {
-            const url = new URL(href);
-            const baseUrlObj = new URL(baseUrl);
-            return url.hostname === baseUrlObj.hostname &&
-                   !href.includes('/umbraco') &&
-                   !href.includes('#') &&
-                   !href.includes('javascript:');
-          } catch {
-            return false;
-          }
-        })
-        .filter((value, index, self) => self.indexOf(value) === index);
-    }, baseUrl);
-
-    console.log('Found ' + links.length + ' internal links to test');
-
-    // Visit each discovered link
-    let counter = 2;
-    for (const link of links.slice(0, 10)) {
-      try {
-        console.log('Navigating to:', link);
-        await page.goto(link, { waitUntil: 'networkidle', timeout: 30000 });
-
-        const screenshotName = counter.toString().padStart(2, '0') + '-' +
-          link.replace(baseUrl, '').replace(/[^a-z0-9]/gi, '-').substring(0, 50) + '.png';
-
-        await page.screenshot({
-          path: path.join(screenshotsDir, screenshotName),
-          fullPage: true
-        });
-        console.log('Screenshot saved:', screenshotName);
-        counter++;
-      } catch (error) {
-        console.error('Error visiting', link, ':', error.message);
-      }
-    }
-
+  try {
     // Test Umbraco login page
     console.log('Navigating to Umbraco login...');
-    await page.goto(baseUrl + '/umbraco', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(baseUrl + '/umbraco', { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+    let counter = 1;
     await page.screenshot({
       path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-login.png'),
       fullPage: true
     });
-    console.log('Screenshot saved: umbraco-login.png');
+    console.log('Screenshot saved: ' + counter.toString().padStart(2, '0') + '-umbraco-login.png');
     counter++;
 
     // Log into Umbraco
@@ -109,168 +80,101 @@ const path = require('path');
     await page.fill('input[name="password"]', '1234567890');
     await page.click('button[type="submit"]');
 
-    // Wait for navigation after login
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
-    await page.waitForTimeout(3000);
+    // Wait for navigation after login (just wait for DOM, not full network idle)
+    console.log('Waiting for Umbraco to load after login...');
+    await page.waitForTimeout(5000);
 
     // Take screenshot after login
     await page.screenshot({
       path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-logged-in.png'),
       fullPage: true
     });
-    console.log('Screenshot saved: umbraco-logged-in.png');
+    console.log('Screenshot saved: ' + counter.toString().padStart(2, '0') + '-umbraco-logged-in.png');
     counter++;
 
-    // Navigate to Content section
-    console.log('Navigating to Content section...');
+    // Process each content key
+    if (contentKeys.length > 0) {
+      console.log('\n================================================');
+      console.log('Processing ' + contentKeys.length + ' content items');
+      console.log('================================================\n');
 
-    // Wait for and click on Content section
-    const contentSelector = 'a[href="#/content"], [data-element="section-content"], a[title="Content"]';
-    await page.waitForSelector(contentSelector, { timeout: 10000 });
-    await page.click(contentSelector);
-    await page.waitForTimeout(2000);
+      for (let i = 0; i < contentKeys.length; i++) {
+        const contentKey = contentKeys[i];
 
-    // Function to click on a tree item and take screenshot
-    async function clickTreeItemAndScreenshot(itemName, screenshotCounter) {
-      try {
-        console.log(`Clicking on tree item: ${itemName}...`);
-
-        // Primary selector using Umbraco's data-element attribute
-        const primarySelector = `[data-element="tree-item-${itemName}"]`;
-
-        let clicked = false;
-
-        // Try primary selector first
         try {
-          await page.click(primarySelector, { timeout: 5000 });
-          clicked = true;
-          console.log(`Clicked on ${itemName} using data-element selector`);
-        } catch (e) {
-          console.log(`Primary selector failed, trying fallback selectors...`);
+          console.log('--- Content Item ' + (i + 1) + '/' + contentKeys.length + ' ---');
+          console.log('Key: ' + contentKey);
 
-          // Fallback selectors
-          const fallbackSelectors = [
-            `[data-element="tree-item-${itemName}"] a`,
-            `a[title="${itemName}"]`,
-            `.umb-tree-item:has-text("${itemName}")`,
-            `text=${itemName}`
+          // Log current URL before navigation
+          const beforeUrl = page.url();
+          console.log('Current URL before navigation: ' + beforeUrl);
+
+          // Try multiple URL patterns for different Umbraco versions
+          const urlPatterns = [
+            baseUrl + '/umbraco/section/content/workspace/document-edit/' + contentKey,
+            baseUrl + '/umbraco/content/edit/' + contentKey,
+            baseUrl + '/umbraco#/content/content/edit/' + contentKey
           ];
 
-          for (const selector of fallbackSelectors) {
+          let navigationSuccessful = false;
+
+          for (let urlPattern of urlPatterns) {
+            console.log('Trying URL pattern: ' + urlPattern);
+
             try {
-              await page.click(selector, { timeout: 3000 });
-              clicked = true;
-              console.log(`Clicked on ${itemName} using fallback selector`);
-              break;
-            } catch (e) {
-              continue;
+              await page.goto(urlPattern, { waitUntil: 'domcontentloaded', timeout: 10000 });
+              await page.waitForTimeout(2000);
+
+              const currentUrl = page.url();
+              console.log('Current URL after navigation: ' + currentUrl);
+
+              // Check if URL contains the content key (indicates successful navigation)
+              if (currentUrl.includes(contentKey) || currentUrl.includes('edit') || currentUrl.includes('workspace')) {
+                console.log('Navigation successful with this pattern!');
+                navigationSuccessful = true;
+                break;
+              } else {
+                console.log('URL reverted, trying next pattern...');
+              }
+            } catch (navError) {
+              console.log('Navigation failed with this pattern: ' + navError.message);
             }
           }
-        }
 
-        if (!clicked) {
-          console.log(`Warning: Could not click on ${itemName}`);
-          return screenshotCounter;
-        }
-
-        // Wait 5 seconds before taking screenshot
-        console.log(`Waiting 5 seconds before taking screenshot...`);
-        await page.waitForTimeout(5000);
-
-        // Take screenshot
-        const screenshotName = screenshotCounter.toString().padStart(2, '0') +
-          `-content-${itemName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`;
-        await page.screenshot({
-          path: path.join(screenshotsDir, screenshotName),
-          fullPage: true
-        });
-        console.log(`Screenshot saved: ${screenshotName}`);
-        return screenshotCounter + 1;
-      } catch (error) {
-        console.error(`Error processing ${itemName}:`, error.message);
-        return screenshotCounter;
-      }
-    }
-
-    // Click on Home page first
-    counter = await clickTreeItemAndScreenshot('Home', counter);
-
-    // Try to expand the Home node to see child pages
-    console.log('Attempting to expand Home node...');
-    try {
-      // Click on the uui-symbol-expand element within the Home tree item
-      // Based on Umbraco's data-element attributes for tree navigation
-      const expandSelector = '[data-element="tree-item-Home"] [data-element="tree-item-expand"]';
-
-      try {
-        await page.click(expandSelector, { timeout: 5000 });
-        console.log('Home node expanded using uui-symbol-expand');
-        await page.waitForTimeout(1000);
-      } catch (e) {
-        console.log('Could not find expand element, trying alternative selectors...');
-
-        // Fallback selectors
-        const fallbackSelectors = [
-          '[data-element="tree-item-Home"] uui-symbol-expand',
-          '[data-element="tree-item-Home"] button[aria-label*="expand"]',
-          '[data-element="tree-item-Home"] .umb-tree-item__expand'
-        ];
-
-        let expanded = false;
-        for (const selector of fallbackSelectors) {
-          try {
-            await page.click(selector, { timeout: 3000 });
-            expanded = true;
-            console.log('Home node expanded using fallback selector');
-            await page.waitForTimeout(1000);
-            break;
-          } catch (e) {
-            continue;
+          if (!navigationSuccessful) {
+            console.log('WARNING: Could not navigate to content item, screenshot may show default page');
           }
-        }
 
-        if (!expanded) {
-          console.log('Could not expand Home node automatically');
-        }
-      }
+          // Additional wait for content to load
+          console.log('Waiting 5 seconds for content to fully load...');
+          await page.waitForTimeout(5000);
 
-      // Get all visible tree items that are children of Home
-      console.log('Looking for child pages under Home...');
-      const childPages = await page.evaluate(() => {
-        const items = [];
+          // Log final URL before screenshot
+          const finalUrl = page.url();
+          console.log('Final URL before screenshot: ' + finalUrl);
 
-        // Look for elements with data-element attribute starting with "tree-item-"
-        const treeItems = document.querySelectorAll('[data-element^="tree-item-"]');
+          // Take screenshot
+          const screenshotName = counter.toString().padStart(2, '0') + '-content-' + contentKey + '.png';
+          await page.screenshot({
+            path: path.join(screenshotsDir, screenshotName),
+            fullPage: true
+          });
 
-        treeItems.forEach(item => {
-          const dataElement = item.getAttribute('data-element');
-          if (dataElement && dataElement !== 'tree-item-Home') {
-            // Extract the page name from data-element attribute
-            const pageName = dataElement.replace('tree-item-', '');
+          console.log('Screenshot saved: ' + screenshotName);
+          console.log('');
+          counter++;
 
-            // Also check if this item is visible (has non-zero dimensions)
-            const rect = item.getBoundingClientRect();
-            if (rect.width > 0 && rect.height > 0 && pageName.length > 0) {
-              items.push(pageName);
-            }
-          }
-        });
-
-        // Remove duplicates
-        return [...new Set(items)];
-      });
-
-      console.log(`Found ${childPages.length} potential child pages`);
-
-      // Click on each child page
-      for (const pageName of childPages) {
-        if (pageName && pageName.trim()) {
-          counter = await clickTreeItemAndScreenshot(pageName.trim(), counter);
+        } catch (error) {
+          console.error('Error processing content key ' + contentKey + ':', error.message);
+          console.log('');
         }
       }
 
-    } catch (error) {
-      console.error('Error expanding or processing child pages:', error.message);
+      console.log('================================================');
+      console.log('Completed processing all content items');
+      console.log('================================================\n');
+    } else {
+      console.log('\nNo content keys provided, skipping content item screenshots');
     }
 
   } catch (error) {
@@ -281,7 +185,7 @@ const path = require('path');
   await browser.close();
   console.log('Testing complete!');
 })();
-'@
+"@
 
 $testScript | Out-File -FilePath $OutputPath -Encoding UTF8
 Write-Host "Playwright test script written to: $OutputPath" -ForegroundColor Green

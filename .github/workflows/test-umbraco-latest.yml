@@ -1,6 +1,9 @@
 name: Scheduled - Test Umbraco with Latest Clean Package
 
 on:
+  pull_request_target:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       umbraco-source:
@@ -37,10 +40,14 @@ jobs:
     permissions:
       contents: read
       packages: read
+      pull-requests: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          fetch-depth: 0
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
