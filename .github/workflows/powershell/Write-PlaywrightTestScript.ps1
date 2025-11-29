@@ -92,23 +92,6 @@ const path = require('path');
     console.log('Screenshot saved: ' + counter.toString().padStart(2, '0') + '-umbraco-logged-in.png');
     counter++;
 
-    // Navigate to Content section
-    console.log('Navigating to Content section...');
-
-    // Wait for and click on Content section
-    const contentSelector = 'a[href=\"#/content\"], [data-element=\"section-content\"], a[title=\"Content\"]';
-    await page.waitForSelector(contentSelector, { timeout: 10000 });
-    await page.click(contentSelector);
-    await page.waitForTimeout(2000);
-
-    // Take screenshot of content section
-    await page.screenshot({
-      path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-content-section.png'),
-      fullPage: true
-    });
-    console.log('Screenshot saved: ' + counter.toString().padStart(2, '0') + '-content-section.png');
-    counter++;
-
     // Process each content key
     if (contentKeys.length > 0) {
       console.log('\n================================================');
