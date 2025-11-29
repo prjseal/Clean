@@ -27,7 +27,7 @@ param(
     [string]$OutputPath,
 
     [Parameter(Mandatory = $false)]
-    [string[]]$ContentKeys = @()
+    [string[]]$ContentKeys = @(),
 
     [Parameter(Mandatory = $false)]
     [string[]]$DataTypeKeys = @()
