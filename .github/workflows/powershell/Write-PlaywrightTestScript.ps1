@@ -109,24 +109,44 @@ const path = require('path');
           const beforeUrl = page.url();
           console.log('Current URL before navigation: ' + beforeUrl);
 
-          // Construct the full URL with hash
-          const contentUrl = baseUrl + '/umbraco#/content/content/edit/' + contentKey;
-          console.log('Target URL: ' + contentUrl);
+          // Try multiple URL patterns for different Umbraco versions
+          const urlPatterns = [
+            baseUrl + '/umbraco/section/content/workspace/document-edit/' + contentKey,
+            baseUrl + '/umbraco/content/edit/' + contentKey,
+            baseUrl + '/umbraco#/content/content/edit/' + contentKey
+          ];
 
-          // Navigate using goto with the full URL (forcing navigation)
-          console.log('Calling page.goto()...');
-          try {
-            await page.goto(contentUrl, { waitUntil: 'load', timeout: 10000 });
-          } catch (navError) {
-            console.log('Navigation timeout (expected for SPA), continuing...');
+          let navigationSuccessful = false;
+
+          for (let urlPattern of urlPatterns) {
+            console.log('Trying URL pattern: ' + urlPattern);
+
+            try {
+              await page.goto(urlPattern, { waitUntil: 'domcontentloaded', timeout: 10000 });
+              await page.waitForTimeout(2000);
+
+              const currentUrl = page.url();
+              console.log('Current URL after navigation: ' + currentUrl);
+
+              // Check if URL contains the content key (indicates successful navigation)
+              if (currentUrl.includes(contentKey) || currentUrl.includes('edit') || currentUrl.includes('workspace')) {
+                console.log('Navigation successful with this pattern!');
+                navigationSuccessful = true;
+                break;
+              } else {
+                console.log('URL reverted, trying next pattern...');
+              }
+            } catch (navError) {
+              console.log('Navigation failed with this pattern: ' + navError.message);
+            }
           }
 
-          // Log current URL after navigation
-          const afterUrl = page.url();
-          console.log('Current URL after navigation: ' + afterUrl);
+          if (!navigationSuccessful) {
+            console.log('WARNING: Could not navigate to content item, screenshot may show default page');
+          }
 
-          // Additional wait for SPA to update
-          console.log('Waiting 5 seconds for SPA content to load...');
+          // Additional wait for content to load
+          console.log('Waiting 5 seconds for content to fully load...');
           await page.waitForTimeout(5000);
 
           // Log final URL before screenshot
