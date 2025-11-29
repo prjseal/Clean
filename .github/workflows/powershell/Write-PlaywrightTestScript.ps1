@@ -30,7 +30,7 @@ param(
     [string[]]$ContentKeys = @()
 
     [Parameter(Mandatory = $false)]
-    [string[]]$ContentKeys = @()
+    [string[]]$DataTypeKeys = @()
 )
 
 # Convert ContentKeys to JSON for the JavaScript script
