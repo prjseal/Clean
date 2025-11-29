@@ -111,6 +111,7 @@ const path = require('path');
 
           // Try multiple URL patterns for different Umbraco versions
           const urlPatterns = [
+            baseUrl + '/umbraco/section/content/workspace/document/edit/' + contentKey + '/invariant',
             baseUrl + '/umbraco/section/content/workspace/document-edit/' + contentKey,
             baseUrl + '/umbraco/content/edit/' + contentKey,
             baseUrl + '/umbraco#/content/content/edit/' + contentKey
