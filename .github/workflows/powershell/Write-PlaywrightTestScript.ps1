@@ -105,18 +105,33 @@ const path = require('path');
           console.log('--- Content Item ' + (i + 1) + '/' + contentKeys.length + ' ---');
           console.log('Key: ' + contentKey);
 
-          // Navigate to content item by changing the hash (SPA navigation)
-          const hashPath = '/content/content/edit/' + contentKey;
-          console.log('Navigating to: ' + baseUrl + '/umbraco#' + hashPath);
+          // Log current URL before navigation
+          const beforeUrl = page.url();
+          console.log('Current URL before navigation: ' + beforeUrl);
 
-          // Change the window location hash to trigger SPA navigation
-          await page.evaluate((hash) => {
-            window.location.hash = hash;
-          }, hashPath);
+          // Construct the full URL with hash
+          const contentUrl = baseUrl + '/umbraco#/content/content/edit/' + contentKey;
+          console.log('Target URL: ' + contentUrl);
 
-          // Wait 5 seconds for content to fully load
-          console.log('Waiting 5 seconds for content to load...');
+          // Navigate using goto with the full URL (forcing navigation)
+          console.log('Calling page.goto()...');
+          try {
+            await page.goto(contentUrl, { waitUntil: 'load', timeout: 10000 });
+          } catch (navError) {
+            console.log('Navigation timeout (expected for SPA), continuing...');
+          }
+
+          // Log current URL after navigation
+          const afterUrl = page.url();
+          console.log('Current URL after navigation: ' + afterUrl);
+
+          // Additional wait for SPA to update
+          console.log('Waiting 5 seconds for SPA content to load...');
           await page.waitForTimeout(5000);
+
+          // Log final URL before screenshot
+          const finalUrl = page.url();
+          console.log('Final URL before screenshot: ' + finalUrl);
 
           // Take screenshot
           const screenshotName = counter.toString().padStart(2, '0') + '-content-' + contentKey + '.png';
