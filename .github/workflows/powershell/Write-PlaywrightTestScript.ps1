@@ -65,7 +65,7 @@ const path = require('path');
 
   try {
     contentKeys = JSON.parse(contentKeysJson);
-    console.log('Content keys loaded:', contentKeys.length);
+    console.log('Content type keys loaded:\n' + JSON.stringify(contentKeys, null, 2));
   } catch (error) {
     console.error('Error parsing content keys:', error.message);
   }
@@ -76,7 +76,7 @@ const path = require('path');
 
   try {
     dataTypeKeys = JSON.parse(dataTypeKeysJson);
-    console.log('Data type keys loaded:', dataTypeKeys.length);
+    console.log('Data type keys loaded:\n' + JSON.stringify(dataTypeKeys, null, 2));
   } catch (error) {
     console.error('Error parsing data type keys:', error.message);
   }
