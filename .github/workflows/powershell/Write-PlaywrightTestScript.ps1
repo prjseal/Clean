@@ -48,7 +48,7 @@ const path = require('path');
   const browser = await chromium.launch({
     headless: false,
     args: ['--start-maximized']
-  }).;
+  });
   const context = await browser.newContext({
     ignoreHTTPSErrors: true
   });
