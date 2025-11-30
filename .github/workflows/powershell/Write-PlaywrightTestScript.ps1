@@ -45,12 +45,9 @@ const fs = require('fs');
 const path = require('path');
 
 (async () => {
-  const browser = await chromium.launch({
-    headless: false,
-    args: ['--start-maximized'],
-  });
+  const browser = await chromium.launch();
   const context = await browser.newContext({
-    ignoreHTTPSErrors: true,
+    ignoreHTTPSErrors: true
   });
   const page = await context.newPage();
 
@@ -125,7 +122,7 @@ const path = require('path');
 
     // Visit each discovered link
     counter = 2;
-    for (const link of links.slice(0, 10)) {
+    for (const link of links.slice(0, 25)) {
       try {
         console.log('Navigating to:', link);
         await page.goto(link, { waitUntil: 'networkidle', timeout: 30000 });
@@ -150,19 +147,12 @@ const path = require('path');
       }
     }
 
-    // Test Umbraco login page
+ // Test Umbraco login page
     console.log('Navigating to Umbraco login...');
-    await page.goto(baseUrl + '/umbraco', {
-      waitUntil: 'domcontentloaded',
-      timeout: 30000,
-    });
-
-    await page.locator('uui-app').screenshot({
-      path: path.join(
-        screenshotsDir,
-        counter.toString().padStart(2, '0') + '-umbraco-login.png'
-      ),
-      fullPage: true,
+    await page.goto(baseUrl + '/umbraco', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.screenshot({
+      path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-login.png'),
+      fullPage: true
     });
     console.log(
       'Screenshot saved: ' +
