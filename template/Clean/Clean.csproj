@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyVersion>7.0.0</AssemblyVersion>
-    <Version>7.0.0</Version>
-    <InformationalVersion>7.0.0</InformationalVersion>
+    <AssemblyVersion>7.0.1</AssemblyVersion>
+    <Version>7.0.1</Version>
+    <InformationalVersion>7.0.1</InformationalVersion>
     <TargetFramework>net10.0</TargetFramework>
     <Authors>Paul Seal</Authors>
     <ContentTargetFolders>.</ContentTargetFolders>
@@ -38,8 +38,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Web.Website" Version="17.0.0" />
-    <PackageReference Include="Clean.Core" Version="7.0.0" />
-    <PackageReference Include="Clean.Headless" Version="7.0.0" />
+    <PackageReference Include="Clean.Core" Version="7.0.1" />
+    <PackageReference Include="Clean.Headless" Version="7.0.1" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />

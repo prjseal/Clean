@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <PackageVersion>7.0.0</PackageVersion>
+    <PackageVersion>7.0.1</PackageVersion>
     <PackageType>Template</PackageType>
     <PackageId>Umbraco.Community.Templates.Clean</PackageId>
     <Title>Umbraco.Community.Templates.Clean</Title>
@@ -20,8 +20,8 @@
     <PackageProjectUrl>https://github.com/prjseal/Clean</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <InformationalVersion>7.0.0</InformationalVersion>
-    <AssemblyVersion>7.0.0</AssemblyVersion>
+    <InformationalVersion>7.0.1</InformationalVersion>
+    <AssemblyVersion>7.0.1</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="template\**\*" Exclude="template\**\bin\**;template\**\obj\**,template\.vs\**,template\**\created-packages\**" />
