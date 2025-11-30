@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/github/license/prjseal/Clean?label=License)](https://github.com/prjseal/Clean/blob/main/LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/prjseal/Clean?label=Stars)](https://github.com/prjseal/Clean/stargazers)
 
-A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 13 and 17.
+A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 17.
 
 ## Features
 
@@ -15,7 +15,6 @@ A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a 
 - **Headless/API Support**: Full Content Delivery API integration with Next.js revalidation support
 - **API Endpoints**: Built-in endpoints for dictionary, search, and contact functionality
 - **OpenAPI Documentation**: Swagger UI for exploring and testing API endpoints
-- **Multi-version Support**: NuGet packages for Compatible with Umbraco 13 and 17 (.NET 8 and .NET 10)
 - **SQLite by Default**: Quick setup with SQLite database for development
 
 Clean targets **Umbraco 17 (LTS)**. For complete version mapping for previous versions, see the [Versioning and Releases](.github/workflow-versioning-releases.md#version-mapping) documentation.
