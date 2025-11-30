@@ -1,45 +1,3 @@
-<#
-.SYNOPSIS
-    Writes a Playwright test script to a file.
-
-.DESCRIPTION
-    This script creates a Playwright JavaScript test file that tests an Umbraco site
-    by navigating pages, taking screenshots, and testing the Umbraco login page.
-
-.PARAMETER OutputPath
-    The path where the test script should be written
-
-.PARAMETER ContentKeys
-    Optional array of content keys (GUIDs) to screenshot in Umbraco
-
-.PARAMETER DataTypeKeys
-    Optional array of data type keys (GUIDs) to screenshot in Umbraco
-
-.EXAMPLE
-    .\Write-PlaywrightTestScript.ps1 -OutputPath "test.js"
-
-.EXAMPLE
-    .\Write-PlaywrightTestScript.ps1 -OutputPath "test.js" -ContentKeys @("guid1", "guid2")
-#>
-
-param(
-    [Parameter(Mandatory = $true)]
-    [string]$OutputPath,
-
-    [Parameter(Mandatory = $false)]
-    [string[]]$ContentKeys = @(),
-
-    [Parameter(Mandatory = $false)]
-    [string[]]$DataTypeKeys = @()
-)
-
-# Convert ContentKeys to JSON for the JavaScript script
-$contentKeysJson = $ContentKeys | ConvertTo-Json -Compress
-
-# Convert DataTypeKeys to JSON for the JavaScript script
-$dataTypeKeysJson = $DataTypeKeys | ConvertTo-Json -Compress
-
-$testScript = @"
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -344,7 +302,3 @@ const path = require('path');
   await browser.close();
   console.log('Testing complete!');
 })();
-"@
-
-$testScript | Out-File -FilePath $OutputPath -Encoding UTF8
-Write-Host "Playwright test script written to: $OutputPath" -ForegroundColor Green
