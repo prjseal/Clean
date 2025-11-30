@@ -1,53 +1,14 @@
-<#
-.SYNOPSIS
-    Writes a Playwright test script to a file.
-
-.DESCRIPTION
-    This script creates a Playwright JavaScript test file that tests an Umbraco site
-    by navigating pages, taking screenshots, and testing the Umbraco login page.
-
-.PARAMETER OutputPath
-    The path where the test script should be written
-
-.PARAMETER ContentKeys
-    Optional array of content keys (GUIDs) to screenshot in Umbraco
-
-.PARAMETER DataTypeKeys
-    Optional array of data type keys (GUIDs) to screenshot in Umbraco
-
-.EXAMPLE
-    .\Write-PlaywrightTestScript.ps1 -OutputPath "test.js"
-
-.EXAMPLE
-    .\Write-PlaywrightTestScript.ps1 -OutputPath "test.js" -ContentKeys @("guid1", "guid2")
-#>
-
-param(
-    [Parameter(Mandatory = $true)]
-    [string]$OutputPath,
-
-    [Parameter(Mandatory = $false)]
-    [string[]]$ContentKeys = @(),
-
-    [Parameter(Mandatory = $false)]
-    [string[]]$DataTypeKeys = @()
-)
-
-# Convert ContentKeys to JSON for the JavaScript script
-$contentKeysJson = $ContentKeys | ConvertTo-Json -Compress
-
-# Convert DataTypeKeys to JSON for the JavaScript script
-$dataTypeKeysJson = $DataTypeKeys | ConvertTo-Json -Compress
-
-$testScript = @"
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({
+    headless: false,
+    args: ['--start-maximized'],
+  });
   const context = await browser.newContext({
-    ignoreHTTPSErrors: true
+    ignoreHTTPSErrors: true,
   });
   const page = await context.newPage();
 
@@ -122,7 +83,7 @@ const path = require('path');
 
     // Visit each discovered link
     counter = 2;
-    for (const link of links.slice(0, 25)) {
+    for (const link of links.slice(0, 10)) {
       try {
         console.log('Navigating to:', link);
         await page.goto(link, { waitUntil: 'networkidle', timeout: 30000 });
@@ -147,12 +108,19 @@ const path = require('path');
       }
     }
 
- // Test Umbraco login page
+    // Test Umbraco login page
     console.log('Navigating to Umbraco login...');
-    await page.goto(baseUrl + '/umbraco', { waitUntil: 'networkidle', timeout: 30000 });
-    await page.screenshot({
-      path: path.join(screenshotsDir, counter.toString().padStart(2, '0') + '-umbraco-login.png'),
-      fullPage: true
+    await page.goto(baseUrl + '/umbraco', {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
+    });
+
+    await page.locator('uui-app').screenshot({
+      path: path.join(
+        screenshotsDir,
+        counter.toString().padStart(2, '0') + '-umbraco-login.png'
+      ),
+      fullPage: true,
     });
     console.log(
       'Screenshot saved: ' +
@@ -334,7 +302,3 @@ const path = require('path');
   await browser.close();
   console.log('Testing complete!');
 })();
-"@
-
-$testScript | Out-File -FilePath $OutputPath -Encoding UTF8
-Write-Host "Playwright test script written to: $OutputPath" -ForegroundColor Green

@@ -423,6 +423,20 @@ if ($contentKeys.Count -eq 0) {
     Write-Host "WARNING: No content keys found in uSync files" -ForegroundColor Yellow
 }
 
+if ($contentKeys.Count -eq 0) {
+    Write-Host "WARNING: No content keys found in uSync files" -ForegroundColor Yellow
+}
+
+# Extract data type keys from uSync files
+Write-Host "`nExtracting data type keys from uSync files..." -ForegroundColor Yellow
+$dataTypeKeys = & "$WorkspacePath\.github\workflows\powershell\Get-UsyncKeys.ps1" `
+    -WorkspacePath $WorkspacePath `
+    -UsyncFileType "DataTypes"
+
+if ($dataTypeKeys.Count -eq 0) {
+    Write-Host "WARNING: No data type keys found in uSync files" -ForegroundColor Yellow
+}
+
 # Create Playwright test script
 Write-Host "`nCreating Playwright test script..." -ForegroundColor Yellow
 & "$WorkspacePath\.github\workflows\powershell\Write-PlaywrightTestScript.ps1" `
@@ -433,6 +447,7 @@ Write-Host "`nCreating Playwright test script..." -ForegroundColor Yellow
 Write-Host "`nRunning Playwright tests..." -ForegroundColor Yellow
 $env:SITE_URL = "$siteUrl"
 $env:CONTENT_KEYS = ($contentKeys | ConvertTo-Json -Compress)
+$env:DATATYPE_KEYS = ($dataTypeKeys | ConvertTo-Json -Compress)
 
 # Verify process is still running before tests
 if ($process.HasExited) {
