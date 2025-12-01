@@ -86,6 +86,18 @@ jobs:
           }
           ./.github/workflows/powershell/Test-LatestWithZap.ps1 @params
 
+      - name: Sanitize Version Numbers for Artifact Names
+        id: sanitize-versions
+        shell: bash
+        run: |
+          # Replace dots with dashes for artifact naming (GitHub Actions requirement)
+          UMBRACO_VERSION_SAFE="${{ steps.setup-site.outputs.umbraco_version }}"
+          CLEAN_VERSION_SAFE="${{ steps.setup-site.outputs.clean_version }}"
+          UMBRACO_VERSION_SAFE="${UMBRACO_VERSION_SAFE//./-}"
+          CLEAN_VERSION_SAFE="${CLEAN_VERSION_SAFE//./-}"
+          echo "umbraco_version_safe=${UMBRACO_VERSION_SAFE}" >> $GITHUB_OUTPUT
+          echo "clean_version_safe=${CLEAN_VERSION_SAFE}" >> $GITHUB_OUTPUT
+
       - name: Wait for Site Readiness
         run: |
           echo "Waiting additional time to ensure site is fully ready for ZAP scan..."
@@ -119,13 +131,12 @@ jobs:
           cmd_options: '-a -j'
           allow_issue_writing: false
           fail_action: false
-          artifact_name: 'zap-scan-results-umbraco-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}'
 
       - name: Upload ZAP Scan Report (HTML)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zap-scan-report-html-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}
+          name: zap-scan-report-html-umbraco-${{ steps.sanitize-versions.outputs.umbraco_version_safe }}-clean-${{ steps.sanitize-versions.outputs.clean_version_safe }}
           path: |
             report_html.html
             report.html
@@ -135,7 +146,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zap-scan-report-json-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}
+          name: zap-scan-report-json-umbraco-${{ steps.sanitize-versions.outputs.umbraco_version_safe }}-clean-${{ steps.sanitize-versions.outputs.clean_version_safe }}
           path: |
             report_json.json
             report.json
@@ -145,27 +156,17 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zap-scan-report-markdown-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}
+          name: zap-scan-report-markdown-umbraco-${{ steps.sanitize-versions.outputs.umbraco_version_safe }}-clean-${{ steps.sanitize-versions.outputs.clean_version_safe }}
           path: |
             report_md.md
             report.md
-          if-no-files-found: warn
-
-      - name: Upload ZAP Scan Report (XML)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: zap-scan-report-xml-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}
-          path: |
-            report_xml.xml
-            report.xml
           if-no-files-found: warn
 
       - name: Upload Site Logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: site-logs-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}
+          name: site-logs-umbraco-${{ steps.sanitize-versions.outputs.umbraco_version_safe }}-clean-${{ steps.sanitize-versions.outputs.clean_version_safe }}
           path: |
             ${{ steps.setup-site.outputs.test_dir }}/site.log
             ${{ steps.setup-site.outputs.test_dir }}/site.err
