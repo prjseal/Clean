@@ -142,16 +142,6 @@ jobs:
             report.html
           if-no-files-found: warn
 
-      - name: Upload ZAP Scan Report (JSON)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: zap-scan-report-json-umbraco-${{ steps.sanitize-versions.outputs.umbraco_version_safe }}-clean-${{ steps.sanitize-versions.outputs.clean_version_safe }}
-          path: |
-            report_json.json
-            report.json
-          if-no-files-found: warn
-
       - name: Upload ZAP Scan Report (Markdown)
         if: always()
         uses: actions/upload-artifact@v4
