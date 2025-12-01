@@ -7,28 +7,16 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      umbraco-source:
-        description: 'Umbraco source'
-        required: false
-        type: choice
-        options:
-          - nuget
-          - nightly-feed
-        default: nuget
-      package-source:
-        description: 'Package source'
+      template-source:
+        description: 'Clean template source'
         required: false
         type: choice
         options:
           - nuget
           - github-packages
         default: nuget
-      umbraco-version:
-        description: 'Umbraco version to test (leave blank for latest)'
-        required: false
-        type: string
-      package-version:
-        description: 'Package version to test (leave blank for latest)'
+      template-version:
+        description: 'Clean template version to test (leave blank for latest)'
         required: false
         type: string
   schedule:
@@ -63,7 +51,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Setup Umbraco Site for ZAP Testing
+      - name: Setup Clean Template Site for ZAP Testing
         id: setup-site
         shell: pwsh
         env:
@@ -72,17 +60,11 @@ jobs:
           $params = @{
             WorkspacePath = "${{ github.workspace }}"
           }
-          if ("${{ inputs.umbraco-source }}" -ne "") {
-            $params.UmbracoTemplateSource = "${{ inputs.umbraco-source }}"
+          if ("${{ inputs.template-source }}" -ne "") {
+            $params.TemplateSource = "${{ inputs.template-source }}"
           }
-          if ("${{ inputs.package-source }}" -ne "") {
-            $params.PackageSource = "${{ inputs.package-source }}"
-          }
-          if ("${{ inputs.umbraco-version }}" -ne "") {
-            $params.UmbracoVersion = "${{ inputs.umbraco-version }}"
-          }
-          if ("${{ inputs.package-version }}" -ne "") {
-            $params.CleanVersion = "${{ inputs.package-version }}"
+          if ("${{ inputs.template-version }}" -ne "") {
+            $params.TemplateVersion = "${{ inputs.template-version }}"
           }
           ./.github/workflows/powershell/Test-LatestWithZap.ps1 @params
 
@@ -91,12 +73,9 @@ jobs:
         shell: bash
         run: |
           # Replace dots with dashes for artifact naming (GitHub Actions requirement)
-          UMBRACO_VERSION_SAFE="${{ steps.setup-site.outputs.umbraco_version }}"
-          CLEAN_VERSION_SAFE="${{ steps.setup-site.outputs.clean_version }}"
-          UMBRACO_VERSION_SAFE="${UMBRACO_VERSION_SAFE//./-}"
-          CLEAN_VERSION_SAFE="${CLEAN_VERSION_SAFE//./-}"
-          echo "umbraco_version_safe=${UMBRACO_VERSION_SAFE}" >> $GITHUB_OUTPUT
-          echo "clean_version_safe=${CLEAN_VERSION_SAFE}" >> $GITHUB_OUTPUT
+          TEMPLATE_VERSION_SAFE="${{ steps.setup-site.outputs.clean_template_version }}"
+          TEMPLATE_VERSION_SAFE="${TEMPLATE_VERSION_SAFE//./-}"
+          echo "template_version_safe=${TEMPLATE_VERSION_SAFE}" >> $GITHUB_OUTPUT
 
       - name: Wait for Site Readiness
         run: |
@@ -136,7 +115,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zap-scan-report-html-umbraco-${{ steps.sanitize-versions.outputs.umbraco_version_safe }}-clean-${{ steps.sanitize-versions.outputs.clean_version_safe }}
+          name: zap-scan-report-html-clean-template-${{ steps.sanitize-versions.outputs.template_version_safe }}
           path: |
             report_html.html
             report.html
@@ -146,7 +125,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zap-scan-report-markdown-umbraco-${{ steps.sanitize-versions.outputs.umbraco_version_safe }}-clean-${{ steps.sanitize-versions.outputs.clean_version_safe }}
+          name: zap-scan-report-markdown-clean-template-${{ steps.sanitize-versions.outputs.template_version_safe }}
           path: |
             report_md.md
             report.md
@@ -156,7 +135,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: site-logs-umbraco-${{ steps.sanitize-versions.outputs.umbraco_version_safe }}-clean-${{ steps.sanitize-versions.outputs.clean_version_safe }}
+          name: site-logs-clean-template-${{ steps.sanitize-versions.outputs.template_version_safe }}
           path: |
             ${{ steps.setup-site.outputs.test_dir }}/site.log
             ${{ steps.setup-site.outputs.test_dir }}/site.err
@@ -194,9 +173,9 @@ jobs:
           echo "## OWASP ZAP Security Scan Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Scan Details" >> $GITHUB_STEP_SUMMARY
-          echo "- **Umbraco Version:** ${{ steps.setup-site.outputs.umbraco_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Clean Package Version:** ${{ steps.setup-site.outputs.clean_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Clean Template Version:** ${{ steps.setup-site.outputs.clean_template_version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Target URL:** ${{ steps.setup-site.outputs.site_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Project Type:** Clean Blog (from Umbraco.Community.Templates.Clean)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
