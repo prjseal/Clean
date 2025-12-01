@@ -2,7 +2,7 @@ name: Scheduled - Update NuGet Packages
 
 on:
   schedule:
-    - cron: '0 8 * * *' # Run daily at 8:00am UTC (8:00am UK time in winter, 09:00am in summer)
+    - cron: '10 8 * * *' # Run daily at 8:10am UTC (8:00am UK time in winter, 09:00am in summer)
   workflow_dispatch:
     inputs:
       dryRun:
@@ -12,7 +12,7 @@ on:
       includePrerelease:
         description: 'Include prerelease versions'
         required: false
-        default: 'false'
+        default: 'true'
       umbracoVersions:
         description: 'Comma-separated Umbraco major versions (e.g., "13" or "13,17")'
         required: false
