@@ -143,11 +143,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           echo $env:GITHUB_TOKEN | gh auth login --with-token
+
+          # Determine the correct includePrerelease value based on trigger type
+          $isScheduled = '${{ github.event_name }}' -eq 'schedule'
+          if ($isScheduled) {
+            $includePrereleaseValue = '${{ env.SCHEDULED_INCLUDE_PRERELEASE }}'
+          } else {
+            $includePrereleaseValue = '${{ github.event.inputs.includePrerelease }}'
+          }
+
           ./.github/workflows/powershell/New-PackageUpdatePullRequest.ps1 `
             -ReadmeUpdated "${{ steps.update-readme.outputs.readme_updated }}" `
             -UpdatedVersions "${{ steps.update-readme.outputs.updated_versions }}" `
             -PackageSummary "${{ steps.read-summary.outputs.summary }}" `
-            -IncludePrerelease "${{ github.event.inputs.includePrerelease }}" `
+            -IncludePrerelease "$includePrereleaseValue" `
             -NuGetSources "${{ github.event.inputs.nugetSources }}" `
             -BranchName "${{ steps.commit-and-push.outputs.branchName }}" `
             -WorkspacePath "${{ github.workspace }}"
