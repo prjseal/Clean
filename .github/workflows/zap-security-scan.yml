@@ -1,0 +1,213 @@
+name: OWASP ZAP Security Scan
+
+on:
+  pull_request_review:
+    types: [submitted]
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      umbraco-source:
+        description: 'Umbraco source'
+        required: false
+        type: choice
+        options:
+          - nuget
+          - nightly-feed
+        default: nuget
+      package-source:
+        description: 'Package source'
+        required: false
+        type: choice
+        options:
+          - nuget
+          - github-packages
+        default: nuget
+      umbraco-version:
+        description: 'Umbraco version to test (leave blank for latest)'
+        required: false
+        type: string
+      package-version:
+        description: 'Package version to test (leave blank for latest)'
+        required: false
+        type: string
+  schedule:
+    # Run nightly at 2:00 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  zap-security-scan:
+    # Only run on approved PR reviews or other triggers
+    if: github.event_name != 'pull_request_review' || github.event.review.state == 'approved'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      pull-requests: read
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Umbraco Site for ZAP Testing
+        id: setup-site
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $params = @{
+            WorkspacePath = "${{ github.workspace }}"
+          }
+          if ("${{ inputs.umbraco-source }}" -ne "") {
+            $params.UmbracoTemplateSource = "${{ inputs.umbraco-source }}"
+          }
+          if ("${{ inputs.package-source }}" -ne "") {
+            $params.PackageSource = "${{ inputs.package-source }}"
+          }
+          if ("${{ inputs.umbraco-version }}" -ne "") {
+            $params.UmbracoVersion = "${{ inputs.umbraco-version }}"
+          }
+          if ("${{ inputs.package-version }}" -ne "") {
+            $params.CleanVersion = "${{ inputs.package-version }}"
+          }
+          ./.github/workflows/powershell/Test-LatestWithZap.ps1 @params
+
+      - name: Wait for Site Readiness
+        run: |
+          echo "Waiting additional time to ensure site is fully ready for ZAP scan..."
+          sleep 5
+          echo "Site URL: ${{ steps.setup-site.outputs.site_url }}"
+          echo "Testing site connectivity..."
+
+          # Convert HTTPS to HTTP if needed (ZAP works better with HTTP for local testing)
+          SITE_URL="${{ steps.setup-site.outputs.site_url }}"
+          if [[ $SITE_URL == https://* ]]; then
+            HTTP_URL="${SITE_URL/https/http}"
+            echo "Attempting to connect to: $HTTP_URL"
+
+            # Try a simple curl to verify the site is responding
+            for i in {1..10}; do
+              if curl -k -s -o /dev/null -w "%{http_code}" "$SITE_URL" | grep -q "200\|302"; then
+                echo "Site is responding!"
+                break
+              fi
+              echo "Waiting for site to respond (attempt $i/10)..."
+              sleep 3
+            done
+          fi
+
+      - name: Run OWASP ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.10.0
+        continue-on-error: true
+        with:
+          target: ${{ steps.setup-site.outputs.site_url }}
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a -j'
+          allow_issue_writing: false
+          fail_action: false
+          artifact_name: 'zap-scan-results-umbraco-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}'
+
+      - name: Upload ZAP Scan Report (HTML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-scan-report-html-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}
+          path: |
+            report_html.html
+            report.html
+          if-no-files-found: warn
+
+      - name: Upload ZAP Scan Report (JSON)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-scan-report-json-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}
+          path: |
+            report_json.json
+            report.json
+          if-no-files-found: warn
+
+      - name: Upload ZAP Scan Report (Markdown)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-scan-report-markdown-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}
+          path: |
+            report_md.md
+            report.md
+          if-no-files-found: warn
+
+      - name: Upload ZAP Scan Report (XML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-scan-report-xml-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}
+          path: |
+            report_xml.xml
+            report.xml
+          if-no-files-found: warn
+
+      - name: Upload Site Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-logs-${{ steps.setup-site.outputs.umbraco_version }}-clean-${{ steps.setup-site.outputs.clean_version }}
+          path: |
+            ${{ steps.setup-site.outputs.test_dir }}/site.log
+            ${{ steps.setup-site.outputs.test_dir }}/site.err
+          if-no-files-found: warn
+
+      - name: Cleanup - Stop Umbraco Site
+        if: always()
+        shell: pwsh
+        run: |
+          $sitePid = "${{ steps.setup-site.outputs.site_pid }}"
+
+          if ($sitePid) {
+            Write-Host "Stopping site process (PID: $sitePid)..." -ForegroundColor Yellow
+
+            try {
+              # Check if process exists and is running
+              $process = Get-Process -Id $sitePid -ErrorAction SilentlyContinue
+
+              if ($process) {
+                Stop-Process -Id $sitePid -Force -ErrorAction SilentlyContinue
+                Write-Host "Site process stopped successfully" -ForegroundColor Green
+              } else {
+                Write-Host "Site process already exited" -ForegroundColor Yellow
+              }
+            } catch {
+              Write-Host "Error stopping process: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+          } else {
+            Write-Host "No site PID found, skipping cleanup" -ForegroundColor Yellow
+          }
+
+      - name: ZAP Scan Summary
+        if: always()
+        run: |
+          echo "## OWASP ZAP Security Scan Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Scan Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Umbraco Version:** ${{ steps.setup-site.outputs.umbraco_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Clean Package Version:** ${{ steps.setup-site.outputs.clean_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target URL:** ${{ steps.setup-site.outputs.site_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Reports" >> $GITHUB_STEP_SUMMARY
+          echo "Security scan reports have been uploaded as artifacts. Review them for any security findings." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Note:** This workflow does not fail on security findings. Please review the reports manually." >> $GITHUB_STEP_SUMMARY
