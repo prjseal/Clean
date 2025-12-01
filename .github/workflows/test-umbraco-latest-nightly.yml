@@ -1,4 +1,4 @@
-name: Scheduled - Test Umbraco with Latest Clean Package
+name: Scheduled - Test Umbraco Latest with Nightly Feed
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
         options:
           - nuget
           - nightly-feed
-        default: nuget
+        default: nightly-feed
       package-source:
         description: 'Package source'
         required: false
@@ -28,8 +28,8 @@ on:
         required: false
         type: string
   schedule:
-    # Run every Monday at 9:00 AM UTC
-    - cron: '0 9 * * 1'
+    # Run daily at 9:00 AM UTC with nightly-feed
+    - cron: '0 9 * * *'
 
 jobs:
   test-latest-packages:
@@ -65,12 +65,20 @@ jobs:
           $params = @{
             WorkspacePath = "${{ github.workspace }}"
           }
-          if ("${{ inputs.umbraco-source }}" -ne "") {
-            $params.UmbracoTemplateSource = "${{ inputs.umbraco-source }}"
+
+          # For scheduled runs, use nightly-feed; for manual runs, use input
+          if ("${{ github.event_name }}" -eq "schedule") {
+            $params.UmbracoTemplateSource = "nightly-feed"
+            $params.PackageSource = "nuget"
+          } else {
+            if ("${{ inputs.umbraco-source }}" -ne "") {
+              $params.UmbracoTemplateSource = "${{ inputs.umbraco-source }}"
+            }
+            if ("${{ inputs.package-source }}" -ne "") {
+              $params.PackageSource = "${{ inputs.package-source }}"
+            }
           }
-          if ("${{ inputs.package-source }}" -ne "") {
-            $params.PackageSource = "${{ inputs.package-source }}"
-          }
+
           if ("${{ inputs.umbraco-version }}" -ne "") {
             $params.UmbracoVersion = "${{ inputs.umbraco-version }}"
           }
@@ -83,6 +91,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: umbraco-latest-screenshots-${{ steps.test-packages.outputs.umbraco_version }}-clean-${{ steps.test-packages.outputs.clean_version }}
+          name: umbraco-latest-nightly-screenshots-${{ steps.test-packages.outputs.umbraco_version }}-clean-${{ steps.test-packages.outputs.clean_version }}
           path: test-latest/screenshots/*.png
           if-no-files-found: warn
