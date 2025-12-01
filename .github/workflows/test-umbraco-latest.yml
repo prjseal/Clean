@@ -1,9 +1,6 @@
 name: Scheduled - Test Umbraco with Latest Clean Package
 
 on:
-  pull_request_target:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       umbraco-source:
