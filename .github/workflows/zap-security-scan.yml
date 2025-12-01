@@ -1,4 +1,4 @@
-name: OWASP ZAP Security Scan
+name: PR - OWASP ZAP Security Scan
 
 on:
   pull_request_review:
