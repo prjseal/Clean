@@ -28,8 +28,8 @@ on:
         required: false
         type: string
   schedule:
-    # Run every Monday at 10:00 AM UTC with nuget
-    - cron: '0 10 * * 1'
+    # Run daily at 10:00 AM UTC with nuget
+    - cron: '0 10 * * *'
 
 jobs:
   test-latest-packages:

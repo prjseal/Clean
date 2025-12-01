@@ -28,8 +28,8 @@ on:
         required: false
         type: string
   schedule:
-    # Run every Monday at 9:00 AM UTC with nightly-feed
-    - cron: '0 9 * * 1'
+    # Run daily at 9:00 AM UTC with nightly-feed
+    - cron: '0 9 * * *'
 
 jobs:
   test-latest-packages:
