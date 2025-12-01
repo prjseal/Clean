@@ -1,0 +1,96 @@
+name: Scheduled - Test Umbraco Latest with Nightly Feed
+
+on:
+  workflow_dispatch:
+    inputs:
+      umbraco-source:
+        description: 'Umbraco source'
+        required: false
+        type: choice
+        options:
+          - nuget
+          - nightly-feed
+        default: nightly-feed
+      package-source:
+        description: 'Package source'
+        required: false
+        type: choice
+        options:
+          - nuget
+          - github-packages
+        default: nuget
+      umbraco-version:
+        description: 'Umbraco version to test (leave blank for latest)'
+        required: false
+        type: string
+      package-version:
+        description: 'Package version to test (leave blank for latest)'
+        required: false
+        type: string
+  schedule:
+    # Run every Monday at 9:00 AM UTC with nightly-feed
+    - cron: '0 9 * * 1'
+
+jobs:
+  test-latest-packages:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      packages: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Test Latest NuGet Packages
+        id: test-packages
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $params = @{
+            WorkspacePath = "${{ github.workspace }}"
+          }
+
+          # For scheduled runs, use nightly-feed; for manual runs, use input
+          if ("${{ github.event_name }}" -eq "schedule") {
+            $params.UmbracoTemplateSource = "nightly-feed"
+            $params.PackageSource = "nuget"
+          } else {
+            if ("${{ inputs.umbraco-source }}" -ne "") {
+              $params.UmbracoTemplateSource = "${{ inputs.umbraco-source }}"
+            }
+            if ("${{ inputs.package-source }}" -ne "") {
+              $params.PackageSource = "${{ inputs.package-source }}"
+            }
+          }
+
+          if ("${{ inputs.umbraco-version }}" -ne "") {
+            $params.UmbracoVersion = "${{ inputs.umbraco-version }}"
+          }
+          if ("${{ inputs.package-version }}" -ne "") {
+            $params.CleanVersion = "${{ inputs.package-version }}"
+          }
+          ./.github/workflows/powershell/Test-LatestNuGetPackages.ps1 @params
+
+      - name: Upload Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umbraco-latest-nightly-screenshots-${{ steps.test-packages.outputs.umbraco_version }}-clean-${{ steps.test-packages.outputs.clean_version }}
+          path: test-latest/screenshots/*.png
+          if-no-files-found: warn
