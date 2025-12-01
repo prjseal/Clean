@@ -198,7 +198,26 @@ jobs:
           echo "- **Clean Package Version:** ${{ steps.setup-site.outputs.clean_version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Target URL:** ${{ steps.setup-site.outputs.site_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Reports" >> $GITHUB_STEP_SUMMARY
-          echo "Security scan reports have been uploaded as artifacts. Review them for any security findings." >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⚠️ **Note:** This workflow does not fail on security findings. Please review the reports manually." >> $GITHUB_STEP_SUMMARY
+
+          # Include the full ZAP scan results in the summary
+          if [ -f "report_md.md" ]; then
+            echo "### Security Scan Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cat report_md.md >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Warning:** Scan report not found. Please check the artifacts for detailed results." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Downloadable Reports" >> $GITHUB_STEP_SUMMARY
+          echo "Full scan reports have been uploaded as artifacts:" >> $GITHUB_STEP_SUMMARY
+          echo "- 📄 HTML Report (detailed with styling)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📝 Markdown Report (text-based)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📋 Site Logs (for debugging)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Note:** This workflow does not fail on security findings. Please review the results above and in the artifacts." >> $GITHUB_STEP_SUMMARY
