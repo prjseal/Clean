@@ -160,25 +160,37 @@ if ($TemplateSource -eq 'github-packages') {
 
 # Check if template was installed successfully
 Write-Host "`nVerifying template installation..." -ForegroundColor Yellow
+Write-Host "Installed templates:" -ForegroundColor Gray
+dotnet new list
+
 $templateList = dotnet new list
-if ($templateList -match "clean") {
-    Write-Host "Clean template installed successfully" -ForegroundColor Green
+if ($templateList -match "umbraco-starter-clean") {
+    Write-Host "`nClean template installed successfully" -ForegroundColor Green
+    $templateShortName = "umbraco-starter-clean"
 } else {
     Write-Host "ERROR: Clean template not found in installed templates" -ForegroundColor Red
-    Write-Host "`nInstalled templates:" -ForegroundColor Yellow
-    dotnet new list
+    Write-Host "Expected template short name 'umbraco-starter-clean' not found" -ForegroundColor Red
     exit 1
 }
 
 # Create Clean project using the template
 Write-Host "`nCreating Clean Blog project from template..." -ForegroundColor Yellow
-dotnet new sln --name "TestCleanSolution"
-dotnet new clean --force -n "TestCleanProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890"
-dotnet sln add "TestCleanProject"
+dotnet new $templateShortName -n "TestCleanProject"
+
+# The template creates a .Blog project, so we need to reference that
+$projectPath = "TestCleanProject/TestCleanProject.Blog"
+if (-not (Test-Path "$projectPath/TestCleanProject.Blog.csproj")) {
+    Write-Host "ERROR: Expected project not found at $projectPath" -ForegroundColor Red
+    Write-Host "Directory contents:" -ForegroundColor Yellow
+    Get-ChildItem -Recurse
+    exit 1
+}
+
+Write-Host "Clean Blog project created successfully at $projectPath" -ForegroundColor Green
 
 # Restore the project
 Write-Host "`nRestoring Clean Blog project..." -ForegroundColor Yellow
-dotnet restore TestCleanProject/TestCleanProject.csproj
+dotnet restore "$projectPath/TestCleanProject.Blog.csproj"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Restore failed with exit code $LASTEXITCODE" -ForegroundColor Red
@@ -193,10 +205,10 @@ $logFile = Join-Path $testDir "site.log"
 $errFile = Join-Path $testDir "site.err"
 $pidFile = Join-Path $testDir "site.pid"
 
-# Start the site process
-$projectPath = Join-Path $testDir "TestCleanProject"
+# Start the site process (using the .Blog project)
+$runProjectPath = Join-Path $testDir "TestCleanProject" "TestCleanProject.Blog"
 $process = Start-Process -FilePath "dotnet" `
-    -ArgumentList "run --project `"$projectPath`"" `
+    -ArgumentList "run --project `"$runProjectPath`"" `
     -RedirectStandardOutput $logFile `
     -RedirectStandardError $errFile `
     -NoNewWindow `
