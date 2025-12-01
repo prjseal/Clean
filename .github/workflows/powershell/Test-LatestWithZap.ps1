@@ -160,20 +160,23 @@ if ($TemplateSource -eq 'github-packages') {
 
 # Check if template was installed successfully
 Write-Host "`nVerifying template installation..." -ForegroundColor Yellow
+Write-Host "Installed templates:" -ForegroundColor Gray
+dotnet new list
+
 $templateList = dotnet new list
-if ($templateList -match "clean") {
-    Write-Host "Clean template installed successfully" -ForegroundColor Green
+if ($templateList -match "umbracoclean") {
+    Write-Host "`nClean template installed successfully" -ForegroundColor Green
+    $templateShortName = "umbracoclean"
 } else {
     Write-Host "ERROR: Clean template not found in installed templates" -ForegroundColor Red
-    Write-Host "`nInstalled templates:" -ForegroundColor Yellow
-    dotnet new list
+    Write-Host "Expected template short name 'umbracoclean' not found" -ForegroundColor Red
     exit 1
 }
 
 # Create Clean project using the template
 Write-Host "`nCreating Clean Blog project from template..." -ForegroundColor Yellow
 dotnet new sln --name "TestCleanSolution"
-dotnet new clean --force -n "TestCleanProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890"
+dotnet new $templateShortName --force -n "TestCleanProject" --friendly-name "Administrator" --email "admin@example.com" --password "1234567890"
 dotnet sln add "TestCleanProject"
 
 # Restore the project
