@@ -110,6 +110,7 @@ jobs:
           cmd_options: '-a -j'
           allow_issue_writing: false
           fail_action: false
+          artifact_name: 'zap-scan-results'
 
       - name: Upload ZAP Scan Report (HTML)
         if: always()
@@ -212,7 +213,7 @@ jobs:
           echo "⚠️ **Note:** This workflow does not fail on security findings. Please review the results above and in the artifacts." >> $GITHUB_STEP_SUMMARY
 
       - name: Create GitHub Issues for ZAP Alerts
-        if: always() && hashFiles('report.json') != ''
+        if: always() && hashFiles('report_json.json') != ''
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
