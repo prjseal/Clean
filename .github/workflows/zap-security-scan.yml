@@ -14,6 +14,7 @@ on:
         options:
           - nuget
           - github-packages
+          - code
         default: nuget
       template-version:
         description: 'Clean template version to test (leave blank for latest)'

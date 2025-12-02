@@ -31,7 +31,7 @@ param(
     [string]$WorkspacePath,
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet('nuget', 'github-packages')]
+    [ValidateSet('nuget', 'github-packages', 'code')]
     [string]$TemplateSource = 'nuget',
 
     [Parameter(Mandatory = $false)]
@@ -42,12 +42,32 @@ Write-Host "================================================" -ForegroundColor C
 Write-Host "Setting up Clean Template for ZAP Security Testing" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 
-$templateSourceDisplay = if ($TemplateSource -eq 'github-packages') { "GitHub Packages" } else { "NuGet.org" }
+$templateSourceDisplay = switch ($TemplateSource) {
+    'github-packages' { "GitHub Packages" }
+    'code' { "Local Repository Code" }
+    default { "NuGet.org" }
+}
 Write-Host "Clean Template Source: $templateSourceDisplay" -ForegroundColor Cyan
 
 # Get Clean template version (use provided or fetch latest)
 if ([string]::IsNullOrWhiteSpace($TemplateVersion)) {
-    if ($TemplateSource -eq 'nuget') {
+    if ($TemplateSource -eq 'code') {
+        Write-Host "`nUsing local repository code..." -ForegroundColor Yellow
+        # Try to get version from git tag or use a default
+        try {
+            Push-Location $WorkspacePath
+            $gitTag = git describe --tags --abbrev=0 2>$null
+            if ($gitTag) {
+                $templateVersion = $gitTag -replace '^v', ''
+            } else {
+                $templateVersion = "local-dev"
+            }
+            Pop-Location
+        } catch {
+            $templateVersion = "local-dev"
+        }
+        Write-Host "Using version: $templateVersion" -ForegroundColor Green
+    } elseif ($TemplateSource -eq 'nuget') {
         Write-Host "`nFetching latest Clean template version from NuGet..." -ForegroundColor Yellow
         $templateResponse = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/umbraco.community.templates.clean/index.json"
         $templateVersion = $templateResponse.versions | Where-Object { $_ -notmatch '-' } | Select-Object -Last 1
@@ -118,6 +138,169 @@ if (Test-Path $testDir) {
     Remove-Item $testDir -Recurse -Force
 }
 New-Item -ItemType Directory -Path $testDir | Out-Null
+
+# Handle 'code' option separately - use local repository code
+if ($TemplateSource -eq 'code') {
+    Write-Host "`nUsing local repository code from Clean.Template.sln..." -ForegroundColor Yellow
+
+    # Path to the solution in the repository
+    $solutionPath = Join-Path $WorkspacePath "template" "Clean.Template.sln"
+    $blogProjectPath = Join-Path $WorkspacePath "template" "Clean.Blog"
+
+    # Verify the solution and project exist
+    if (-not (Test-Path $solutionPath)) {
+        Write-Host "ERROR: Clean.Template.sln not found at $solutionPath" -ForegroundColor Red
+        exit 1
+    }
+
+    if (-not (Test-Path $blogProjectPath)) {
+        Write-Host "ERROR: Clean.Blog project not found at $blogProjectPath" -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "Found Clean.Template.sln at: $solutionPath" -ForegroundColor Green
+    Write-Host "Found Clean.Blog project at: $blogProjectPath" -ForegroundColor Green
+
+    # Clean the solution
+    Write-Host "`nCleaning solution..." -ForegroundColor Yellow
+    dotnet clean "$solutionPath" --configuration Release
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Clean failed with exit code $LASTEXITCODE" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "Solution cleaned successfully" -ForegroundColor Green
+
+    # Build the solution
+    Write-Host "`nBuilding solution..." -ForegroundColor Yellow
+    dotnet build "$solutionPath" --configuration Release
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Build failed with exit code $LASTEXITCODE" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "Solution built successfully" -ForegroundColor Green
+
+    # Start the Clean.Blog project
+    Write-Host "`nStarting Clean.Blog site..." -ForegroundColor Yellow
+    $logFile = Join-Path $testDir "site.log"
+    $errFile = Join-Path $testDir "site.err"
+    $pidFile = Join-Path $testDir "site.pid"
+
+    $process = Start-Process -FilePath "dotnet" `
+        -ArgumentList "run --project `"$blogProjectPath`" --no-build --configuration Release" `
+        -RedirectStandardOutput $logFile `
+        -RedirectStandardError $errFile `
+        -NoNewWindow `
+        -PassThru
+
+    Write-Host "Site process started with PID: $($process.Id)" -ForegroundColor Green
+
+    # Save PID to file and GitHub output for later cleanup
+    $process.Id | Out-File -FilePath $pidFile -NoNewline
+    if ($env:GITHUB_OUTPUT) {
+        "site_pid=$($process.Id)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        "test_dir=$testDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+    }
+
+    # Wait for site to start and extract URL
+    $startTime = Get-Date
+    $timeoutSeconds = 180
+    $siteStarted = $false
+    $siteUrl = $null
+
+    Write-Host "Waiting for site to start (timeout: ${timeoutSeconds}s)..." -ForegroundColor Yellow
+
+    while (-not $siteStarted) {
+        if ((Get-Date) - $startTime -gt (New-TimeSpan -Seconds $timeoutSeconds)) {
+            Write-Host "Timeout reached! Site failed to start." -ForegroundColor Red
+
+            # Output logs for debugging
+            if (Test-Path $logFile) {
+                Write-Host "`nSite output log:" -ForegroundColor Yellow
+                Get-Content $logFile
+            }
+            if (Test-Path $errFile) {
+                Write-Host "`nSite error log:" -ForegroundColor Yellow
+                Get-Content $errFile
+            }
+
+            if (-not $process.HasExited) {
+                Stop-Process -Id $process.Id -Force
+            }
+            exit 1
+        }
+
+        # Check if process has exited prematurely
+        if ($process.HasExited) {
+            Write-Host "Site process exited prematurely with exit code: $($process.ExitCode)" -ForegroundColor Red
+
+            # Output logs for debugging
+            if (Test-Path $logFile) {
+                Write-Host "`nSite output log:" -ForegroundColor Yellow
+                Get-Content $logFile
+            }
+            if (Test-Path $errFile) {
+                Write-Host "`nSite error log:" -ForegroundColor Yellow
+                Get-Content $errFile
+            }
+
+            exit 1
+        }
+
+        if (Test-Path $logFile) {
+            $logContent = Get-Content $logFile -Raw
+
+            # Check if site is listening on HTTP or HTTPS
+            if ($logContent -match "Now listening on:\s*(https?://[^\s]+)") {
+                $siteUrl = $matches[1]
+                $siteStarted = $true
+                Write-Host "Site is running at: $siteUrl" -ForegroundColor Green
+                break
+            }
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
+    # Additional wait to ensure site is fully ready
+    Write-Host "Waiting additional 10 seconds for site to be fully ready..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 10
+
+    # Verify process is still running
+    if ($process.HasExited) {
+        Write-Host "Site process exited after detection. Exit code: $($process.ExitCode)" -ForegroundColor Red
+
+        if (Test-Path $logFile) {
+            Write-Host "`nSite output log:" -ForegroundColor Yellow
+            Get-Content $logFile
+        }
+        if (Test-Path $errFile) {
+            Write-Host "`nSite error log:" -ForegroundColor Yellow
+            Get-Content $errFile
+        }
+
+        exit 1
+    }
+
+    Write-Host "Site process is still running (PID: $($process.Id))" -ForegroundColor Green
+
+    # Export site URL for ZAP to use
+    if ($env:GITHUB_OUTPUT) {
+        "site_url=$siteUrl" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+    }
+
+    Write-Host "`n================================================" -ForegroundColor Cyan
+    Write-Host "Clean Blog Site Ready for ZAP Security Scanning" -ForegroundColor Cyan
+    Write-Host "Clean Template Version: $templateVersion" -ForegroundColor Green
+    Write-Host "Site URL: $siteUrl" -ForegroundColor Green
+    Write-Host "Process ID: $($process.Id)" -ForegroundColor Green
+    Write-Host "================================================" -ForegroundColor Cyan
+
+    # Exit early since we're done for 'code' option
+    exit 0
+}
+
 Set-Location $testDir
 
 # Configure package source if using GitHub Packages
