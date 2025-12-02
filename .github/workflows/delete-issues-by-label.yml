@@ -1,5 +1,10 @@
 name: Delete Issues by Label
 
+# This workflow requires a Personal Access Token (PAT) with delete permissions
+# Setup Instructions:
+# 1. Create a PAT at https://github.com/settings/tokens/new with 'repo' scope (full control)
+# 2. Add it as a repository secret named 'PAT_TOKEN' at Settings > Secrets and variables > Actions
+
 on:
   workflow_dispatch:
     inputs:
@@ -44,7 +49,7 @@ jobs:
 
       - name: Delete issues by label
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           # Convert comma-separated labels to array
           IFS=',' read -ra LABELS <<< "${{ inputs.labels }}"
@@ -85,4 +90,4 @@ jobs:
             fi
           done
 
-          echo "✨ Completed! Processed $ISSUE_COUNT issue(s)."
+          echo "✨ Completed! Deleted $ISSUE_COUNT issue(s)."
