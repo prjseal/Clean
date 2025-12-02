@@ -7,6 +7,15 @@ on:
         description: 'Comma-separated list of labels (e.g., "zap-scan,bug")'
         required: true
         type: string
+      status:
+        description: 'Issue status to filter by'
+        required: true
+        type: choice
+        default: 'open'
+        options:
+          - open
+          - closed
+          - all
       confirm:
         description: 'Type "DELETE ISSUES" to confirm deletion'
         required: true
@@ -40,7 +49,7 @@ jobs:
           # Convert comma-separated labels to array
           IFS=',' read -ra LABELS <<< "${{ inputs.labels }}"
 
-          echo "🔍 Searching for issues with labels: ${{ inputs.labels }}"
+          echo "🔍 Searching for ${{ inputs.status }} issues with labels: ${{ inputs.labels }}"
 
           # Build label filter for gh CLI
           LABEL_FILTER=""
@@ -53,11 +62,11 @@ jobs:
             LABEL_FILTER="${LABEL_FILTER}${label}"
           done
 
-          # Get all open issues with the specified labels
-          ISSUES=$(gh issue list --label "$LABEL_FILTER" --state open --limit 1000 --json number --jq '.[].number')
+          # Get all issues with the specified labels and status
+          ISSUES=$(gh issue list --label "$LABEL_FILTER" --state ${{ inputs.status }} --limit 1000 --json number --jq '.[].number')
 
           if [ -z "$ISSUES" ]; then
-            echo "ℹ️  No open issues found with the specified label(s)."
+            echo "ℹ️  No ${{ inputs.status }} issues found with the specified label(s)."
             exit 0
           fi
 
