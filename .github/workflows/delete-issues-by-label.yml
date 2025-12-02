@@ -1,4 +1,4 @@
-name: Delete Issues by Label
+name: Cleanup - Delete Issues by Label
 
 # This workflow requires a Personal Access Token (PAT) with delete permissions
 # Setup Instructions:
