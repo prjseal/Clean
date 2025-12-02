@@ -102,7 +102,7 @@ jobs:
           fi
 
       - name: Run OWASP ZAP Full Scan
-        uses: zaproxy/action-full-scan@v0.10.0
+        uses: zaproxy/action-full-scan@v0.13.0
         continue-on-error: true
         with:
           target: ${{ steps.setup-site.outputs.site_url }}
@@ -110,7 +110,6 @@ jobs:
           cmd_options: '-a -j'
           allow_issue_writing: false
           fail_action: false
-          artifact_name: 'zap-scan-results'
 
       - name: Upload ZAP Scan Report (HTML)
         if: always()
