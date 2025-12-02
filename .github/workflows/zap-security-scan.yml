@@ -204,7 +204,12 @@ jobs:
           echo "## OWASP ZAP Security Scan Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Scan Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ steps.setup-site.outputs.branch_name || github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Template Source:** ${{ steps.setup-site.outputs.template_source }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Clean Template Version:** ${{ steps.setup-site.outputs.clean_template_version }}" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.setup-site.outputs.umbraco_cms_version }}" ]; then
+            echo "- **Umbraco CMS Version:** ${{ steps.setup-site.outputs.umbraco_cms_version }}" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "- **Target URL:** ${{ steps.setup-site.outputs.site_url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Project Type:** Clean Blog (from Umbraco.Community.Templates.Clean)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -230,9 +235,14 @@ jobs:
           echo "- 📝 Markdown Report (text-based)" >> $GITHUB_STEP_SUMMARY
           echo "- 📋 Site Logs (for debugging)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⚠️ **Note:** This workflow does not fail on security findings. Please review the results above and in the artifacts." >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.setup-site.outputs.template_source }}" = "code" ]; then
+            echo "⚠️ **Note:** When testing local repository code, this workflow will fail if new security issues are found." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ **Note:** This workflow does not fail on security findings when testing published templates. Please review the results above and in the artifacts." >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Create GitHub Issues for ZAP Alerts
+        id: create-issues
         if: always() && hashFiles('report_json.json') != ''
         shell: pwsh
         env:
@@ -240,8 +250,39 @@ jobs:
         run: |
           Write-Host "Creating GitHub issues for ZAP security alerts..." -ForegroundColor Cyan
 
-          # Run the issue creation script
-          ./.github/workflows/powershell/Create-ZapAlertIssues.ps1 `
-            -ReportPath "report_json.json" `
-            -Repository "${{ github.repository }}" `
-            -Token "$env:GITHUB_TOKEN"
+          # Build PR URL if triggered from PR review
+          $prUrl = ""
+          if ("${{ github.event_name }}" -eq "pull_request_review") {
+            $prUrl = "https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+          }
+
+          # Run the issue creation script with all metadata
+          $params = @{
+            ReportPath = "report_json.json"
+            Repository = "${{ github.repository }}"
+            Token = "$env:GITHUB_TOKEN"
+            BranchName = "${{ steps.setup-site.outputs.branch_name || github.ref_name }}"
+            TemplateSource = "${{ steps.setup-site.outputs.template_source }}"
+            TemplateVersion = "${{ steps.setup-site.outputs.clean_template_version }}"
+          }
+
+          if ("${{ steps.setup-site.outputs.umbraco_cms_version }}" -ne "") {
+            $params.UmbracoCmsVersion = "${{ steps.setup-site.outputs.umbraco_cms_version }}"
+          }
+
+          if ($prUrl -ne "") {
+            $params.PullRequestUrl = $prUrl
+          }
+
+          ./.github/workflows/powershell/Create-ZapAlertIssues.ps1 @params
+
+      - name: Fail Check if Code Template Created Issues
+        if: steps.setup-site.outputs.template_source == 'code' && steps.create-issues.outputs.issues_created != '' && steps.create-issues.outputs.issues_created != '0'
+        run: |
+          echo "::error::Security scan found issues when testing local repository code. ${{ steps.create-issues.outputs.issues_created }} new issue(s) were created."
+          echo "### ❌ Security Check Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The security scan found **${{ steps.create-issues.outputs.issues_created }}** new security issue(s) when testing the local repository code." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please review and fix these issues before merging." >> $GITHUB_STEP_SUMMARY
+          exit 1

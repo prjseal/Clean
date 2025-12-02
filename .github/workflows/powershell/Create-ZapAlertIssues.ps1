@@ -30,7 +30,22 @@ param(
     [string]$Repository,
 
     [Parameter(Mandatory = $true)]
-    [string]$Token
+    [string]$Token,
+
+    [Parameter(Mandatory = $false)]
+    [string]$BranchName,
+
+    [Parameter(Mandatory = $false)]
+    [string]$TemplateSource,
+
+    [Parameter(Mandatory = $false)]
+    [string]$TemplateVersion,
+
+    [Parameter(Mandatory = $false)]
+    [string]$UmbracoCmsVersion,
+
+    [Parameter(Mandatory = $false)]
+    [string]$PullRequestUrl
 )
 
 Set-StrictMode -Version Latest
@@ -292,6 +307,29 @@ foreach ($alert in $alerts) {
         $issueBody += "`n*Plugin ID: $($alert.PluginId)*"
     }
 
+    # Add metadata section
+    $issueBody += "`n`n### Scan Metadata"
+    if ($BranchName) {
+        $issueBody += "`n- **Branch:** ``$BranchName``"
+    }
+    if ($TemplateSource) {
+        $templateSourceDisplay = switch ($TemplateSource) {
+            'github-packages' { "GitHub Packages" }
+            'code' { "Local Repository Code" }
+            default { "NuGet.org" }
+        }
+        $issueBody += "`n- **Template Source:** $templateSourceDisplay"
+    }
+    if ($TemplateVersion) {
+        $issueBody += "`n- **Clean Template Version:** $TemplateVersion"
+    }
+    if ($UmbracoCmsVersion) {
+        $issueBody += "`n- **Umbraco CMS Version:** $UmbracoCmsVersion"
+    }
+    if ($PullRequestUrl) {
+        $issueBody += "`n- **Related PR:** $PullRequestUrl"
+    }
+
     # Create the issue
     $labels = @('security', 'zap-scan', $alert.RiskLevel.ToLower())
     $result = New-GitHubIssue -Repository $Repository -Token $Token -Title $issueTitle -Body $issueBody -Labels $labels
@@ -309,3 +347,8 @@ Write-ColorOutput "Total alerts: $($alerts.Count)" -Color White
 Write-ColorOutput "Issues created: $created" -Color Green
 Write-ColorOutput "Issues skipped (already exist): $skipped" -Color Yellow
 Write-ColorOutput ""
+
+# Output the count of created issues to GitHub Actions output
+if ($env:GITHUB_OUTPUT) {
+    "issues_created=$created" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+}
