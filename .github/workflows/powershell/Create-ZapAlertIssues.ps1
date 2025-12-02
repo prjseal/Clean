@@ -193,26 +193,20 @@ function Parse-ZapReport {
                 $contentParts += ""
             }
 
-            # Get the first URL from instances
-            $firstUrl = $null
+            # Get the first instance with all its properties
+            $firstInstance = $null
             if ($alert.instances -and $alert.instances.Count -gt 0) {
                 $firstInstance = $alert.instances[0]
-                if ($firstInstance.uri) {
-                    $firstUrl = $firstInstance.uri
-                }
-                elseif ($firstInstance.url) {
-                    $firstUrl = $firstInstance.url
-                }
             }
 
             $content = $contentParts -join "`n"
 
             $alerts += @{
-                Title       = $alert.name
-                RiskLevel   = $riskLevel
-                Content     = $content.Trim()
-                FirstUrl    = $firstUrl
-                PluginId    = $alert.pluginid
+                Title         = $alert.name
+                RiskLevel     = $riskLevel
+                Content       = $content.Trim()
+                FirstInstance = $firstInstance
+                PluginId      = $alert.pluginid
             }
         }
     }
@@ -257,10 +251,38 @@ foreach ($alert in $alerts) {
     # Build issue body
     $issueBody = $alert.Content
 
-    if ($alert.FirstUrl) {
-        $issueBody += "`n`n### Example URL`n`n``````"
-        $issueBody += "`n$($alert.FirstUrl)"
-        $issueBody += "`n``````"
+    if ($alert.FirstInstance) {
+        $issueBody += "`n`n### Example Instance`n`n"
+
+        # Display all properties from the first instance
+        if ($alert.FirstInstance.uri) {
+            $issueBody += "**URL:** ``$($alert.FirstInstance.uri)```n`n"
+        }
+        elseif ($alert.FirstInstance.url) {
+            $issueBody += "**URL:** ``$($alert.FirstInstance.url)```n`n"
+        }
+
+        if ($alert.FirstInstance.method) {
+            $issueBody += "**Method:** $($alert.FirstInstance.method)`n`n"
+        }
+
+        if ($alert.FirstInstance.param) {
+            $issueBody += "**Parameter:** ``$($alert.FirstInstance.param)```n`n"
+        }
+
+        if ($alert.FirstInstance.attack) {
+            $issueBody += "**Attack:** ``$($alert.FirstInstance.attack)```n`n"
+        }
+
+        if ($alert.FirstInstance.evidence) {
+            $issueBody += "**Evidence:**`n``````"
+            $issueBody += "`n$($alert.FirstInstance.evidence)"
+            $issueBody += "`n```````n`n"
+        }
+
+        if ($alert.FirstInstance.otherinfo) {
+            $issueBody += "**Other Info:** $($alert.FirstInstance.otherinfo)`n`n"
+        }
     }
 
     $issueBody += "`n`n---`n`n*This issue was automatically created from an OWASP ZAP security scan.*"
