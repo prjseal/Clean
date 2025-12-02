@@ -1,0 +1,79 @@
+name: Delete Issues by Label
+
+on:
+  workflow_dispatch:
+    inputs:
+      labels:
+        description: 'Comma-separated list of labels (e.g., "zap-scan,bug")'
+        required: true
+        type: string
+      confirm:
+        description: 'Type "DELETE ISSUES" to confirm deletion'
+        required: true
+        type: string
+
+jobs:
+  delete-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "DELETE ISSUES" ]; then
+            echo "❌ Confirmation text does not match. Workflow cancelled."
+            echo "You entered: ${{ inputs.confirm }}"
+            echo "Required: DELETE ISSUES"
+            exit 1
+          fi
+          echo "✅ Confirmation validated. Proceeding with issue deletion..."
+
+      - name: Delete issues by label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Convert comma-separated labels to array
+          IFS=',' read -ra LABELS <<< "${{ inputs.labels }}"
+
+          echo "🔍 Searching for issues with labels: ${{ inputs.labels }}"
+
+          # Build label filter for gh CLI
+          LABEL_FILTER=""
+          for label in "${LABELS[@]}"; do
+            # Trim whitespace
+            label=$(echo "$label" | xargs)
+            if [ -n "$LABEL_FILTER" ]; then
+              LABEL_FILTER="${LABEL_FILTER},"
+            fi
+            LABEL_FILTER="${LABEL_FILTER}${label}"
+          done
+
+          # Get all open issues with the specified labels
+          ISSUES=$(gh issue list --label "$LABEL_FILTER" --state open --limit 1000 --json number --jq '.[].number')
+
+          if [ -z "$ISSUES" ]; then
+            echo "ℹ️  No open issues found with the specified label(s)."
+            exit 0
+          fi
+
+          # Count issues
+          ISSUE_COUNT=$(echo "$ISSUES" | wc -l)
+          echo "📋 Found $ISSUE_COUNT issue(s) to delete"
+
+          # Delete each issue
+          for issue_number in $ISSUES; do
+            echo "🗑️  Deleting issue #$issue_number..."
+            gh issue delete "$issue_number" --yes
+            if [ $? -eq 0 ]; then
+              echo "✅ Successfully deleted issue #$issue_number"
+            else
+              echo "⚠️  Failed to delete issue #$issue_number"
+            fi
+          done
+
+          echo "✨ Completed! Processed $ISSUE_COUNT issue(s)."
