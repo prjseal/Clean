@@ -5,11 +5,11 @@
     Creates GitHub issues for OWASP ZAP security alerts.
 
 .DESCRIPTION
-    This script parses the ZAP markdown report and creates GitHub issues for each alert type
+    This script parses the ZAP JSON report and creates GitHub issues for each alert type
     if an issue doesn't already exist. Each issue includes the alert details and one URL example.
 
 .PARAMETER ReportPath
-    Path to the ZAP markdown report file.
+    Path to the ZAP JSON report file.
 
 .PARAMETER Repository
     GitHub repository in the format "owner/repo".
@@ -18,7 +18,7 @@
     GitHub API token with issues:write permission.
 
 .EXAMPLE
-    ./Create-ZapAlertIssues.ps1 -ReportPath "report_md.md" -Repository "owner/repo" -Token $env:GITHUB_TOKEN
+    ./Create-ZapAlertIssues.ps1 -ReportPath "report.json" -Repository "owner/repo" -Token $env:GITHUB_TOKEN
 #>
 
 [CmdletBinding()]
@@ -124,98 +124,96 @@ function Parse-ZapReport {
         return @()
     }
 
-    $content = Get-Content -Path $ReportPath -Raw
-    $alerts = @()
-
-    # Split by alert sections (they typically start with "##" or "###")
-    # ZAP reports have sections like: ## <Risk Level>: <Alert Name>
-    $lines = $content -split "`n"
-
-    $currentAlert = $null
-    $currentContent = @()
-    $inAlert = $false
-    $capturedFirstUrl = $false
-
-    foreach ($line in $lines) {
-        # Match alert headers like "## High (Medium): Content Security Policy (CSP) Header Not Set"
-        # Or "### Content Security Policy (CSP) Header Not Set"
-        if ($line -match '^##\s+(High|Medium|Low|Informational)\s*(\([^)]+\))?\s*:\s*(.+)$') {
-            # Save previous alert if exists
-            if ($currentAlert) {
-                $alerts += @{
-                    Title       = $currentAlert.Title
-                    RiskLevel   = $currentAlert.RiskLevel
-                    Content     = ($currentContent -join "`n").Trim()
-                    FirstUrl    = $currentAlert.FirstUrl
-                }
-            }
-
-            # Start new alert
-            $riskLevel = $matches[1]
-            $alertName = $matches[3].Trim()
-
-            $currentAlert = @{
-                Title     = $alertName
-                RiskLevel = $riskLevel
-                FirstUrl  = $null
-            }
-            $currentContent = @("## $alertName", "", "**Risk Level:** $riskLevel", "")
-            $inAlert = $true
-            $capturedFirstUrl = $false
-        }
-        elseif ($line -match '^###\s+(.+)$' -and -not ($line -match 'URL|Instance')) {
-            # This might be an alert without risk level prefix
-            if ($currentAlert) {
-                $alerts += @{
-                    Title       = $currentAlert.Title
-                    RiskLevel   = $currentAlert.RiskLevel
-                    Content     = ($currentContent -join "`n").Trim()
-                    FirstUrl    = $currentAlert.FirstUrl
-                }
-            }
-
-            $alertName = $matches[1].Trim()
-            $currentAlert = @{
-                Title     = $alertName
-                RiskLevel = 'Unknown'
-                FirstUrl  = $null
-            }
-            $currentContent = @("## $alertName", "")
-            $inAlert = $true
-            $capturedFirstUrl = $false
-        }
-        elseif ($inAlert) {
-            # Capture URL instances (only the first one)
-            if (-not $capturedFirstUrl -and $line -match '^\s*\*\s*(https?://\S+)' -or $line -match '^\s*-\s*(https?://\S+)') {
-                $currentAlert.FirstUrl = $matches[1]
-                $capturedFirstUrl = $true
-                # Add just this one URL to content
-                $currentContent += $line
-            }
-            # Skip other URL lines if we already have one
-            elseif ($capturedFirstUrl -and ($line -match '^\s*\*\s*https?://' -or $line -match '^\s*-\s*https?://')) {
-                # Skip additional URLs
-                continue
-            }
-            # Skip "Instances" headers and count lines after we have our URL
-            elseif ($capturedFirstUrl -and ($line -match '^\s*\*\s*Instances:' -or $line -match 'Instances:')) {
-                # Skip
-                continue
-            }
-            else {
-                # Add other content lines (description, solution, etc.)
-                $currentContent += $line
-            }
-        }
+    try {
+        $reportContent = Get-Content -Path $ReportPath -Raw -ErrorAction Stop
+        $zapReport = $reportContent | ConvertFrom-Json -ErrorAction Stop
+    }
+    catch {
+        Write-ColorOutput "Error: Failed to parse JSON report: $($_.Exception.Message)" -Color Red
+        return @()
     }
 
-    # Save last alert
-    if ($currentAlert) {
-        $alerts += @{
-            Title       = $currentAlert.Title
-            RiskLevel   = $currentAlert.RiskLevel
-            Content     = ($currentContent -join "`n").Trim()
-            FirstUrl    = $currentAlert.FirstUrl
+    $alerts = @()
+
+    # Navigate through the ZAP report structure
+    # Typically: site -> alerts[]
+    foreach ($site in $zapReport.site) {
+        if (-not $site.alerts) {
+            continue
+        }
+
+        foreach ($alert in $site.alerts) {
+            # Extract risk level from riskdesc (e.g., "High (Medium)" -> "High")
+            $riskLevel = 'Unknown'
+            if ($alert.riskdesc -match '^(High|Medium|Low|Informational)') {
+                $riskLevel = $matches[1]
+            }
+
+            # Build the alert content
+            $contentParts = @()
+
+            $contentParts += "## $($alert.name)"
+            $contentParts += ""
+            $contentParts += "**Risk Level:** $riskLevel"
+            $contentParts += ""
+
+            if ($alert.confidence) {
+                $contentParts += "**Confidence:** $($alert.confidence)"
+                $contentParts += ""
+            }
+
+            if ($alert.desc) {
+                $contentParts += "### Description"
+                $contentParts += ""
+                $contentParts += $alert.desc
+                $contentParts += ""
+            }
+
+            if ($alert.solution) {
+                $contentParts += "### Solution"
+                $contentParts += ""
+                $contentParts += $alert.solution
+                $contentParts += ""
+            }
+
+            if ($alert.reference) {
+                $contentParts += "### Reference"
+                $contentParts += ""
+                $contentParts += $alert.reference
+                $contentParts += ""
+            }
+
+            if ($alert.cweid) {
+                $contentParts += "**CWE ID:** $($alert.cweid)"
+                $contentParts += ""
+            }
+
+            if ($alert.wascid) {
+                $contentParts += "**WASC ID:** $($alert.wascid)"
+                $contentParts += ""
+            }
+
+            # Get the first URL from instances
+            $firstUrl = $null
+            if ($alert.instances -and $alert.instances.Count -gt 0) {
+                $firstInstance = $alert.instances[0]
+                if ($firstInstance.uri) {
+                    $firstUrl = $firstInstance.uri
+                }
+                elseif ($firstInstance.url) {
+                    $firstUrl = $firstInstance.url
+                }
+            }
+
+            $content = $contentParts -join "`n"
+
+            $alerts += @{
+                Title       = $alert.name
+                RiskLevel   = $riskLevel
+                Content     = $content.Trim()
+                FirstUrl    = $firstUrl
+                PluginId    = $alert.pluginid
+            }
         }
     }
 
@@ -260,11 +258,17 @@ foreach ($alert in $alerts) {
     $issueBody = $alert.Content
 
     if ($alert.FirstUrl) {
-        $issueBody += "`n`n### Example URL`n`n$($alert.FirstUrl)"
+        $issueBody += "`n`n### Example URL`n`n``````"
+        $issueBody += "`n$($alert.FirstUrl)"
+        $issueBody += "`n``````"
     }
 
     $issueBody += "`n`n---`n`n*This issue was automatically created from an OWASP ZAP security scan.*"
     $issueBody += "`n*Alert detected on: $(Get-Date -Format 'yyyy-MM-dd')*"
+
+    if ($alert.PluginId) {
+        $issueBody += "`n*Plugin ID: $($alert.PluginId)*"
+    }
 
     # Create the issue
     $labels = @('security', 'zap-scan', $alert.RiskLevel.ToLower())

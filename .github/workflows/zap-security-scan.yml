@@ -107,7 +107,7 @@ jobs:
         with:
           target: ${{ steps.setup-site.outputs.site_url }}
           rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a -j'
+          cmd_options: '-a -j -J report.json'
           allow_issue_writing: false
           fail_action: false
 
@@ -129,6 +129,14 @@ jobs:
           path: |
             report_md.md
             report.md
+          if-no-files-found: warn
+
+      - name: Upload ZAP Scan Report (JSON)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-scan-report-json-clean-template-${{ steps.sanitize-versions.outputs.template_version_safe }}
+          path: report.json
           if-no-files-found: warn
 
       - name: Upload Site Logs
@@ -202,7 +210,7 @@ jobs:
           echo "⚠️ **Note:** This workflow does not fail on security findings. Please review the results above and in the artifacts." >> $GITHUB_STEP_SUMMARY
 
       - name: Create GitHub Issues for ZAP Alerts
-        if: always() && hashFiles('report_md.md') != ''
+        if: always() && hashFiles('report.json') != ''
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -211,6 +219,6 @@ jobs:
 
           # Run the issue creation script
           ./.github/workflows/powershell/Create-ZapAlertIssues.ps1 `
-            -ReportPath "report_md.md" `
+            -ReportPath "report.json" `
             -Repository "${{ github.repository }}" `
             -Token "$env:GITHUB_TOKEN"
