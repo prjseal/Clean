@@ -136,7 +136,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zap-scan-report-json-clean-template-${{ steps.sanitize-versions.outputs.template_version_safe }}
-          path: report.json
+          path: |
+            report_json.json
+            report.json
           if-no-files-found: warn
 
       - name: Upload Site Logs
