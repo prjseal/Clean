@@ -61,9 +61,29 @@ jobs:
           $params = @{
             WorkspacePath = "${{ github.workspace }}"
           }
-          if ("${{ inputs.template-source }}" -ne "") {
-            $params.TemplateSource = "${{ inputs.template-source }}"
+
+          # Determine template source based on trigger type
+          $templateSource = switch ("${{ github.event_name }}") {
+            "pull_request_review" {
+              Write-Host "Trigger: PR Review - Using 'code' template source" -ForegroundColor Cyan
+              "code"
+            }
+            "schedule" {
+              Write-Host "Trigger: Scheduled - Using 'nuget' template source" -ForegroundColor Cyan
+              "nuget"
+            }
+            default {
+              if ("${{ inputs.template-source }}" -ne "") {
+                Write-Host "Trigger: Manual - Using '${{ inputs.template-source }}' template source" -ForegroundColor Cyan
+                "${{ inputs.template-source }}"
+              } else {
+                Write-Host "Trigger: Manual - Using default 'nuget' template source" -ForegroundColor Cyan
+                "nuget"
+              }
+            }
           }
+          $params.TemplateSource = $templateSource
+
           if ("${{ inputs.template-version }}" -ne "") {
             $params.TemplateVersion = "${{ inputs.template-version }}"
           }
