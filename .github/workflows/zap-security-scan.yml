@@ -221,6 +221,6 @@ jobs:
 
           # Run the issue creation script
           ./.github/workflows/powershell/Create-ZapAlertIssues.ps1 `
-            -ReportPath "report.json" `
+            -ReportPath "report_json.json" `
             -Repository "${{ github.repository }}" `
             -Token "$env:GITHUB_TOKEN"
