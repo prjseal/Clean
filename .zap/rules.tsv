@@ -1,0 +1,24 @@
+# OWASP ZAP Scan Rules Configuration
+# Format: Rule-ID	Threshold	Action
+# Thresholds: OFF, DEFAULT, LOW, MEDIUM, HIGH
+# Actions: IGNORE, WARN, FAIL
+#
+# This file customizes the OWASP ZAP security scan behavior for the Clean Blog template.
+# For a full list of ZAP scan rules, see: https://www.zaproxy.org/docs/alerts/
+#
+# Note: These are starting defaults. Adjust based on your security requirements and findings.
+
+# Default behavior: Use ZAP's default settings for most rules
+# Only specify rules that need custom behavior below
+
+# Example: Ignore common false positives for Umbraco sites
+# Uncomment and adjust as needed:
+# 10021	OFF	IGNORE	# X-Content-Type-Options Header Missing
+# 10020	OFF	IGNORE	# X-Frame-Options Header Not Set
+
+# Example: Warn on potential issues
+# 10202	DEFAULT	WARN	# Absence of Anti-CSRF Tokens
+
+# Example: Fail on critical vulnerabilities
+# 40012	DEFAULT	FAIL	# Cross Site Scripting
+# 40018	DEFAULT	FAIL	# SQL Injection
