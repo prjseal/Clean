@@ -107,7 +107,7 @@ jobs:
         with:
           target: ${{ steps.setup-site.outputs.site_url }}
           rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a -j -J report.json'
+          cmd_options: '-a -j'
           allow_issue_writing: false
           fail_action: false
 
