@@ -200,3 +200,17 @@ jobs:
           echo "- 📋 Site Logs (for debugging)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "⚠️ **Note:** This workflow does not fail on security findings. Please review the results above and in the artifacts." >> $GITHUB_STEP_SUMMARY
+
+      - name: Create GitHub Issues for ZAP Alerts
+        if: always() && hashFiles('report_md.md') != ''
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          Write-Host "Creating GitHub issues for ZAP security alerts..." -ForegroundColor Cyan
+
+          # Run the issue creation script
+          ./.github/workflows/powershell/Create-ZapAlertIssues.ps1 `
+            -ReportPath "report_md.md" `
+            -Repository "${{ github.repository }}" `
+            -Token "$env:GITHUB_TOKEN"
