@@ -42,6 +42,22 @@ param(
     [string]$PatToken
 )
 
+# Early exit: Check if there are actually any changes to commit
+$readmeUpdated = $ReadmeUpdated -eq 'true'
+$summaryPath = "$WorkspacePath\.artifacts\package-summary.txt"
+$packagesUpdated = $false
+if (Test-Path $summaryPath) {
+    $content = Get-Content $summaryPath -Raw
+    $packagesUpdated = $content -notmatch 'No packages to update'
+}
+
+Write-Host "Commit check - README updated: $readmeUpdated, Packages updated: $packagesUpdated"
+
+if (-not $readmeUpdated -and -not $packagesUpdated) {
+    Write-Host "No changes detected (neither README nor packages updated). Exiting without creating branch." -ForegroundColor Yellow
+    exit 0
+}
+
 $branchName = "update-nuget-packages-$(Get-Date -Format 'yyyyMMddHHmmss')"
 echo "branchName=$branchName" >> $env:GITHUB_OUTPUT
 
@@ -50,17 +66,8 @@ git config user.email "github-actions@github.com"
 git checkout -b $branchName
 git add .
 if (git diff --cached --quiet) {
-    Write-Host "No changes detected. Skipping commit and PR."
+    Write-Host "No changes detected in git. Skipping commit and PR."
     exit 0
-}
-
-# Determine what was updated for commit message
-$readmeUpdated = $ReadmeUpdated -eq 'true'
-$summaryPath = "$WorkspacePath\.artifacts\package-summary.txt"
-$packagesUpdated = $false
-if (Test-Path $summaryPath) {
-    $content = Get-Content $summaryPath -Raw
-    $packagesUpdated = $content -notmatch 'No packages to update'
 }
 
 # Create appropriate commit message

@@ -39,3 +39,40 @@ Write-Host "📂 Build logs are saved in .artifacts/logs/ directory." -Foregroun
 Write-Host ""
 Write-Host "No PR will be created due to build failures." -ForegroundColor Yellow
 Write-Host "================================================" -ForegroundColor Red
+
+# Add GitHub Action summary
+$summary = @"
+## ❌ Update Packages Workflow Failed
+
+### 🚨 Build Failures Detected
+
+The UpdateThirdPartyPackages script encountered build failures.
+
+### 📋 Build Summary
+
+"@
+
+$buildSummaryPath = "$WorkspacePath\.artifacts\build-summary.txt"
+if (Test-Path $buildSummaryPath) {
+    $buildSummary = Get-Content $buildSummaryPath -Raw
+    $summary += @"
+``````
+$buildSummary
+``````
+
+"@
+}
+else {
+    $summary += "Build summary file not found.`n`n"
+}
+
+$summary += @"
+### 🔍 Next Steps
+- Check the logs above for detailed error messages
+- Build logs are saved in `.artifacts/logs/` directory
+- **No PR will be created** due to build failures
+
+Fix the build errors and re-run the workflow.
+"@
+
+$summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
