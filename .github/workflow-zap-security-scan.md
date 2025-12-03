@@ -267,7 +267,7 @@ All input parameters are optional:
 
 ## Scripts Used
 
-The workflow uses the following PowerShell script:
+The workflow uses the following PowerShell scripts:
 
 ### Test-LatestWithZap.ps1
 
@@ -279,7 +279,7 @@ The workflow uses the following PowerShell script:
 
 **Parameters Used**:
 - `-WorkspacePath`: GitHub workspace path
-- `-TemplateSource`: Set to `nuget` or `github-packages`
+- `-TemplateSource`: Set to `nuget`, `github-packages`, or `code`
 - `-TemplateVersion`: Optional specific template version
 
 **Outputs**:
@@ -287,6 +287,30 @@ The workflow uses the following PowerShell script:
 - `site_pid`: Process ID for cleanup
 - `test_dir`: Test directory path for logs
 - `clean_template_version`: Version being tested
+- `branch_name`: Current branch name
+- `template_source`: Template source used
+- `umbraco_cms_version`: Umbraco CMS version (if detected)
+
+### Create-ZapAlertIssues.ps1
+
+**Purpose**: Creates GitHub issues for OWASP ZAP security alerts found during scanning.
+
+**Location**: `.github/workflows/powershell/Create-ZapAlertIssues.ps1`
+
+**Documentation**: [script-create-zap-alert-issues.md](script-create-zap-alert-issues.md)
+
+**Parameters Used**:
+- `-ReportPath`: Path to ZAP JSON report file
+- `-Repository`: GitHub repository (owner/repo)
+- `-Token`: GitHub API token with issues:write permission
+- `-BranchName`: Current branch name
+- `-TemplateSource`: Template source used for scan
+- `-TemplateVersion`: Clean template version tested
+- `-UmbracoCmsVersion`: Umbraco CMS version (optional)
+- `-PullRequestUrl`: Related PR URL (optional)
+
+**Outputs**:
+- `issues_created`: Number of new issues created
 
 ## ZAP Configuration
 
@@ -508,6 +532,7 @@ The workflow requires the following GitHub permissions:
 ## Related Documentation
 
 - [script-test-latest-with-zap.md](script-test-latest-with-zap.md) - Site setup script
+- [script-create-zap-alert-issues.md](script-create-zap-alert-issues.md) - GitHub issue creation script
 - [OWASP ZAP Documentation](https://www.zaproxy.org/docs/)
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [ZAP GitHub Action](https://github.com/zaproxy/action-full-scan)
