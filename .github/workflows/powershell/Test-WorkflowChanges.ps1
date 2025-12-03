@@ -30,6 +30,11 @@ param(
     [string]$EnvVersions
 )
 
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host "Checking for Workflow Changes" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host "ReadmeUpdated input parameter: '$ReadmeUpdated'" -ForegroundColor Magenta
+
 $readmeUpdated = $ReadmeUpdated -eq 'true'
 
 # Check if packages were updated by reading the summary file
@@ -38,10 +43,17 @@ $packagesUpdated = $false
 if (Test-Path $summaryPath) {
     $content = Get-Content $summaryPath -Raw
     $packagesUpdated = $content -notmatch 'No packages to update'
+    Write-Host "Package summary file found. Packages updated: $packagesUpdated" -ForegroundColor Magenta
+}
+else {
+    Write-Host "Package summary file not found at: $summaryPath" -ForegroundColor Yellow
 }
 
-Write-Host "README updated: $readmeUpdated"
-Write-Host "Packages updated: $packagesUpdated"
+Write-Host ""
+Write-Host "README updated: $readmeUpdated" -ForegroundColor Yellow
+Write-Host "Packages updated: $packagesUpdated" -ForegroundColor Yellow
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host ""
 
 if (-not $readmeUpdated -and -not $packagesUpdated) {
     Write-Host ""
