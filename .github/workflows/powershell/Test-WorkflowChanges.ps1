@@ -57,10 +57,15 @@ if (-not $readmeUpdated -and -not $packagesUpdated) {
     Write-Host ""
     Write-Host "No branch created, no commits made, no PR needed." -ForegroundColor Cyan
     Write-Host "================================================" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "Setting has_changes=false" -ForegroundColor Cyan
 
     echo "has_changes=false" >> $env:GITHUB_OUTPUT
     exit 0
 }
 else {
+    Write-Host ""
+    Write-Host "Changes detected - will proceed with commit and PR creation" -ForegroundColor Cyan
+    Write-Host "Setting has_changes=true" -ForegroundColor Cyan
     echo "has_changes=true" >> $env:GITHUB_OUTPUT
 }
