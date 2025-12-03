@@ -10,7 +10,7 @@ This script creates a new branch, commits changes with an appropriate message ba
 
 ## Purpose
 
-Automates the git commit and push process for package and README updates, using smart commit messages and branch naming conventions.
+Automates the git commit and push process for package and README updates, using smart commit messages and branch naming conventions. Includes defense-in-depth validation to prevent empty commits and unnecessary branch creation.
 
 ## When It's Used
 
@@ -30,14 +30,21 @@ Automates the git commit and push process for package and README updates, using 
 
 ```mermaid
 flowchart TD
-    Start([Script Start]) --> GenBranch[Generate Branch Name<br/>update-nuget-packages-{timestamp}]
-    GenBranch --> ConfigGit[Configure Git<br/>Set user name and email]
+    Start([Script Start]) --> EarlyCheck[Early Exit Check:<br/>Verify README and Package flags]
+    EarlyCheck --> BothFalse{Both flags<br/>false?}
+
+    BothFalse -->|Yes| EarlyExit[Exit: No changes detected<br/>Don't create branch]
+    EarlyExit --> End1([Exit: Success])
+
+    BothFalse -->|No| GenBranch[Generate Branch Name<br/>update-nuget-packages-{timestamp}]
+    GenBranch --> OutputBranch[Set GITHUB_OUTPUT:<br/>branchName]
+    OutputBranch --> ConfigGit[Configure Git<br/>Set user name and email]
     ConfigGit --> CreateBranch[Create and checkout branch]
     CreateBranch --> StageFiles[git add .<br/>Stage all changes]
     StageFiles --> CheckStaged{Changes<br/>Staged?}
 
     CheckStaged -->|No| Exit[Exit: No changes to commit]
-    Exit --> End1([Exit: Success])
+    Exit --> End2([Exit: Success])
 
     CheckStaged -->|Yes| DetermineType{What was<br/>Updated?}
 
@@ -50,43 +57,56 @@ flowchart TD
     BothMessage --> Commit
 
     Commit --> Push[git push with PAT token<br/>Set upstream branch]
-    Push --> OutputBranch[Set GITHUB_OUTPUT:<br/>branchName]
-    OutputBranch --> End2([Exit: Success])
+    Push --> End3([Exit: Success])
 
     style ReadmeMessage fill:#ffffcc
     style PackagesMessage fill:#ffffcc
     style BothMessage fill:#ffffcc
+    style EarlyExit fill:#ccffcc
     style Exit fill:#e6e6e6
+    style EarlyCheck fill:#e6e6fa
+    style BothFalse fill:#e6e6fa
     style CheckStaged fill:#e6e6fa
     style DetermineType fill:#e6e6fa
 ```
 
 ## What It Does
 
-1. **Branch Creation**
+1. **Early Exit Check (Defense-in-Depth)**
+   - **Critical**: Validates flags before creating branch
+   - Checks package summary file for updates
+   - Uses string comparison: `($ReadmeUpdated -ne 'true') -and (-not $packagesUpdated)`
+   - Exits immediately if both flags are false
+   - Prevents unnecessary branch creation and git operations
+   - Logs diagnostic information
+
+2. **Branch Creation**
    - Generates timestamped branch name
    - Format: `update-nuget-packages-yyyyMMddHHmmss`
    - Example: `update-nuget-packages-20251126143025`
+   - Sets `branchName` output for PR step
 
-2. **Git Configuration**
+3. **Git Configuration**
    - Sets user name: `github-actions`
    - Sets user email: `github-actions@github.com`
 
-3. **Change Detection**
-   - Checks if any files are staged
-   - Exits early if no changes
+4. **Stage and Verify**
+   - Stages all changes with `git add .`
+   - Performs git diff check as final validation
+   - Exits early if no changes staged
 
-4. **Commit Message Logic**
-   - **README only**: Adds `[skip ci]` to avoid triggering workflows
-   - **Packages only**: Simple "Update NuGet packages" message
+5. **Commit Message Logic (String Comparison)**
+   - Uses string comparison for ReadmeUpdated flag
+   - **README only**: `($ReadmeUpdated -eq 'true') -and (-not $packagesUpdated)`
+     - Adds `[skip ci]` to avoid triggering workflows
+   - **Packages only**: `($ReadmeUpdated -ne 'true') -and $packagesUpdated`
+     - Simple "Update NuGet packages" message
    - **Both**: Combined message
 
-5. **Push to Remote**
+6. **Push to Remote**
    - Uses PAT token for authentication
    - Sets upstream tracking branch
-
-6. **Output**
-   - Outputs branch name for PR creation step
+   - Format: `https://x-access-token:$PatToken@github.com/$Repository.git`
 
 ## Output
 
@@ -263,6 +283,47 @@ git config user.email "github-actions@github.com"
 
 Shows as "github-actions" in commit history.
 
+## String Comparison Approach (Critical Fix)
+
+### Why String Comparison
+
+This script uses string comparison for the `ReadmeUpdated` flag to avoid PowerShell type conversion issues:
+
+```powershell
+# Early exit check - uses string comparison
+if (($ReadmeUpdated -ne 'true') -and (-not $packagesUpdated)) {
+    Write-Host "No changes detected. Exiting without creating branch."
+    exit 0
+}
+
+# Commit message logic - uses string comparison
+if (($ReadmeUpdated -eq 'true') -and (-not $packagesUpdated)) {
+    # README only
+} elseif (($ReadmeUpdated -ne 'true') -and $packagesUpdated) {
+    # Packages only
+} else {
+    # Both updated
+}
+```
+
+### Historical Issue
+
+Previously, the script attempted to convert the string to boolean:
+```powershell
+# This was unreliable:
+$readmeUpdated = $ReadmeUpdated -eq 'true'
+if (-not $readmeUpdated -and -not $packagesUpdated)
+```
+
+This conversion mysteriously produced String types instead of Boolean, causing the logic to fail.
+
+### Benefits of Current Approach
+
+- **Reliable**: String comparison is predictable and works consistently
+- **Defensive**: Multiple validation points prevent empty branches
+- **Debuggable**: Diagnostic logging shows exactly what's being checked
+- **Consistent**: Same pattern used across all workflow scripts
+
 ## Troubleshooting
 
 ### Issue: Authentication Failed
@@ -342,5 +403,8 @@ fatal: A branch named 'update-nuget-packages-...' already exists
 - Outputs **branch name** for PR creation step
 - **Authenticates with PAT token** for push permissions
 - **Configures git identity** as github-actions bot
-- **Early exits** if no changes detected
+- **Defense-in-Depth Validation**: Multiple early exit checks prevent empty commits
+- **Critical Fix**: Uses string comparison to avoid PowerShell type issues
+- **Diagnostic Logging**: Shows flag values and decision logic
 - Supports **multiple Umbraco versions** in commit message
+- **Two-layer validation**: Early check before branch creation + git diff check after staging
