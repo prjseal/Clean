@@ -57,14 +57,7 @@ param(
 # Create PR body in a file to avoid escaping issues
 $prBodyFile = "$WorkspacePath\.artifacts\pr-body.md"
 
-# Determine what was updated
-# Explicitly convert string to boolean using if statement to guarantee proper boolean type
-if ($ReadmeUpdated -eq 'true') {
-    $readmeUpdated = $true
-} else {
-    $readmeUpdated = $false
-}
-
+# Determine what was updated - use string comparison for ReadmeUpdated
 $summaryContent = $PackageSummary
 $packagesUpdated = ($summaryContent -notmatch 'No package summary found') -and ($summaryContent -notmatch 'No packages to update')
 
@@ -72,7 +65,7 @@ $packagesUpdated = ($summaryContent -notmatch 'No package summary found') -and (
 "This PR updates the following:" | Out-File -FilePath $prBodyFile -Encoding UTF8
 "" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
 
-if ($readmeUpdated) {
+if ($ReadmeUpdated -eq 'true') {
     $updatedVersions = $UpdatedVersions -split ',' | ForEach-Object { $_.Trim() }
     if ($updatedVersions.Count -eq 1) {
         $versionText = "Umbraco $($updatedVersions[0])"
@@ -142,7 +135,7 @@ $summary = @"
 ### 📋 Summary
 "@
 
-if ($readmeUpdated) {
+if ($ReadmeUpdated -eq 'true') {
     $summary += "`n- **README.md**: Updated with latest $versionText version"
 }
 if ($packagesUpdated) {

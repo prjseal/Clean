@@ -35,15 +35,6 @@ Write-Host "Checking for Workflow Changes" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host "ReadmeUpdated input parameter: '$ReadmeUpdated'" -ForegroundColor Magenta
 
-# Explicitly convert string to boolean using if statement to guarantee proper boolean type
-if ($ReadmeUpdated -eq 'true') {
-    $readmeUpdated = $true
-} else {
-    $readmeUpdated = $false
-}
-
-Write-Host "After conversion - ReadmeUpdated type: $($readmeUpdated.GetType().Name), value: $readmeUpdated" -ForegroundColor Magenta
-
 # Check if packages were updated by reading the summary file
 $summaryPath = "$WorkspacePath\.artifacts\package-summary.txt"
 $packagesUpdated = $false
@@ -57,19 +48,18 @@ else {
 }
 
 Write-Host ""
-Write-Host "README updated: $readmeUpdated" -ForegroundColor Yellow
-Write-Host "  Type: $($readmeUpdated.GetType().Name), Value: '$readmeUpdated'" -ForegroundColor Magenta
-Write-Host "Packages updated: $packagesUpdated" -ForegroundColor Yellow
-Write-Host "  Type: $($packagesUpdated.GetType().Name), Value: '$packagesUpdated'" -ForegroundColor Magenta
+Write-Host "README updated: $ReadmeUpdated (string)" -ForegroundColor Yellow
+Write-Host "Packages updated: $packagesUpdated (boolean)" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Condition evaluation:" -ForegroundColor Cyan
-Write-Host "  -not `$readmeUpdated = $(-not $readmeUpdated)" -ForegroundColor Magenta
-Write-Host "  -not `$packagesUpdated = $(-not $packagesUpdated)" -ForegroundColor Magenta
-Write-Host "  Combined: $(-not $readmeUpdated -and -not $packagesUpdated)" -ForegroundColor Magenta
+Write-Host "  ReadmeUpdated -ne 'true' = $($ReadmeUpdated -ne 'true')" -ForegroundColor Magenta
+Write-Host "  -not packagesUpdated = $(-not $packagesUpdated)" -ForegroundColor Magenta
+Write-Host "  Combined: $(($ReadmeUpdated -ne 'true') -and (-not $packagesUpdated))" -ForegroundColor Magenta
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
-if (-not $readmeUpdated -and -not $packagesUpdated) {
+# Check both flags using string comparison for ReadmeUpdated
+if (($ReadmeUpdated -ne 'true') -and (-not $packagesUpdated)) {
     Write-Host "ENTERING: No changes block" -ForegroundColor Green
     Write-Host ""
     Write-Host "================================================" -ForegroundColor Green
@@ -111,7 +101,7 @@ else {
 
     # Add GitHub Action summary
     $changesList = @()
-    if ($readmeUpdated) { $changesList += "README updated" }
+    if ($ReadmeUpdated -eq 'true') { $changesList += "README updated" }
     if ($packagesUpdated) { $changesList += "NuGet packages updated" }
     $changesText = $changesList -join ", "
 
