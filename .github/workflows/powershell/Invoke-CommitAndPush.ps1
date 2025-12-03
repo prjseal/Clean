@@ -43,8 +43,13 @@ param(
 )
 
 # Early exit: Check if there are actually any changes to commit
-# Explicitly convert string to boolean
-$readmeUpdated = [bool]($ReadmeUpdated -eq 'true')
+# Explicitly convert string to boolean using if statement to guarantee proper boolean type
+if ($ReadmeUpdated -eq 'true') {
+    $readmeUpdated = $true
+} else {
+    $readmeUpdated = $false
+}
+
 $summaryPath = "$WorkspacePath\.artifacts\package-summary.txt"
 $packagesUpdated = $false
 if (Test-Path $summaryPath) {
