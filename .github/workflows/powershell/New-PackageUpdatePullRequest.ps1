@@ -108,8 +108,66 @@ if ($packagesUpdated) {
     "``````" | Out-File -FilePath $prBodyFile -Encoding UTF8 -Append
 }
 
-gh pr create `
+$prOutput = gh pr create `
     --title "Update NuGet packages" `
     --body-file $prBodyFile `
     --base main `
     --head $BranchName
+
+# Extract PR URL from output
+$prUrl = $prOutput | Select-Object -Last 1
+$prNumber = ""
+if ($prUrl -match '/pull/(\d+)') {
+    $prNumber = $matches[1]
+}
+
+Write-Host ""
+Write-Host "================================================" -ForegroundColor Green
+Write-Host "✅ Pull Request Created Successfully" -ForegroundColor Green
+Write-Host "================================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "PR URL: $prUrl" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Green
+
+# Add GitHub Action summary
+$summary = @"
+## ✅ Pull Request Created
+
+### 📋 Summary
+"@
+
+if ($readmeUpdated) {
+    $summary += "`n- **README.md**: Updated with latest $versionText version"
+}
+if ($packagesUpdated) {
+    $summary += "`n- **NuGet Packages**: Updated to latest versions"
+}
+
+$summary += @"
+
+### 🔗 Pull Request
+[$prNumber]($prUrl)
+
+"@
+
+if ($packagesUpdated) {
+    $summary += @"
+### 📦 Updated Packages
+``````
+$PackageSummary
+``````
+
+"@
+}
+
+if (-not [string]::IsNullOrWhiteSpace($NuGetSources)) {
+    $summary += @"
+### 🔧 Custom NuGet Sources
+This PR was created with custom NuGet sources.
+
+"@
+}
+
+$summary += "**Include Prerelease**: $IncludePrerelease"
+
+$summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8

@@ -60,6 +60,19 @@ if (-not $readmeUpdated -and -not $packagesUpdated) {
     Write-Host ""
     Write-Host "Setting has_changes=false" -ForegroundColor Cyan
 
+    # Add GitHub Action summary
+    $summary = @"
+## ✅ No Changes Needed - Workflow Complete
+
+### 📋 Summary
+- **README**: Already up-to-date with latest $versionText version(s)
+- **NuGet Packages**: All packages are already at their latest versions
+
+### 📌 Result
+No branch created, no commits made, no PR needed.
+"@
+    $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+
     echo "has_changes=false" >> $env:GITHUB_OUTPUT
     exit 0
 }
@@ -67,5 +80,21 @@ else {
     Write-Host ""
     Write-Host "Changes detected - will proceed with commit and PR creation" -ForegroundColor Cyan
     Write-Host "Setting has_changes=true" -ForegroundColor Cyan
+
+    # Add GitHub Action summary
+    $changesList = @()
+    if ($readmeUpdated) { $changesList += "README updated" }
+    if ($packagesUpdated) { $changesList += "NuGet packages updated" }
+    $changesText = $changesList -join ", "
+
+    $summary = @"
+## 🔄 Changes Detected
+
+**Changes found**: $changesText
+
+Proceeding with commit and PR creation...
+"@
+    $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+
     echo "has_changes=true" >> $env:GITHUB_OUTPUT
 }
