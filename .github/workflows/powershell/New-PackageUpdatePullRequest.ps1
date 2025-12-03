@@ -58,7 +58,8 @@ param(
 $prBodyFile = "$WorkspacePath\.artifacts\pr-body.md"
 
 # Determine what was updated
-$readmeUpdated = $ReadmeUpdated -eq 'true'
+# Explicitly convert string to boolean
+$readmeUpdated = [bool]($ReadmeUpdated -eq 'true')
 $summaryContent = $PackageSummary
 $packagesUpdated = ($summaryContent -notmatch 'No package summary found') -and ($summaryContent -notmatch 'No packages to update')
 
