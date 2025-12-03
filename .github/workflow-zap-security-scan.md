@@ -267,7 +267,7 @@ All input parameters are optional:
 
 ## Scripts Used
 
-The workflow uses the following PowerShell scripts:
+The workflow uses the following scripts (PowerShell and Bash):
 
 ### Test-LatestWithZap.ps1
 
@@ -311,6 +311,76 @@ The workflow uses the following PowerShell scripts:
 
 **Outputs**:
 - `issues_created`: Number of new issues created
+
+### sanitize-version-numbers.sh
+
+**Purpose**: Sanitizes version numbers for use in GitHub Actions artifact names by replacing dots with dashes.
+
+**Location**: `.github/workflows/scripts/sanitize-version-numbers.sh`
+
+**Documentation**: [script-sanitize-version-numbers.md](script-sanitize-version-numbers.md)
+
+**Parameters Used**:
+- Positional argument 1: Version string to sanitize (e.g., "7.0.1")
+
+**Outputs**:
+- `template_version_safe`: Sanitized version string with dashes
+
+### wait-site-readiness.sh
+
+**Purpose**: Waits for an Umbraco site to be fully ready for OWASP ZAP security scanning by polling the site URL.
+
+**Location**: `.github/workflows/scripts/wait-site-readiness.sh`
+
+**Documentation**: [script-wait-site-readiness.md](script-wait-site-readiness.md)
+
+**Parameters Used**:
+- Positional argument 1: Site URL to check (e.g., "https://localhost:5001")
+
+**Behavior**:
+- Waits 5 seconds for initial stabilization
+- Polls site up to 10 times with 3-second intervals
+- Validates HTTP 200 or 302 response codes
+- Total timeout: ~35 seconds
+
+### Stop-UmbracoSite.ps1
+
+**Purpose**: Gracefully stops a running Umbraco site process by its Process ID.
+
+**Location**: `.github/workflows/powershell/Stop-UmbracoSite.ps1`
+
+**Documentation**: [script-stop-umbraco-site.md](script-stop-umbraco-site.md)
+
+**Parameters Used**:
+- `-SitePid`: Process ID of the site to stop (optional)
+
+**Behavior**:
+- Checks if process exists before stopping
+- Handles cases where process already exited
+- Always exits successfully (never fails workflow)
+- Used in cleanup step with `if: always()`
+
+### create-zap-scan-summary.sh
+
+**Purpose**: Creates a comprehensive GitHub Actions workflow summary for OWASP ZAP security scan results.
+
+**Location**: `.github/workflows/scripts/create-zap-scan-summary.sh`
+
+**Documentation**: [script-create-zap-scan-summary.md](script-create-zap-scan-summary.md)
+
+**Parameters Used**:
+- Positional argument 1: Branch name
+- Positional argument 2: Template source (code/nuget/github-packages)
+- Positional argument 3: Template version
+- Positional argument 4: Site URL
+- Positional argument 5: Umbraco CMS version (optional)
+- Positional argument 6: Number of issues created (optional)
+
+**Behavior**:
+- Generates formatted markdown summary
+- Includes scan metadata and results
+- Displays contextual notes based on template source
+- Shows failure section for code template with new issues
 
 ## ZAP Configuration
 
@@ -531,8 +601,17 @@ The workflow requires the following GitHub permissions:
 
 ## Related Documentation
 
-- [script-test-latest-with-zap.md](script-test-latest-with-zap.md) - Site setup script
-- [script-create-zap-alert-issues.md](script-create-zap-alert-issues.md) - GitHub issue creation script
+### Workflow Scripts
+
+- [script-test-latest-with-zap.md](script-test-latest-with-zap.md) - Site setup script (PowerShell)
+- [script-sanitize-version-numbers.md](script-sanitize-version-numbers.md) - Version sanitization script (Bash)
+- [script-wait-site-readiness.md](script-wait-site-readiness.md) - Site readiness verification script (Bash)
+- [script-stop-umbraco-site.md](script-stop-umbraco-site.md) - Site cleanup script (PowerShell)
+- [script-create-zap-scan-summary.md](script-create-zap-scan-summary.md) - Workflow summary generation script (Bash)
+- [script-create-zap-alert-issues.md](script-create-zap-alert-issues.md) - GitHub issue creation script (PowerShell)
+
+### External Resources
+
 - [OWASP ZAP Documentation](https://www.zaproxy.org/docs/)
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [ZAP GitHub Action](https://github.com/zaproxy/action-full-scan)

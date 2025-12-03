@@ -93,34 +93,11 @@ jobs:
         id: sanitize-versions
         shell: bash
         run: |
-          # Replace dots with dashes for artifact naming (GitHub Actions requirement)
-          TEMPLATE_VERSION_SAFE="${{ steps.setup-site.outputs.clean_template_version }}"
-          TEMPLATE_VERSION_SAFE="${TEMPLATE_VERSION_SAFE//./-}"
-          echo "template_version_safe=${TEMPLATE_VERSION_SAFE}" >> $GITHUB_OUTPUT
+          ./.github/workflows/scripts/sanitize-version-numbers.sh "${{ steps.setup-site.outputs.clean_template_version }}"
 
       - name: Wait for Site Readiness
         run: |
-          echo "Waiting additional time to ensure site is fully ready for ZAP scan..."
-          sleep 5
-          echo "Site URL: ${{ steps.setup-site.outputs.site_url }}"
-          echo "Testing site connectivity..."
-
-          # Convert HTTPS to HTTP if needed (ZAP works better with HTTP for local testing)
-          SITE_URL="${{ steps.setup-site.outputs.site_url }}"
-          if [[ $SITE_URL == https://* ]]; then
-            HTTP_URL="${SITE_URL/https/http}"
-            echo "Attempting to connect to: $HTTP_URL"
-
-            # Try a simple curl to verify the site is responding
-            for i in {1..10}; do
-              if curl -k -s -o /dev/null -w "%{http_code}" "$SITE_URL" | grep -q "200\|302"; then
-                echo "Site is responding!"
-                break
-              fi
-              echo "Waiting for site to respond (attempt $i/10)..."
-              sleep 3
-            done
-          fi
+          ./.github/workflows/scripts/wait-site-readiness.sh "${{ steps.setup-site.outputs.site_url }}"
 
       - name: Run OWASP ZAP Full Scan
         uses: zaproxy/action-full-scan@v0.13.0
@@ -176,70 +153,18 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          $sitePid = "${{ steps.setup-site.outputs.site_pid }}"
-
-          if ($sitePid) {
-            Write-Host "Stopping site process (PID: $sitePid)..." -ForegroundColor Yellow
-
-            try {
-              # Check if process exists and is running
-              $process = Get-Process -Id $sitePid -ErrorAction SilentlyContinue
-
-              if ($process) {
-                Stop-Process -Id $sitePid -Force -ErrorAction SilentlyContinue
-                Write-Host "Site process stopped successfully" -ForegroundColor Green
-              } else {
-                Write-Host "Site process already exited" -ForegroundColor Yellow
-              }
-            } catch {
-              Write-Host "Error stopping process: $($_.Exception.Message)" -ForegroundColor Yellow
-            }
-          } else {
-            Write-Host "No site PID found, skipping cleanup" -ForegroundColor Yellow
-          }
+          ./.github/workflows/powershell/Stop-UmbracoSite.ps1 -SitePid "${{ steps.setup-site.outputs.site_pid }}"
 
       - name: ZAP Scan Summary
         if: always()
         run: |
-          echo "## OWASP ZAP Security Scan Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Scan Details" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch:** \`${{ steps.setup-site.outputs.branch_name || github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Template Source:** ${{ steps.setup-site.outputs.template_source }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Clean Template Version:** ${{ steps.setup-site.outputs.clean_template_version }}" >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ steps.setup-site.outputs.umbraco_cms_version }}" ]; then
-            echo "- **Umbraco CMS Version:** ${{ steps.setup-site.outputs.umbraco_cms_version }}" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "- **Target URL:** ${{ steps.setup-site.outputs.site_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Project Type:** Clean Blog (from Umbraco.Community.Templates.Clean)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Include the full ZAP scan results in the summary
-          if [ -f "report_md.md" ]; then
-            echo "### Security Scan Results" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            cat report_md.md >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ **Warning:** Scan report not found. Please check the artifacts for detailed results." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Downloadable Reports" >> $GITHUB_STEP_SUMMARY
-          echo "Full scan reports have been uploaded as artifacts:" >> $GITHUB_STEP_SUMMARY
-          echo "- 📄 HTML Report (detailed with styling)" >> $GITHUB_STEP_SUMMARY
-          echo "- 📝 Markdown Report (text-based)" >> $GITHUB_STEP_SUMMARY
-          echo "- 📋 Site Logs (for debugging)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.setup-site.outputs.template_source }}" = "code" ]; then
-            echo "⚠️ **Note:** When testing local repository code, this workflow will fail if new security issues are found." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "ℹ️ **Note:** This workflow does not fail on security findings when testing published templates. Please review the results above and in the artifacts." >> $GITHUB_STEP_SUMMARY
-          fi
+          ./.github/workflows/scripts/create-zap-scan-summary.sh \
+            "${{ steps.setup-site.outputs.branch_name || github.ref_name }}" \
+            "${{ steps.setup-site.outputs.template_source }}" \
+            "${{ steps.setup-site.outputs.clean_template_version }}" \
+            "${{ steps.setup-site.outputs.site_url }}" \
+            "${{ steps.setup-site.outputs.umbraco_cms_version }}" \
+            "${{ steps.create-issues.outputs.issues_created }}"
 
       - name: Create GitHub Issues for ZAP Alerts
         id: create-issues
