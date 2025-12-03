@@ -72,17 +72,29 @@ Documentation for managing NuGet packages and dependencies:
 
 Documentation related to GitHub Actions workflows and automation:
 
-### PR Build Workflow
+### Build and Release Workflows
 
-- **[PR Workflow](workflow-pr.md)** - Automated build and testing process for pull requests, including package validation
-
-### Update Packages Workflow
-
-- **[Update NuGet Packages](workflow-update-nuget-packages.md)** - Automated workflow for updating NuGet packages and Umbraco versions
-
-### Release Workflow
-
+- **[PR Workflow](workflow-pr.md)** - Automated build and testing process for pull requests, including package validation and GitHub Packages publication
 - **[Versioning and Releases](workflow-versioning-releases.md)** - Understanding version numbers, release processes, and how Clean versions map to Umbraco versions
+
+### Maintenance Workflows
+
+- **[Update NuGet Packages](workflow-update-nuget-packages.md)** - Automated workflow for updating NuGet packages and Umbraco versions with daily scheduled runs
+
+### Testing Workflows
+
+- **[Test Umbraco Latest](workflow-test-umbraco-latest.md)** - Weekly automated testing of Clean package with latest stable Umbraco versions, supporting flexible source selection
+- **[Test Umbraco Latest with NuGet](workflow-test-umbraco-latest-nuget.md)** - Daily automated testing against stable Umbraco releases from NuGet.org for production readiness validation
+- **[Test Umbraco Latest with Nightly Feed](workflow-test-umbraco-latest-nightly.md)** - Daily automated testing against Umbraco nightly builds from MyGet for early detection of breaking changes
+
+### Security Workflows
+
+- **[OWASP ZAP Security Scan](workflow-zap-security-scan.md)** - Automated security testing with OWASP ZAP on PR approval, manual trigger, and nightly schedule
+
+### Cleanup Workflows
+
+- **[Cleanup GitHub Packages](workflow-cleanup-github-packages.md)** - Manual workflow for removing CI versions from GitHub Packages while preserving stable releases
+- **[Delete Issues by Label](workflow-delete-issues-by-label.md)** - Manual workflow for bulk deletion of GitHub issues filtered by labels and status
 
 ---
 
