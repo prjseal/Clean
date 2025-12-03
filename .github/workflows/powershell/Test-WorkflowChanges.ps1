@@ -35,7 +35,10 @@ Write-Host "Checking for Workflow Changes" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host "ReadmeUpdated input parameter: '$ReadmeUpdated'" -ForegroundColor Magenta
 
-$readmeUpdated = $ReadmeUpdated -eq 'true'
+# Explicitly convert string to boolean
+$readmeUpdated = [bool]($ReadmeUpdated -eq 'true')
+
+Write-Host "After conversion - ReadmeUpdated type: $($readmeUpdated.GetType().Name), value: $readmeUpdated" -ForegroundColor Magenta
 
 # Check if packages were updated by reading the summary file
 $summaryPath = "$WorkspacePath\.artifacts\package-summary.txt"

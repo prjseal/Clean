@@ -43,7 +43,8 @@ param(
 )
 
 # Early exit: Check if there are actually any changes to commit
-$readmeUpdated = $ReadmeUpdated -eq 'true'
+# Explicitly convert string to boolean
+$readmeUpdated = [bool]($ReadmeUpdated -eq 'true')
 $summaryPath = "$WorkspacePath\.artifacts\package-summary.txt"
 $packagesUpdated = $false
 if (Test-Path $summaryPath) {
@@ -51,7 +52,7 @@ if (Test-Path $summaryPath) {
     $packagesUpdated = $content -notmatch 'No packages to update'
 }
 
-Write-Host "Commit check - README updated: $readmeUpdated, Packages updated: $packagesUpdated"
+Write-Host "Commit check - README updated: $readmeUpdated (type: $($readmeUpdated.GetType().Name)), Packages updated: $packagesUpdated"
 
 if (-not $readmeUpdated -and -not $packagesUpdated) {
     Write-Host "No changes detected (neither README nor packages updated). Exiting without creating branch." -ForegroundColor Yellow
