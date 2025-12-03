@@ -120,14 +120,20 @@ else {
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
+Write-Host "`$anyUpdated type: $($anyUpdated.GetType().Name), value: $anyUpdated" -ForegroundColor Magenta
+
 if ($anyUpdated) {
     $versionsText = $updatedVersions -join ','
     Write-Host "Setting readme_updated=true and updated_versions=$versionsText" -ForegroundColor Green
-    echo "readme_updated=true" >> $env:GITHUB_OUTPUT
-    echo "updated_versions=$versionsText" >> $env:GITHUB_OUTPUT
+    "readme_updated=true" >> $env:GITHUB_OUTPUT
+    "updated_versions=$versionsText" >> $env:GITHUB_OUTPUT
+    Write-Host "Wrote to GITHUB_OUTPUT: readme_updated=true" -ForegroundColor Cyan
+    Write-Host "Wrote to GITHUB_OUTPUT: updated_versions=$versionsText" -ForegroundColor Cyan
 }
 else {
     Write-Host "Setting readme_updated=false and updated_versions=" -ForegroundColor Yellow
-    echo "readme_updated=false" >> $env:GITHUB_OUTPUT
-    echo "updated_versions=" >> $env:GITHUB_OUTPUT
+    "readme_updated=false" >> $env:GITHUB_OUTPUT
+    "updated_versions=" >> $env:GITHUB_OUTPUT
+    Write-Host "Wrote to GITHUB_OUTPUT: readme_updated=false" -ForegroundColor Cyan
+    Write-Host "Wrote to GITHUB_OUTPUT: updated_versions=" -ForegroundColor Cyan
 }

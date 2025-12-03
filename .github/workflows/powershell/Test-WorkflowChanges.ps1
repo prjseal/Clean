@@ -51,11 +51,19 @@ else {
 
 Write-Host ""
 Write-Host "README updated: $readmeUpdated" -ForegroundColor Yellow
+Write-Host "  Type: $($readmeUpdated.GetType().Name), Value: '$readmeUpdated'" -ForegroundColor Magenta
 Write-Host "Packages updated: $packagesUpdated" -ForegroundColor Yellow
+Write-Host "  Type: $($packagesUpdated.GetType().Name), Value: '$packagesUpdated'" -ForegroundColor Magenta
+Write-Host ""
+Write-Host "Condition evaluation:" -ForegroundColor Cyan
+Write-Host "  -not `$readmeUpdated = $(-not $readmeUpdated)" -ForegroundColor Magenta
+Write-Host "  -not `$packagesUpdated = $(-not $packagesUpdated)" -ForegroundColor Magenta
+Write-Host "  Combined: $(-not $readmeUpdated -and -not $packagesUpdated)" -ForegroundColor Magenta
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
 if (-not $readmeUpdated -and -not $packagesUpdated) {
+    Write-Host "ENTERING: No changes block" -ForegroundColor Green
     Write-Host ""
     Write-Host "================================================" -ForegroundColor Green
     Write-Host "✅ No Changes Needed - Workflow Complete" -ForegroundColor Green
@@ -89,6 +97,7 @@ No branch created, no commits made, no PR needed.
     exit 0
 }
 else {
+    Write-Host "ENTERING: Changes detected block" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Changes detected - will proceed with commit and PR creation" -ForegroundColor Cyan
     Write-Host "Setting has_changes=true" -ForegroundColor Cyan
