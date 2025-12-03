@@ -65,10 +65,12 @@ Determines if any files were modified by the update process.
 **Script**: [Test-WorkflowChanges.ps1](script-test-workflow-changes.md)
 
 **What happens**:
-- Checks if README files were updated
-- Checks if packages were updated
-- Outputs summary if no changes were made
-- Sets output variable for subsequent steps
+- Checks if README files were updated (using string comparison)
+- Checks if packages were updated (by parsing package summary file)
+- Outputs comprehensive diagnostic information for debugging
+- Displays "No Changes Needed" summary if nothing was updated
+- Sets `has_changes` output variable for workflow conditionals
+- **Critical Fix**: Uses string comparison directly instead of boolean conversion to avoid PowerShell type conversion issues
 
 ### 4. **Commit and Push Changes**
 
@@ -77,10 +79,13 @@ Creates a new branch and commits the changes when updates are found.
 **Script**: [Invoke-CommitAndPush.ps1](script-invoke-commit-and-push.md)
 
 **What happens**:
+- **Early Exit Check**: Verifies both README and package flags before proceeding
 - Creates a timestamped branch (e.g., `update-nuget-packages-20251126120000`)
-- Commits changes with appropriate message
-- Adds `[skip ci]` for README-only updates
-- Pushes branch to remote repository
+- Commits changes with appropriate message based on what was updated
+- Adds `[skip ci]` for README-only updates to avoid unnecessary CI builds
+- Performs final git diff check to ensure changes exist before committing
+- Pushes branch to remote repository using PAT token authentication
+- **Defense-in-Depth**: Multiple validation layers prevent empty commits and unnecessary branch creation
 
 ### 5. **Check for Existing Similar PRs**
 
@@ -106,6 +111,37 @@ Creates a pull request with detailed update information.
 - Lists custom NuGet sources (if used)
 - Includes package update table
 - Links PR to the update branch
+
+## GitHub Action Summaries
+
+The workflow generates professional summaries that appear at the bottom of each workflow run using `$GITHUB_STEP_SUMMARY`. These provide at-a-glance visibility of workflow outcomes:
+
+### Summary Types
+
+1. **✅ No Changes Needed** - Displayed when both README and packages are already up-to-date
+   - Lists what was checked (README and NuGet packages)
+   - Confirms no branch/commit/PR actions were taken
+
+2. **🔄 Changes Detected** - Shown when proceeding with updates
+   - Lists what changed (README, packages, or both)
+   - Indicates workflow will create branch and PR
+
+3. **✅ Pull Request Created** - Success summary with PR details
+   - Shows what was updated
+   - Provides clickable PR link
+   - Displays package update table
+   - Shows custom NuGet sources if used
+   - Indicates prerelease setting
+
+4. **⚠️ PR Creation Skipped** - When duplicate PR exists
+   - Links to existing PR with identical updates
+   - Explains why duplicate was not created
+
+5. **❌ Workflow Failed** - Build failure summary
+   - Shows build summary table
+   - Lists failed solutions
+   - Provides guidance on next steps
+   - Links to detailed logs
 
 ## Workflow Steps
 
@@ -241,6 +277,39 @@ nugetSources: https://www.myget.org/F/umbraco-dev/api/v3/index.json
 - **.NET Version**: 10.0.x
 - **Tools**: GitHub CLI (gh)
 
+### String Comparison Approach
+
+The workflow uses string comparison for the `readme_updated` flag throughout the entire pipeline to avoid PowerShell type conversion issues:
+
+**Pattern Used**:
+```powershell
+# Checking if README was updated (TRUE check)
+if ($ReadmeUpdated -eq 'true') {
+    # README was updated
+}
+
+# Checking if README was NOT updated (FALSE check)
+if ($ReadmeUpdated -ne 'true') {
+    # README was not updated
+}
+
+# Combined condition (neither README nor packages updated)
+if (($ReadmeUpdated -ne 'true') -and (-not $packagesUpdated)) {
+    # No changes detected
+}
+```
+
+**Why This Approach**:
+- **Reliability**: String comparison is predictable and avoids type conversion issues
+- **Consistency**: All scripts use the same pattern for checking README updates
+- **Debugging**: Diagnostic logs show string vs boolean types clearly
+- **Defense-in-Depth**: Multiple validation points prevent workflow from proceeding when no changes exist
+
+**Implementation Locations**:
+- `Test-WorkflowChanges.ps1`: Main change detection logic
+- `Invoke-CommitAndPush.ps1`: Early exit check and commit message logic
+- `New-PackageUpdatePullRequest.ps1`: PR body generation logic
+
 ### Authentication
 
 - **PAT_TOKEN**: Personal Access Token for pushing commits and creating PRs
@@ -346,6 +415,15 @@ The workflow generates artifacts in `.artifacts/` directory:
 - Check token hasn't expired
 - Ensure token is set in repository secrets
 
+**Workflow Proceeds When No Changes** (FIXED):
+- **Issue**: Workflow was creating branches and attempting PRs even when both `readme_updated=false` and `packages_updated=false`
+- **Root Cause**: PowerShell boolean conversion failure - the expression `$ReadmeUpdated -eq 'true'` was mysteriously producing a String type instead of Boolean
+- **Solution**: Replaced boolean conversion with direct string comparison throughout:
+  - Changed from: `if (-not $readmeUpdated -and -not $packagesUpdated)`
+  - Changed to: `if (($ReadmeUpdated -ne 'true') -and (-not $packagesUpdated))`
+- **Result**: Workflow now correctly stops when no changes are detected
+- **Affected Scripts**: Test-WorkflowChanges.ps1, Invoke-CommitAndPush.ps1, New-PackageUpdatePullRequest.ps1
+
 ### Logs and Debugging
 
 **Build Logs**:
@@ -404,5 +482,9 @@ The update NuGet packages workflow provides:
 - ✅ Build verification before creating PRs
 - ✅ Dry run mode for testing
 - ✅ Comprehensive logging and error reporting
+- ✅ GitHub Action summaries for at-a-glance status
+- ✅ Defense-in-depth validation to prevent unnecessary branches/PRs
+- ✅ Robust string comparison approach for reliable change detection
+- ✅ Detailed diagnostic output for troubleshooting
 
-This ensures the Clean starter kit stays up-to-date with the latest Umbraco and package versions while maintaining stability through automated build verification.
+This ensures the Clean starter kit stays up-to-date with the latest Umbraco and package versions while maintaining stability through automated build verification and robust error handling.

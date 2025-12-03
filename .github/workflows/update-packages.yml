@@ -122,6 +122,7 @@ jobs:
 
       - name: Read package summary
         id: read-summary
+        if: ${{ github.event.inputs.dryRun != 'true' && steps.check-changes.outputs.has_changes == 'true' }}
         shell: pwsh
         run: |
           ./.github/workflows/powershell/Get-PackageSummary.ps1 -WorkspacePath "${{ github.workspace }}"

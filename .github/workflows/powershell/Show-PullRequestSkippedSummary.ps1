@@ -33,3 +33,17 @@ Write-Host "No need to create a duplicate PR." -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Existing PR: https://github.com/$Repository/pull/$ExistingPrNumber" -ForegroundColor Green
 Write-Host "================================================" -ForegroundColor Yellow
+
+# Add GitHub Action summary
+$prUrl = "https://github.com/$Repository/pull/$ExistingPrNumber"
+$summary = @"
+## ⚠️ PR Creation Skipped
+
+An existing PR already has identical package updates.
+
+### 📌 Existing PR
+[#$ExistingPrNumber]($prUrl)
+
+**Reason**: No need to create a duplicate PR with the same package updates.
+"@
+$summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8

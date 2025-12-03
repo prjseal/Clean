@@ -107,12 +107,33 @@ foreach ($entry in $versionEntries) {
     Write-Host ""
 }
 
-if ($anyUpdated) {
-    echo "readme_updated=true" >> $env:GITHUB_OUTPUT
-    $versionsText = $updatedVersions -join ','
-    echo "updated_versions=$versionsText" >> $env:GITHUB_OUTPUT
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host "README Update Summary" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host "Any updates made: $anyUpdated" -ForegroundColor Yellow
+if ($updatedVersions.Count -gt 0) {
+    Write-Host "Updated versions: $($updatedVersions -join ', ')" -ForegroundColor Yellow
 }
 else {
-    echo "readme_updated=false" >> $env:GITHUB_OUTPUT
-    echo "updated_versions=" >> $env:GITHUB_OUTPUT
+    Write-Host "Updated versions: None" -ForegroundColor Yellow
+}
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host ""
+
+Write-Host "`$anyUpdated type: $($anyUpdated.GetType().Name), value: $anyUpdated" -ForegroundColor Magenta
+
+if ($anyUpdated) {
+    $versionsText = $updatedVersions -join ','
+    Write-Host "Setting readme_updated=true and updated_versions=$versionsText" -ForegroundColor Green
+    "readme_updated=true" >> $env:GITHUB_OUTPUT
+    "updated_versions=$versionsText" >> $env:GITHUB_OUTPUT
+    Write-Host "Wrote to GITHUB_OUTPUT: readme_updated=true" -ForegroundColor Cyan
+    Write-Host "Wrote to GITHUB_OUTPUT: updated_versions=$versionsText" -ForegroundColor Cyan
+}
+else {
+    Write-Host "Setting readme_updated=false and updated_versions=" -ForegroundColor Yellow
+    "readme_updated=false" >> $env:GITHUB_OUTPUT
+    "updated_versions=" >> $env:GITHUB_OUTPUT
+    Write-Host "Wrote to GITHUB_OUTPUT: readme_updated=false" -ForegroundColor Cyan
+    Write-Host "Wrote to GITHUB_OUTPUT: updated_versions=" -ForegroundColor Cyan
 }
