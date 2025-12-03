@@ -35,8 +35,12 @@ Write-Host "Checking for Workflow Changes" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host "ReadmeUpdated input parameter: '$ReadmeUpdated'" -ForegroundColor Magenta
 
-# Explicitly convert string to boolean
-$readmeUpdated = [bool]($ReadmeUpdated -eq 'true')
+# Explicitly convert string to boolean using if statement to guarantee proper boolean type
+if ($ReadmeUpdated -eq 'true') {
+    $readmeUpdated = $true
+} else {
+    $readmeUpdated = $false
+}
 
 Write-Host "After conversion - ReadmeUpdated type: $($readmeUpdated.GetType().Name), value: $readmeUpdated" -ForegroundColor Magenta
 
