@@ -94,7 +94,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Test Template Installation and Site
-        if: github.event_name == 'pull_request_target' || inputs.run-template-tests
+        if: inputs.run-template-tests == true
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -102,7 +102,7 @@ jobs:
           ./.github/workflows/powershell/Test-TemplateInstallation.ps1 -Version "${{ steps.version.outputs.version }}" -WorkspacePath "${{ github.workspace }}"
 
       - name: Upload Template Screenshots
-        if: always() && (github.event_name == 'pull_request_target' || inputs.run-template-tests)
+        if: always() && inputs.run-template-tests == true
         uses: actions/upload-artifact@v4
         with:
           name: template-screenshots-${{ steps.version.outputs.version }}
@@ -110,7 +110,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Test Template with Period in Name - Verify Fix for Issue #11
-        if: github.event_name == 'pull_request_target' || inputs.run-period-name-tests
+        if: inputs.run-period-name-tests == true
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -121,7 +121,7 @@ jobs:
           ./.github/workflows/powershell/Test-TemplateInstallation.ps1 -Version "${{ steps.version.outputs.version }}" -WorkspacePath "${{ github.workspace }}" -ProjectName "Company.Website"
 
       - name: Upload Period Name Test Screenshots
-        if: always() && (github.event_name == 'pull_request_target' || inputs.run-period-name-tests)
+        if: always() && inputs.run-period-name-tests == true
         uses: actions/upload-artifact@v4
         with:
           name: period-name-test-screenshots-${{ steps.version.outputs.version }}
