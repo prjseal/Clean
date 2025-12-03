@@ -38,6 +38,34 @@ param(
     [string]$TemplateVersion
 )
 
+# Function to extract Umbraco.Cms version from .csproj file
+function Get-UmbracoCmsVersion {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$CsprojPath
+    )
+
+    if (-not (Test-Path $CsprojPath)) {
+        Write-Host "Warning: .csproj file not found at $CsprojPath" -ForegroundColor Yellow
+        return $null
+    }
+
+    try {
+        [xml]$csprojContent = Get-Content -Path $CsprojPath -Raw
+        $umbracoPackage = $csprojContent.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq 'Umbraco.Cms' }
+
+        if ($umbracoPackage -and $umbracoPackage.Version) {
+            return $umbracoPackage.Version
+        } else {
+            Write-Host "Warning: Umbraco.Cms package reference not found in $CsprojPath" -ForegroundColor Yellow
+            return $null
+        }
+    } catch {
+        Write-Host "Warning: Failed to parse .csproj file: $($_.Exception.Message)" -ForegroundColor Yellow
+        return $null
+    }
+}
+
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host "Setting up Clean Template for ZAP Security Testing" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
@@ -127,9 +155,22 @@ if ([string]::IsNullOrWhiteSpace($TemplateVersion)) {
     Write-Host "`nUsing specified Clean template version: $templateVersion" -ForegroundColor Green
 }
 
-# Save version to GitHub output if running in GitHub Actions
+# Save version and template source to GitHub output if running in GitHub Actions
 if ($env:GITHUB_OUTPUT) {
     "clean_template_version=$templateVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+    "template_source=$TemplateSource" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+    # Get current branch name
+    try {
+        Push-Location $WorkspacePath
+        $branchName = git rev-parse --abbrev-ref HEAD 2>$null
+        if ($branchName) {
+            "branch_name=$branchName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        }
+        Pop-Location
+    } catch {
+        Write-Host "Could not determine branch name" -ForegroundColor Yellow
+    }
 }
 
 # Create test directory
@@ -285,14 +326,24 @@ if ($TemplateSource -eq 'code') {
 
     Write-Host "Site process is still running (PID: $($process.Id))" -ForegroundColor Green
 
-    # Export site URL for ZAP to use
+    # Extract Umbraco.Cms version from the Blog project
+    $blogCsprojPath = Join-Path $blogProjectPath "Clean.Blog.csproj"
+    $umbracoCmsVersion = Get-UmbracoCmsVersion -CsprojPath $blogCsprojPath
+
+    # Export site URL and Umbraco version for ZAP to use
     if ($env:GITHUB_OUTPUT) {
         "site_url=$siteUrl" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        if ($umbracoCmsVersion) {
+            "umbraco_cms_version=$umbracoCmsVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        }
     }
 
     Write-Host "`n================================================" -ForegroundColor Cyan
     Write-Host "Clean Blog Site Ready for ZAP Security Scanning" -ForegroundColor Cyan
     Write-Host "Clean Template Version: $templateVersion" -ForegroundColor Green
+    if ($umbracoCmsVersion) {
+        Write-Host "Umbraco CMS Version: $umbracoCmsVersion" -ForegroundColor Green
+    }
     Write-Host "Site URL: $siteUrl" -ForegroundColor Green
     Write-Host "Process ID: $($process.Id)" -ForegroundColor Green
     Write-Host "================================================" -ForegroundColor Cyan
@@ -488,14 +539,24 @@ if ($process.HasExited) {
 
 Write-Host "Site process is still running (PID: $($process.Id))" -ForegroundColor Green
 
-# Export site URL for ZAP to use
+# Extract Umbraco.Cms version from the Blog project
+$blogCsprojPath = Join-Path $testDir "TestCleanProject" "TestCleanProject.Blog" "TestCleanProject.Blog.csproj"
+$umbracoCmsVersion = Get-UmbracoCmsVersion -CsprojPath $blogCsprojPath
+
+# Export site URL and Umbraco version for ZAP to use
 if ($env:GITHUB_OUTPUT) {
     "site_url=$siteUrl" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+    if ($umbracoCmsVersion) {
+        "umbraco_cms_version=$umbracoCmsVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+    }
 }
 
 Write-Host "`n================================================" -ForegroundColor Cyan
 Write-Host "Clean Blog Site Ready for ZAP Security Scanning" -ForegroundColor Cyan
 Write-Host "Clean Template Version: $templateVersion" -ForegroundColor Green
+if ($umbracoCmsVersion) {
+    Write-Host "Umbraco CMS Version: $umbracoCmsVersion" -ForegroundColor Green
+}
 Write-Host "Site URL: $siteUrl" -ForegroundColor Green
 Write-Host "Process ID: $($process.Id)" -ForegroundColor Green
 Write-Host "================================================" -ForegroundColor Cyan
