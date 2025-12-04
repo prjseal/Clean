@@ -33,6 +33,7 @@ on:
 
 jobs:
   test-latest-packages:
+    if: github.repository == 'prjseal/Clean'
     runs-on: windows-latest
     permissions:
       contents: read

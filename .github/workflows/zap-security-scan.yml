@@ -28,6 +28,7 @@ jobs:
   zap-security-scan:
     # Only run on approved PR reviews or other triggers
     if: github.event_name != 'pull_request_review' || github.event.review.state == 'approved'
+    if: github.repository == 'prjseal/Clean'
     runs-on: ubuntu-latest
     permissions:
       contents: read
