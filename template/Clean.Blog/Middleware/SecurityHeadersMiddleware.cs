@@ -1,7 +1,8 @@
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 
-namespace Clean.Core.Middleware;
+namespace Clean.Blog.Middleware;
 
 /// <summary>
 /// Middleware to add security headers to HTTP responses.

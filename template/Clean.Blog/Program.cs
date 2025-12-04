@@ -1,4 +1,4 @@
-using Clean.Core.Middleware;
+using Clean.Blog.Middleware;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
