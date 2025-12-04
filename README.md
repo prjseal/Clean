@@ -173,4 +173,3 @@ After installation, you'll need to:
 ## Legacy Versions
 
 Looking for Clean for Umbraco V9-12? Visit the [Clean Starter Kit for Umbraco v9](https://github.com/prjseal/Clean-Starter-Kit-for-Umbraco-v9) repository.
-test
