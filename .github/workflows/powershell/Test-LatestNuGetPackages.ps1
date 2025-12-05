@@ -406,11 +406,48 @@ Write-Host "Site process is still running (PID: $($process.Id))" -ForegroundColo
 # Install Node.js dependencies for Playwright
 Write-Host "`nInstalling Playwright..." -ForegroundColor Yellow
 npm init -y
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: npm init failed with exit code $LASTEXITCODE" -ForegroundColor Red
+    if (-not $process.HasExited) {
+        Stop-Process -Id $process.Id -Force
+    }
+    exit 1
+}
+
 npm install --save-dev playwright
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: npm install playwright failed with exit code $LASTEXITCODE" -ForegroundColor Red
+    if (-not $process.HasExited) {
+        Stop-Process -Id $process.Id -Force
+    }
+    exit 1
+}
+
+# Verify Playwright was installed
+if (-not (Test-Path "$testDir\node_modules\playwright")) {
+    Write-Host "ERROR: Playwright module not found in node_modules" -ForegroundColor Red
+    Write-Host "Expected path: $testDir\node_modules\playwright" -ForegroundColor Yellow
+    if (-not $process.HasExited) {
+        Stop-Process -Id $process.Id -Force
+    }
+    exit 1
+}
+
+Write-Host "Playwright installed successfully" -ForegroundColor Green
 
 # Install Playwright browsers
 Write-Host "Installing Playwright browsers..." -ForegroundColor Yellow
 npx playwright install chromium
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Playwright browser installation failed with exit code $LASTEXITCODE" -ForegroundColor Red
+    if (-not $process.HasExited) {
+        Stop-Process -Id $process.Id -Force
+    }
+    exit 1
+}
 
 # Extract content keys from uSync files
 Write-Host "`nExtracting content keys from uSync files..." -ForegroundColor Yellow
