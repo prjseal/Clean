@@ -38,8 +38,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Web.Website" Version="17.0.2" />
-    <PackageReference Include="Clean.Core" Version="7.0.2" />
-    <PackageReference Include="Clean.Headless" Version="7.0.2" />
+    <PackageReference Include="Clean.Core" Version="7.0.3" />
+    <PackageReference Include="Clean.Headless" Version="7.0.3" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />
