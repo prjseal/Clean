@@ -13,7 +13,7 @@
     <ProjectReference Include="..\Clean.Core\Clean.Core.csproj" />
     <ProjectReference Include="..\Clean.Headless\Clean.Headless.csproj" />
     <ProjectReference Include="..\Clean.Models\Clean.Models.csproj" />
-    <PackageReference Include="uSync" Version="17.0.0" />
+    <PackageReference Include="uSync" Version="17.0.1" />
   </ItemGroup>
   <ItemGroup>
     <!-- Opt-in to app-local ICU to ensure consistent globalization APIs across different platforms -->
