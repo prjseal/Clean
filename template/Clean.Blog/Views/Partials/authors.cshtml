@@ -1,11 +1,13 @@
-﻿@inherits UmbracoViewPage
+
+@inherits UmbracoViewPage
 
 @using Clean.Core.Helpers
 @using Clean.Core.Models.ViewModels;
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels
+@using Umbraco.Extensions
 
 @{
-    AuthorList authorList = UmbracoContext.Content.GetAtRoot().DescendantsOrSelf<AuthorList>().FirstOrDefault();
+    AuthorList authorList = Umbraco.ContentAtRoot().DescendantsOrSelf<AuthorList>().FirstOrDefault();
     int modelId = Model.Id;
     var isAuthorListPage = modelId == authorList?.Id;
     var fallbackPageSize = isAuthorListPage ? 10 : 3;
