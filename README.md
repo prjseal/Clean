@@ -96,7 +96,7 @@ dotnet run --project "MyProject.Blog"
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::17.0.0-rc4 --force
+dotnet new install Umbraco.Templates::13.13.0 --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
