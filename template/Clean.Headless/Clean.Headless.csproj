@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyVersion>8.0.0-beta1</AssemblyVersion>
+    <AssemblyVersion>8.0.0.0</AssemblyVersion>
+    <FileVersion>8.0.0.0</FileVersion>
     <Version>8.0.0-beta1</Version>
     <InformationalVersion>8.0.0-beta1</InformationalVersion>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Microsoft.AspNetCore.OpenApi.Generated</InterceptorsNamespaces>
     <Authors>Paul Seal,Phil Whittaker</Authors>
     <ContentTargetFolders>.</ContentTargetFolders>
     <Product>Clean.Headless</Product>

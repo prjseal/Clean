@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyVersion>8.0.0-beta1</AssemblyVersion>
+    <AssemblyVersion>8.0.0.0</AssemblyVersion>
+    <FileVersion>8.0.0.0</FileVersion>
     <Version>8.0.0-beta1</Version>
     <InformationalVersion>8.0.0-beta1</InformationalVersion>
     <TargetFramework>net10.0</TargetFramework>
