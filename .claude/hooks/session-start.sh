@@ -10,6 +10,7 @@ fi
 
 DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
 INSTALL_SCRIPT="$HOME/.dotnet-install.sh"
+# Channel "10.0" tracks the latest .NET 10 SDK, which Umbraco 18 requires.
 CHANNEL="10.0"
 
 mkdir -p "$DOTNET_ROOT"
