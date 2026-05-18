@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyVersion>7.0.5</AssemblyVersion>
-    <Version>7.0.5</Version>
-    <InformationalVersion>7.0.5</InformationalVersion>
+    <AssemblyVersion>8.0.0-beta1</AssemblyVersion>
+    <Version>8.0.0-beta1</Version>
+    <InformationalVersion>8.0.0-beta1</InformationalVersion>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <Authors>Paul Seal,Phil Whittaker</Authors>
@@ -20,8 +20,8 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.Website" Version="17.1.0" />
-    <PackageReference Include="Umbraco.Cms.Api.Common" Version="17.1.0" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="18.0.0-beta2" />
+    <PackageReference Include="Umbraco.Cms.Api.Common" Version="18.0.0-beta2" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Revalidate\" />

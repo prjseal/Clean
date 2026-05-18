@@ -11,9 +11,9 @@
                 if (!(content.HasProperty("excludeFromSitemap") && content.Value<bool>("excludeFromSitemap")))
                 {
 <url><loc>@content.Url(mode:UrlMode.Absolute)</loc><lastmod>@content.UpdateDate.ToString("yyyy-MM-ddTHH:mm:sszzz")</lastmod></url>
-                    if (content.Children.Any(x => x.IsVisible()))
+                    if (content.Children().Any(x => x.IsVisible()))
                     {
-                        RenderChildPages(content.Children);
+                        RenderChildPages(content.Children());
                     }
                 }
             }
@@ -26,7 +26,7 @@
     xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
 <url><loc>@homePage.Url(mode: UrlMode.Absolute)</loc><priority>1.0</priority><lastmod>@homePage.UpdateDate.ToString("yyyy-MM-ddTHH:mm:sszzz")</lastmod></url>
     @{
-        RenderChildPages(homePage.Children);
+        RenderChildPages(homePage.Children());
     }
 </urlset>
 
