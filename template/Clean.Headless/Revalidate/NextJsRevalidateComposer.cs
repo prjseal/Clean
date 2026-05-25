@@ -11,7 +11,10 @@ namespace Clean.Headless.Revalidate
         public void Compose(IUmbracoBuilder builder)
         {
             builder.Services.AddTransient<NextJsRevalidateService>();
-            builder.AddNotificationAsyncHandler<ContentPublishedNotification, NextJsRevalidatePublishedNotificationHandler>();
+            builder.AddNotificationAsyncHandler<ContentPublishedNotification, NextJsRevalidateContentNotificationHandler>();
+            builder.AddNotificationAsyncHandler<ContentUnpublishedNotification, NextJsRevalidateContentNotificationHandler>();
+            builder.AddNotificationAsyncHandler<ContentMovedToRecycleBinNotification, NextJsRevalidateContentNotificationHandler>();
+            builder.AddNotificationAsyncHandler<ContentDeletedNotification, NextJsRevalidateContentNotificationHandler>();
             builder.AddNotificationAsyncHandler<DictionaryItemSavedNotification, NextJsRevalidateDictionaryNotificationHandler>();
 
             OptionsBuilder<NextJsRevalidateOptions> optionsBuilder = builder.Services.AddOptions<NextJsRevalidateOptions>()

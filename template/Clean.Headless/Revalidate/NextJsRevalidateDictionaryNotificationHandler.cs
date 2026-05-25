@@ -12,11 +12,11 @@ namespace Clean.Headless.Revalidate
     {
         private readonly NextJsRevalidateService _revalidateService;
         private readonly NextJsRevalidateOptions _config;
-        private readonly ILogger<NextJsRevalidatePublishedNotificationHandler> _logger;
+        private readonly ILogger<NextJsRevalidateDictionaryNotificationHandler> _logger;
 
         public NextJsRevalidateDictionaryNotificationHandler(NextJsRevalidateService revalidateService,
             IOptions<NextJsRevalidateOptions> options,
-            ILogger<NextJsRevalidatePublishedNotificationHandler> logger)
+            ILogger<NextJsRevalidateDictionaryNotificationHandler> logger)
         {
             _revalidateService = revalidateService;
             _config = options.Value;
