@@ -29,6 +29,14 @@ namespace Clean.Headless.Revalidate
             });
         }
 
+        public async Task UpdateArticles()
+        {
+            await Send(new
+            {
+                updateArticles = true
+            });
+        }
+
         public async Task ForContent(string path)
         {
             await Send(new
@@ -42,6 +50,30 @@ namespace Clean.Headless.Revalidate
             await Send(new
             {
                 updateLocalisation = true
+            });
+        }
+
+       public async Task IsUnpublished()
+        {
+            await Send(new
+            {
+                isUnpublished = true
+            });
+        }
+
+       public async Task IsDeleted()
+        {
+            await Send(new
+            {
+                isDeleted = true
+            });
+        }
+
+        public async Task IsTrashed()
+        {
+            await Send(new
+            {
+                isTrashed = true
             });
         }
 
@@ -70,7 +102,7 @@ namespace Clean.Headless.Revalidate
                             catch (Exception ex)
                             {
                                 throw new Exception(
-                                    $"NextJs revalidation request has failed at {url}> Is your headless site running?", ex);
+                                    $"NextJs revalidation request has failed at {url} - Is your headless site running?", ex);
                             }
                         }     
                     }
