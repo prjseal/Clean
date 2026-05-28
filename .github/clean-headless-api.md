@@ -6,11 +6,13 @@ The Clean starter kit includes full support for headless implementations. To ena
 
 ```json
 {
-  "Umbraco": {
-    "DeliveryApi": {
-      "Enabled": true
+    "Umbraco": {
+        "CMS": {
+            "DeliveryApi": {
+                "Enabled": true
+            }
+        }
     }
-  }
 }
 ```
 
