@@ -38,7 +38,7 @@
     <EmbeddedResource Include="Migrations\package.zip" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.Website" Version="18.0.0-beta2" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="18.0.0-rc2" />
     <PackageReference Include="Clean.Core" Version="8.0.0-beta01" />
     <PackageReference Include="Clean.Headless" Version="8.0.0-beta01" />
   </ItemGroup>
