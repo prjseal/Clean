@@ -488,7 +488,7 @@ flowchart TD
     
     GetVersion --> ShowVersion[5. Display Version Info<br/>Show base version, build number, full version]
     
-    ShowVersion --> CreatePackages[6. Create NuGet Packages<br/>Start Umbraco<br/>Download package via API<br/>Fix BlockList labels<br/>Update .csproj versions<br/>Build in dependency order]
+    ShowVersion --> CreatePackages[6. Create NuGet Packages<br/>Start Umbraco<br/>Download package via API<br/>Update .csproj versions<br/>Build in dependency order]
     
     CreatePackages --> UploadArtifacts[7. Upload Package Artifacts<br/>Save .nupkg files to workflow]
     

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CreateNuGetPackages.ps1` script automates the process of creating NuGet packages for the Clean Umbraco starter kit. It handles version management, package creation, and includes a temporary workaround for Umbraco BlockList label export issues.
+The `CreateNuGetPackages.ps1` script automates the process of creating NuGet packages for the Clean Umbraco starter kit. It handles version management and package creation.
 
 **Location:** `.github/workflows/powershell/CreateNuGetPackages.ps1`
 
@@ -124,7 +124,6 @@ sequenceDiagram
         Umbraco-->>Script: Bearer token
         Script->>Umbraco: Create package via API
         Umbraco-->>Script: package.zip
-        Script->>Script: Fix BlockList labels (workaround)
         Script->>Script: Update .csproj versions
         Script->>Script: Build & pack all projects
         Script-->>PR: 4 .nupkg files in .artifacts/nuget
@@ -151,7 +150,6 @@ sequenceDiagram
         Umbraco-->>Script: Bearer token
         Script->>Umbraco: Create package via API
         Umbraco-->>Script: package.zip
-        Script->>Script: Fix BlockList labels (workaround)
         Script->>Script: Update .csproj versions
         Script->>Script: Build & pack all projects
         Script-->>Release: 4 .nupkg files in .artifacts/nuget
@@ -206,23 +204,7 @@ The `update-packages.yml` workflow does NOT use this script. It uses `UpdateThir
 - Downloads the package from: `/umbraco/management/api/v1/package/created/{packageId}/download/`
 - Saves the package as `package.zip` in the output folder
 
-### 5. BlockList Labels Fix (Temporary Workaround)
-
-**Status:** Temporary workaround for [Umbraco Issue #20801](https://github.com/umbraco/Umbraco-CMS/issues/20801)
-
-**What it does:**
-- Extracts the downloaded `package.zip` to a temporary location
-- Reads the `package.xml` file
-- Reads the uSync configuration from `template/Clean.Blog/uSync/v17/DataTypes/BlockListMainContent.config`
-- Extracts BlockList label mappings from the uSync configuration
-- Injects the missing labels into the `[BlockList] Main Content` DataType configuration in `package.xml`
-- Re-packs the package with the fixed configuration
-
-**To disable:** Set `$FixBlockListLabels = $false` at the top of the script
-
-**When to remove:** Delete the entire workaround section when Umbraco releases a fix for issue #20801
-
-### 6. Version Updates in .csproj Files
+### 5. Version Updates in .csproj Files
 
 **Target files:** All `.csproj` files except:
 - `Clean.Blog.csproj`
@@ -234,12 +216,12 @@ The `update-packages.yml` workflow does NOT use this script. It uses `UpdateThir
 - **AssemblyVersion:** Set to base version without suffix (e.g., `7.0.0`)
 - **PackageReference for Clean.* packages:** Updated to match the new version
 
-### 7. Clean Build Environment
+### 6. Clean Build Environment
 
 - Empties all `bin` folders in the repository (excluding `.vs` folders)
 - Ensures a clean build environment for package creation
 
-### 8. NuGet Package Building
+### 7. NuGet Package Building
 
 **Build order** (to satisfy dependencies):
 1. **Clean.Core** - Built and packed first
@@ -254,16 +236,15 @@ The `update-packages.yml` workflow does NOT use this script. It uses `UpdateThir
 - Copies intermediate packages to the local NuGet source immediately after packing
 - Removes the temporary local source after all builds complete
 
-### 9. Package Collection
+### 8. Package Collection
 
 - Finds all `.nupkg` files in `Release` folders matching the version
 - Copies all packages to `.artifacts/nuget`
 - Displays the list of generated packages
 
-### 10. Cleanup
+### 9. Cleanup
 
 - Stops the Umbraco process
-- Removes temporary extraction folders
 - Removes the temporary local NuGet source
 
 ## Generated Packages
@@ -287,18 +268,7 @@ All packages are copied to: `.artifacts/nuget/`
 
 ## Known Issues and Workarounds
 
-### 1. Umbraco BlockList Label Export (Issue #20801)
-
-**Problem:** Umbraco doesn't export BlockList labels when creating packages via the Management API.
-
-**Workaround:** The script includes the `Fix-BlockListLabels` function that:
-- Reads labels from the uSync configuration
-- Injects them into the package.xml
-- Removes markdown bold markers (`**`) from labels
-
-**Status:** Temporary - Remove when Umbraco fixes the issue
-
-### 2. SSL Certificate Validation
+### 1. SSL Certificate Validation
 
 **Problem:** CI/CD environments may use self-signed certificates.
 
@@ -337,16 +307,6 @@ All packages are copied to: `.artifacts/nuget/`
 - Ensure the local NuGet source is added correctly
 - Check that intermediate packages are being copied to `.artifacts/nuget`
 
-### BlockList labels not applied
-
-**Symptoms:** Package.xml doesn't contain BlockList labels
-
-**Solutions:**
-- Verify `$FixBlockListLabels = $true`
-- Check that the uSync config exists at the expected path
-- Ensure the `package.xml` contains the `[BlockList] Main Content` DataType
-- Review verbose output for warnings
-
 ### Version not updated in .csproj files
 
 **Symptoms:** Some projects still have old version numbers
@@ -363,7 +323,6 @@ All packages are copied to: `.artifacts/nuget/`
 - Umbraco startup status
 - API authentication status
 - Package download confirmation
-- BlockList label fix details (before/after comparison)
 - List of updated .csproj files
 - Build and pack status for each project
 - List of generated NuGet packages
@@ -394,19 +353,14 @@ All packages are copied to: `.artifacts/nuget/`
 
 **When to update this script:**
 
-1. **Remove BlockList workaround** when Umbraco fixes issue #20801
-   - Delete the `Fix-BlockListLabels` function (lines 15-113)
-   - Delete the workaround section (lines 474-523)
-   - Set `$FixBlockListLabels = $false` or remove the variable
+1. **Update API credentials** if the Umbraco configuration changes
+   - Update `client_id` and `client_secret` in the `$tokenBody`
 
-2. **Update API credentials** if the Umbraco configuration changes
-   - Update `client_id` and `client_secret` in the `$tokenBody` (lines 405-408)
-
-3. **Add new projects** to the build order
-   - Add project discovery (similar to lines 690-700)
+2. **Add new projects** to the build order
+   - Add project discovery
    - Add build/pack step in the appropriate order
 
-4. **Change port or URL** if the Umbraco project configuration changes
+3. **Change port or URL** if the Umbraco project configuration changes
    - Update all references to `https://localhost:44340`
 
 ## Related Files
@@ -420,7 +374,6 @@ All packages are copied to: `.artifacts/nuget/`
 - `README.md` - Updated with version numbers
 - `umbraco-marketplace-readme.md` - Umbraco marketplace README, updated with version numbers
 - `umbraco-marketplace-readme-clean.md` - Umbraco marketplace README for Clean package, updated with version numbers
-- `template/Clean.Blog/uSync/v17/DataTypes/BlockListMainContent.config` - Source of BlockList labels
 
 ## Support
 

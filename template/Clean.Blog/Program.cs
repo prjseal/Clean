@@ -1,3 +1,4 @@
+using Clean.Blog.Composing;
 using Clean.Blog.Middleware;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -11,6 +12,10 @@ builder.CreateUmbracoBuilder()
 WebApplication app = builder.Build();
 
 await app.BootUmbracoAsync();
+
+// Provision the backoffice API client before the Kestrel listener accepts
+// requests, so CreateNuGetPackages.ps1's first /token call doesn't race startup.
+await ApiClientSetup.EnsureAsync(app.Services);
 
 // Add security headers middleware
 app.UseMiddleware<SecurityHeadersMiddleware>();
