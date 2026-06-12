@@ -556,7 +556,7 @@ flowchart TD
     
     ShowVersion --> UpdateREADME[5. Update README Files<br/>Map Clean version to Umbraco<br/>Update installation commands]
     
-    UpdateREADME --> CreatePackages[6. Create NuGet Packages<br/>Start Umbraco<br/>Download package via API<br/>Fix BlockList labels<br/>Update .csproj versions<br/>Build in dependency order]
+    UpdateREADME --> CreatePackages[6. Create NuGet Packages<br/>Start Umbraco<br/>Download package via API<br/>Update .csproj versions<br/>Build in dependency order]
     
     CreatePackages --> UploadArtifacts[7. Upload Package Artifacts<br/>Save .nupkg files to workflow]
     

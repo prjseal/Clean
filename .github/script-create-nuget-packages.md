@@ -2,7 +2,7 @@
 
 ## Overview
 
-This comprehensive script creates NuGet packages by starting Umbraco, downloading the package via API, applying BlockList label fixes (temporary workaround), updating .csproj versions, and building all packages in dependency order.
+This comprehensive script creates NuGet packages by starting Umbraco, downloading the package via API, updating .csproj versions, and building all packages in dependency order.
 
 ## Script Location
 
@@ -10,7 +10,7 @@ This comprehensive script creates NuGet packages by starting Umbraco, downloadin
 
 ## Purpose
 
-Orchestrates the entire package creation process including running Umbraco, downloading content package, fixing BlockList labels, updating versions, and building all NuGet packages.
+Orchestrates the entire package creation process including running Umbraco, downloading content package, updating versions, and building all NuGet packages.
 
 ## When It's Used
 
@@ -30,19 +30,10 @@ Orchestrates the entire package creation process including running Umbraco, down
 4. **Starts Umbraco** - Runs Clean.Blog project
 5. **Waits for API** - Polls until Umbraco responds
 6. **Downloads Package** - Gets package.zip via API
-7. **Fixes BlockList Labels** - Applies workaround for Umbraco issue #20801
-8. **Updates Versions** - Sets version in all .csproj files
-9. **Builds Packages** - In dependency order: Core → Headless → Clean → Template
+7. **Updates Versions** - Sets version in all .csproj files
+8. **Builds Packages** - In dependency order: Core → Headless → Clean → Template
 
 ## Key Features
-
-### BlockList Label Fix (Temporary)
-
-Workaround for [Umbraco issue #20801](https://github.com/umbraco/Umbraco-CMS/issues/20801):
-- Extracts package.zip
-- Reads BlockList config from uSync
-- Adds labels to package.xml
-- Repacks package.zip
 
 ### Dependency Order Building
 
@@ -86,12 +77,10 @@ Packages created in `.artifacts/nuget/`:
 ## Related Documentation
 
 - [workflow-versioning-releases.md](workflow-versioning-releases.md) - Parent workflow
-- BlockList issue: https://github.com/umbraco/Umbraco-CMS/issues/20801
 
 ## Notes
 
-- **Most complex script** in the workflow (831 lines)
-- **Temporary BlockList fix** - remove when Umbraco fixes issue
+- **Most complex script** in the workflow
 - **Builds in dependency order** to avoid package resolution errors
 - **Uses local NuGet source** for intermediate packages
 - **Supports both PowerShell 5.x and Core 6+**
