@@ -5,26 +5,15 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.OperationStatus;
-using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Infrastructure.Security;
 
 namespace Clean.Blog.Composing;
 
+// Provisions the backoffice API client used by CreateNuGetPackages.ps1 to export
+// the package via the management API. This replaces uSync.Command.Setup, which has
+// no Umbraco 18 release; content/schema sync itself is handled by uSync.
 internal static class ApiClientSetup
 {
-    // Run the Clean.Blog package migration synchronously so the runtime is at
-    // Run before the listener accepts requests. By default Umbraco defers package
-    // migrations to a hosted service that races with first incoming traffic, and
-    // /umbraco/management/api/v1/security/back-office/token returns 503
-    // "application is currently being upgraded" until that hosted service
-    // finishes.
-    public static async Task RunPackageMigrationsAsync(IServiceProvider rootServices, string packageName)
-    {
-        using var scope = rootServices.CreateScope();
-        var runner = scope.ServiceProvider.GetRequiredService<PackageMigrationRunner>();
-        await runner.RunPendingPackageMigrations(packageName);
-    }
-
     public static async Task EnsureAsync(IServiceProvider rootServices, CancellationToken ct = default)
     {
         using var scope = rootServices.CreateScope();
