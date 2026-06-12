@@ -3,7 +3,7 @@
     Extracts content keys from uSync configuration files.
 
 .DESCRIPTION
-    This script reads uSync configuration files from the v17 directory structure
+    This script reads uSync configuration files from the v18 directory structure
     and extracts the Key (GUID) values for published content items.
 
 .PARAMETER WorkspacePath
@@ -41,7 +41,7 @@ Write-Host "uSync File Type: $UsyncFileType" -ForegroundColor Yellow
 Write-Host "Published Only: $PublishedOnly" -ForegroundColor Yellow
 
 # Construct path to uSync directory
-$usyncPath = Join-Path $WorkspacePath "template\Clean.Blog\uSync\v17\$UsyncFileType"
+$usyncPath = Join-Path $WorkspacePath "template\Clean.Blog\uSync\v18\$UsyncFileType"
 
 if (-not (Test-Path $usyncPath)) {
     Write-Host "ERROR: uSync directory not found at: $usyncPath" -ForegroundColor Red
