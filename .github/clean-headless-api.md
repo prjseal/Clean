@@ -16,6 +16,19 @@ The Clean starter kit includes full support for headless implementations. To ena
 }
 ```
 
+Update your `program.cs`:
+
+```csharp
+builder.CreateUmbracoBuilder()
+    .AddBackOffice()
+    .AddWebsite()
+    .AddDeliveryApi()
+    .AddComposers()
+    .Build();
+```
+
+Once the Content Delivery API is enabled, the next step is to rebuild the Delivery API content index **DeliveryApiContentIndex**. This can be done using the Examine Management dashboard in the Settings section of the Umbraco Backoffice.
+
 ## Next.js Revalidation
 
 To enable automatic revalidation of content in Next.js applications, configure the following in your `appsettings.json`:
