@@ -265,6 +265,7 @@ The Clean packages maintain version alignment with Umbraco CMS:
 | 5.x.x | 15.x | STS | .NET 9 |
 | 6.x.x | 16.x | STS | .NET 9 |
 | 7.x.x | 17.x | LTS | .NET 10 |
+| 8.x.x | 18.x | STS | .NET 10 |
 
 **Versioning Guidelines**:
 - Major version changes when targeting new Umbraco major version
