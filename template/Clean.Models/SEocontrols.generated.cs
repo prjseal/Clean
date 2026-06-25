@@ -78,7 +78,7 @@ namespace Umbraco.Cms.Web.Common.PublishedModels
 		// properties
 
 		///<summary>
-		/// Is Followable: Set this to true if you want the page to be followable by robots
+		/// Is Followable: Set this to true if you want the page to be followable by robots   {details} {summary} {uui-icon name="icon-help-alt"}{/uui-icon} More information {/summary}  This sets the *follow* aspect of the [`robots` meta tag](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta/name/robots)  {/details}
 		///</summary>
 		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "18.0.0-rc1+45686c9")]
 		[ImplementPropertyType("isFollowable")]
@@ -89,7 +89,7 @@ namespace Umbraco.Cms.Web.Common.PublishedModels
 		public static bool GetIsFollowable(ISEocontrols that, IPublishedValueFallback publishedValueFallback) => that.Value<bool>(publishedValueFallback, "isFollowable");
 
 		///<summary>
-		/// Is Indexable: Set this to true if you want this page to be indexable by robots
+		/// Is Indexable: Set this to true if you want this page to be indexable by robots  {details} {summary} {uui-icon name="icon-help-alt"}{/uui-icon} More information {/summary}  This sets the *index* aspect of the [`robots` meta tag](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta/name/robots)  {/details}
 		///</summary>
 		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "18.0.0-rc1+45686c9")]
 		[ImplementPropertyType("isIndexable")]

@@ -2,8 +2,8 @@
   <PropertyGroup>
     <AssemblyVersion>8.0.0.0</AssemblyVersion>
     <FileVersion>8.0.0.0</FileVersion>
-    <Version>8.0.0-beta1</Version>
-    <InformationalVersion>8.0.0-beta1</InformationalVersion>
+    <Version>8.0.0</Version>
+    <InformationalVersion>8.0.0</InformationalVersion>
     <TargetFramework>net10.0</TargetFramework>
     <Authors>Paul Seal</Authors>
     <ContentTargetFolders>.</ContentTargetFolders>

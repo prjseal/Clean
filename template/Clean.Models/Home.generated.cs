@@ -90,14 +90,14 @@ namespace Umbraco.Cms.Web.Common.PublishedModels
 		public virtual global::Umbraco.Cms.Core.Models.MediaWithCrops MainImage => global::Umbraco.Cms.Web.Common.PublishedModels.MainImageControls.GetMainImage(this, _publishedValueFallback);
 
 		///<summary>
-		/// Is Followable: Set this to true if you want the page to be followable by robots
+		/// Is Followable: Set this to true if you want the page to be followable by robots   {details} {summary} {uui-icon name="icon-help-alt"}{/uui-icon} More information {/summary}  This sets the *follow* aspect of the [`robots` meta tag](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta/name/robots)  {/details}
 		///</summary>
 		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "18.0.0-rc1+45686c9")]
 		[ImplementPropertyType("isFollowable")]
 		public virtual bool IsFollowable => global::Umbraco.Cms.Web.Common.PublishedModels.SEocontrols.GetIsFollowable(this, _publishedValueFallback);
 
 		///<summary>
-		/// Is Indexable: Set this to true if you want this page to be indexable by robots
+		/// Is Indexable: Set this to true if you want this page to be indexable by robots  {details} {summary} {uui-icon name="icon-help-alt"}{/uui-icon} More information {/summary}  This sets the *index* aspect of the [`robots` meta tag](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta/name/robots)  {/details}
 		///</summary>
 		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "18.0.0-rc1+45686c9")]
 		[ImplementPropertyType("isIndexable")]

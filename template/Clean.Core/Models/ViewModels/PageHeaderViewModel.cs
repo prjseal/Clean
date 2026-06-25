@@ -17,12 +17,12 @@ namespace Clean.Core.Models.ViewModels
         public bool HasAuthor => !string.IsNullOrWhiteSpace(AuthorName);
         public DateTime? ArticleDate { get; set; }
         public bool IsArticle => ArticleDate.HasValue;
-        public IEnumerable<IPublishedContent> Categories { get; set; }
+        public IEnumerable<IPublishedElement> Categories { get; set; }
 
         public PageHeaderViewModel(string name, string title, 
             string subtitle, IPublishedContent backgroundImage,
             string authorName = null, DateTime? articleDate = null, 
-            IEnumerable<IPublishedContent> categories = null)
+            IEnumerable<IPublishedElement> categories = null)
         {
             Name = name;
             Title = title;
