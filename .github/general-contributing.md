@@ -380,6 +380,7 @@ The Clean Starter Kit supports multiple versions of Umbraco:
 | 5.x          | 15              | .NET 9       | STS          |
 | 6.x          | 16              | .NET 9       | STS          |
 | 7.x          | 17              | .NET 10      | LTS          |
+| 8.x          | 18              | .NET 10      | STS          |
 
 When contributing:
 - **Target the appropriate version** for your changes

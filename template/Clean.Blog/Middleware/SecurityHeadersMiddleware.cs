@@ -16,14 +16,15 @@ public class SecurityHeadersMiddleware
     // Default CSP policy suitable for Umbraco CMS
     private const string DefaultCspPolicy =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "font-src 'self' data: https://fonts.gstatic.com; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://use.fontawesome.com; " +
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+        "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
         "img-src 'self' data: https:; " +
-        "connect-src 'self'; " +
+        "connect-src 'self' https://cdn.jsdelivr.net;" +
         "frame-ancestors 'self'; " +
         "base-uri 'self'; " +
-        "form-action 'self'";
+        "form-action 'self'; " +
+        "frame-src https://www.youtube.com;";
 
     public SecurityHeadersMiddleware(RequestDelegate next, IConfiguration configuration)
     {

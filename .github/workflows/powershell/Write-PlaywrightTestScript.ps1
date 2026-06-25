@@ -290,11 +290,6 @@ const path = require('path');
             '-content-' +
             contentKey +
             '.png';
-          const elementScreenshotName =
-            counter.toString().padStart(2, '0') +
-            '-content-tab-' +
-            contentKey +
-            '.png';
           await page.screenshot({
             path: path.join(screenshotsDir, screenshotName),
             fullPage: true,
@@ -302,11 +297,6 @@ const path = require('path');
 
           console.log('Screenshot saved: ' + screenshotName);
           console.log('');
-
-          const element = page.locator('#splitViews #main').nth(2);
-          await element.screenshot({
-            path: path.join(screenshotsDir, elementScreenshotName),
-          });
 
           counter++;
         } catch (error) {
