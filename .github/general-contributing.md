@@ -88,20 +88,18 @@ This means:
 The uSync configuration files are located in:
 ```
 template/Clean.Blog/uSync/
-├── v16/                    # Umbraco 16 configuration
-├── v17/                    # Umbraco 17 configuration
-│   ├── Content/           # Content nodes
-│   ├── ContentTypes/      # Document Types
-│   ├── DataTypes/         # Data Type definitions
-│   ├── Dictionary/        # Dictionary items for translations
-│   ├── Languages/         # Language configurations
-│   ├── Media/             # Media items
-│   ├── MediaTypes/        # Media Type definitions
-│   ├── MemberTypes/       # Member Type definitions
-│   ├── RelationTypes/     # Relation Type definitions
-│   ├── Templates/         # Razor templates
-│   └── usync.config       # uSync version metadata
-└── v17-backup/            # Backup configuration
+└── v18/                    # Umbraco 18 configuration
+    ├── Content/           # Content nodes
+    ├── ContentTypes/      # Document Types
+    ├── DataTypes/         # Data Type definitions
+    ├── Dictionary/        # Dictionary items for translations
+    ├── Languages/         # Language configurations
+    ├── Media/             # Media items
+    ├── MediaTypes/        # Media Type definitions
+    ├── MemberTypes/       # Member Type definitions
+    ├── RelationTypes/     # Relation Type definitions
+    ├── Templates/         # Razor templates
+    └── usync.config       # uSync version metadata
 ```
 
 ## Database Changes and uSync
@@ -382,6 +380,7 @@ The Clean Starter Kit supports multiple versions of Umbraco:
 | 5.x          | 15              | .NET 9       | STS          |
 | 6.x          | 16              | .NET 9       | STS          |
 | 7.x          | 17              | .NET 10      | LTS          |
+| 8.x          | 18              | .NET 10      | STS          |
 
 When contributing:
 - **Target the appropriate version** for your changes

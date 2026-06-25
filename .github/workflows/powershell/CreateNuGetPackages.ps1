@@ -436,7 +436,7 @@ try {
 
         # Paths
         $packageXmlPath = Join-Path $tempExtractPath "package.xml"
-        $usyncConfigPath = Join-Path $CurrentDir "template\Clean.Blog\uSync\v17\DataTypes\BlockListMainContent.config"
+        $usyncConfigPath = Join-Path $CurrentDir "template\Clean.Blog\uSync\v18\DataTypes\BlockListMainContent.config"
 
         if ((Test-Path $packageXmlPath) -and (Test-Path $usyncConfigPath)) {
             # Call the PowerShell function to fix labels

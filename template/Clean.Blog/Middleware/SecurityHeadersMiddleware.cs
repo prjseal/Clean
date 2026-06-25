@@ -20,10 +20,11 @@ public class SecurityHeadersMiddleware
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
         "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
         "img-src 'self' data: https:; " +
-        "connect-src 'self'; " +
+        "connect-src 'self' https://cdn.jsdelivr.net;" +
         "frame-ancestors 'self'; " +
         "base-uri 'self'; " +
-        "form-action 'self'";
+        "form-action 'self'; " +
+        "frame-src https://www.youtube.com;";
 
     public SecurityHeadersMiddleware(RequestDelegate next, IConfiguration configuration)
     {
