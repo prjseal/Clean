@@ -36,6 +36,7 @@
     <None Remove="Migrations\package.zip" />
     <None Remove="Views\Components\Pagination\default.cshtml" />
     <EmbeddedResource Include="Migrations\package.zip" />
+    <EmbeddedResource Include="Migrations\ElementLibrary\*.config" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Web.Website" Version="18.0.0" />
