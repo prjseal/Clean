@@ -33,7 +33,7 @@ Clean Starter Kit provides everything you need to launch a professional blog or 
 - **Quick Setup** - SQLite by default for instant development environment
 - **No External Dependencies** - Self-contained with no third-party package requirements
 - **dotnet Template** - Install with `dotnet new umbraco-starter-clean`
-- **Multi-version Support** - Works with Umbraco 13 (.NET 8) and Umbraco 17 (.NET 10)
+- **Multi-version Support** - Works on all versions since Umbraco 8. Latest version targets Umbraco 18 (.NET 10)
 
 ## Package Structure
 
@@ -57,13 +57,13 @@ API controllers and headless CMS functionality. Enables full Content Delivery AP
 
 dotnet CLI template for creating new projects. Use `dotnet new umbraco-starter-clean` to scaffold a complete Umbraco project with Clean pre-installed.
 
-## Umbraco 17 (LTS)
+## Umbraco 18 (STS)
 
 ### NuGet Package Method
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::17.1.0 --force
+dotnet new install Umbraco.Templates::18.0.0 --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
@@ -71,7 +71,7 @@ dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --emai
 dotnet sln add "MyProject"
 
 # Add Clean package
-dotnet add "MyProject" package Clean --version 7.0.7
+dotnet add "MyProject" package Clean --version 8.0.0
 
 # Run the project
 dotnet run --project "MyProject"
@@ -85,14 +85,14 @@ dotnet run --project "MyProject"
 
 ```powershell
 dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 7.0.7
+dotnet add "MyProject" package Clean.Core --version 8.0.0
 ```
 
 ### dotnet Template Method
 
 ```powershell
 # Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::7.0.7 --force
+dotnet new install Umbraco.Community.Templates.Clean::8.0.0 --force
 
 # Create a new project using the template
 dotnet new umbraco-starter-clean -n MyProject
@@ -108,13 +108,22 @@ dotnet run --project "MyProject.Blog"
 # The site should now be running and visible on the front end
 ```
 
+> **✨ Note**: As of version 7.0.0, the template now supports periods in project names (e.g., `Company.Website`).
+
+## Umbraco 17 (LTS)
+
+If you need to use Clean with Umbraco 17 (LTS), use the latest `7.x` release. The `dev/v7` branch on GitHub is where ongoing Umbraco 17 development takes place.
+
+- **NuGet**: `dotnet add package Clean --version 7.0.7`
+- **Branch**: [dev/v7](https://github.com/prjseal/Clean/tree/dev/v7)
+
 ## Umbraco 13 (LTS)
 
 ### NuGet Package Method
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::13.12.0 --force
+dotnet new install Umbraco.Templates::13.14.0 --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
@@ -158,8 +167,6 @@ dotnet run --project "MyProject.Blog"
 # Save and publish the home page and save one of the dictionary items in the translation section
 # The site should now be running and visible on the front end
 ```
-
-> **✨ Note**: As of version 7.0.0-rc4, the template now supports periods in project names (e.g., `Company.Website`). Previous versions had a limitation that prevented using periods due to internal class naming conflicts, which has been resolved.
 
 ### Post-Installation
 
@@ -221,6 +228,7 @@ Available APIs:
 | ------------- | --------------- | ------------ | ------------ |
 | 4.x           | 13              | .NET 8       | LTS          |
 | 7.x           | 17              | .NET 10      | LTS          |
+| 8.x           | 18              | .NET 10      | STS          |
 
 ## Getting Help
 

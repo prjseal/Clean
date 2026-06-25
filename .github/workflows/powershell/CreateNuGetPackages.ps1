@@ -12,6 +12,18 @@ param(
 # ============================================================================
 $FixBlockListLabels = $true
 
+# ============================================================================
+# TEMPORARY WORKAROUND - Remove when Umbraco supports element library items
+# natively in the package XML format.
+#
+# Set to $false to disable copying element library configs into Clean.
+# When removing: delete CreateElementLibraryMigration.cs, remove its To<>
+# step from StarterKitPackageMigrationPlan.cs, remove the EmbeddedResource
+# line for Migrations\ElementLibrary\*.config from Clean.csproj, and delete
+# the Migrations\ElementLibrary folder.
+# ============================================================================
+$CreateElementLibraryItems = $true
+
 function Fix-BlockListLabels {
     param(
         [Parameter(Mandatory = $true)]
@@ -436,7 +448,7 @@ try {
 
         # Paths
         $packageXmlPath = Join-Path $tempExtractPath "package.xml"
-        $usyncConfigPath = Join-Path $CurrentDir "template\Clean.Blog\uSync\v17\DataTypes\BlockListMainContent.config"
+        $usyncConfigPath = Join-Path $CurrentDir "template\Clean.Blog\uSync\v18\DataTypes\BlockListMainContent.config"
 
         if ((Test-Path $packageXmlPath) -and (Test-Path $usyncConfigPath)) {
             # Call the PowerShell function to fix labels
@@ -483,6 +495,18 @@ catch {
 if ($umbracoProcess -and !$umbracoProcess.HasExited) {
     Write-Host "Stopping Umbraco process with ID: $($umbracoProcess.Id)"
     Stop-Process -Id $umbracoProcess.Id -Force
+}
+
+if ($CreateElementLibraryItems) {
+    $elementLibrarySource = Join-Path $CurrentDir "template\Clean.Blog\uSync\v18\Element"
+    $elementLibraryDest   = Join-Path $CurrentDir "template\Clean\Migrations\ElementLibrary"
+    if (Test-Path $elementLibrarySource) {
+        New-Item -ItemType Directory -Path $elementLibraryDest -Force | Out-Null
+        Copy-Item -Path "$elementLibrarySource\*.config" -Destination $elementLibraryDest -Force
+        Write-Host "Copied element library configs to Clean\Migrations\ElementLibrary" -ForegroundColor Green
+    } else {
+        Write-Host "Warning: element library source folder not found at $elementLibrarySource" -ForegroundColor Yellow
+    }
 }
 
 # update the Version and PackageVersion in all .csproj files except Clean.Blog.csproj and Clean.Models.csproj

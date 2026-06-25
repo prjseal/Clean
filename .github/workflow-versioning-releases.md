@@ -265,6 +265,7 @@ The Clean packages maintain version alignment with Umbraco CMS:
 | 5.x.x | 15.x | STS | .NET 9 |
 | 6.x.x | 16.x | STS | .NET 9 |
 | 7.x.x | 17.x | LTS | .NET 10 |
+| 8.x.x | 18.x | STS | .NET 10 |
 
 **Versioning Guidelines**:
 - Major version changes when targeting new Umbraco major version
@@ -556,7 +557,7 @@ flowchart TD
     
     ShowVersion --> UpdateREADME[5. Update README Files<br/>Map Clean version to Umbraco<br/>Update installation commands]
     
-    UpdateREADME --> CreatePackages[6. Create NuGet Packages<br/>Start Umbraco<br/>Download package via API<br/>Fix BlockList labels<br/>Update .csproj versions<br/>Build in dependency order]
+    UpdateREADME --> CreatePackages[6. Create NuGet Packages<br/>Start Umbraco<br/>Download package via API<br/>Update .csproj versions<br/>Build in dependency order]
     
     CreatePackages --> UploadArtifacts[7. Upload Package Artifacts<br/>Save .nupkg files to workflow]
     

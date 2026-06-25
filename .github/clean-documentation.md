@@ -98,16 +98,6 @@ Documentation related to GitHub Actions workflows and automation:
 
 ---
 
-## Technical References
-
-Technical documentation for specific issues and workarounds:
-
-### BlockList Label Workaround
-
-- **[BlockList Label Workaround](clean-blocklist-workaround.md)** - Documentation for the temporary workaround for Umbraco BlockList label export issue (#20801)
-
----
-
 ## Additional Resources
 
 ### External Resources

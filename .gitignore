@@ -23,4 +23,5 @@
 /template/Clean.Headless/obj
 .artifacts/
 template/Clean.Blog/wwwroot/media/created-packages/Clean/package.zip
-.claude/settings.local.json
+template/Clean/Migrations/ElementLibrary/
+.claude/
