@@ -13,8 +13,8 @@ namespace Umbraco.Cms.Api.Management.Controllers.Package.Created;
 
 [Route("api/v{version:apiVersion}/package")]
 [ApiVersion("1.0")]
-[ApiExplorerSettings(GroupName = "Package", IgnoreApi = true)]
-[MapToApi("clean-starter")]
+[ApiExplorerSettings(GroupName = "Package")]
+[MapToApi("clean-starter-admin")]
 [ApiController]
 public class PackageController : CreatedPackageControllerBase
 {
