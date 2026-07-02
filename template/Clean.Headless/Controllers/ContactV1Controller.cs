@@ -15,6 +15,7 @@ namespace Clean.Headless.Controllers;
 [Route("api/v{version:apiVersion}/contact")]
 [ApiVersion("1.0")]
 [ApiExplorerSettings(GroupName = "Contact")]
+[Tags("Contact")]
 [MapToApi("clean-starter")]
 [ApiController]
 public class ContactApiV1Controller : ControllerBase

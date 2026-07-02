@@ -15,6 +15,7 @@ namespace Clean.Headless.Controllers;
 [Route("api/v{version:apiVersion}/search")]
 [ApiVersion("1.0")]
 [ApiExplorerSettings(GroupName = "Search")]
+[Tags("Search")]
 [MapToApi("clean-starter")]
 [ApiController]
 public class SearchApiV1Controller : ControllerBase

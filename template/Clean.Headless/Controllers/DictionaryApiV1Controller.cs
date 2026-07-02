@@ -17,6 +17,7 @@ namespace Clean.Headless.Controllers;
 [ApiVersion("1.0")]
 [MapToApi("clean-starter")]
 [ApiExplorerSettings(GroupName = "Translation")]
+[Tags("Translation")]
 [ApiController]
 public class DictionaryApiV1Controller(
 	IDictionaryItemService dictionaryItemService,
