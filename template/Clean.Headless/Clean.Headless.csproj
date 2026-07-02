@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyVersion>8.0.0.0</AssemblyVersion>
+    <AssemblyVersion>8.0.1</AssemblyVersion>
     <FileVersion>8.0.0.0</FileVersion>
-    <Version>8.0.0</Version>
-    <InformationalVersion>8.0.0</InformationalVersion>
+    <Version>8.0.1</Version>
+    <InformationalVersion>8.0.1</InformationalVersion>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <InterceptorsNamespaces>$(InterceptorsNamespaces);Microsoft.AspNetCore.OpenApi.Generated</InterceptorsNamespaces>
