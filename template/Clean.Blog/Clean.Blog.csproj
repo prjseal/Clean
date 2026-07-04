@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms" Version="18.0.1" />
     <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="18.0.1" />
-    <PackageReference Include="uSync" Version="18.0.0" />
+    <PackageReference Include="uSync" Version="18.0.1" />
     <ProjectReference Include="..\Clean.Core\Clean.Core.csproj" />
     <ProjectReference Include="..\Clean.Headless\Clean.Headless.csproj" />
     <ProjectReference Include="..\Clean.Models\Clean.Models.csproj" />
