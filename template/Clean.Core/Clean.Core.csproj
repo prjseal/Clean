@@ -20,7 +20,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.Website" Version="18.0.1" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="18.1.0-rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />
