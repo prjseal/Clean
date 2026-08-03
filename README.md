@@ -94,7 +94,7 @@ If you need to use Clean with Umbraco 17 (LTS), use the latest `7.x` release. Th
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::13.14.0 --force
+dotnet new install Umbraco.Templates::13.16.0 --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
