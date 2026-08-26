@@ -39,7 +39,7 @@
     <EmbeddedResource Include="Migrations\ElementLibrary\*.config" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.Website" Version="18.0.1" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="18.1.1" />
     <PackageReference Include="Clean.Core" Version="8.0.1" />
     <PackageReference Include="Clean.Headless" Version="8.0.1" />
   </ItemGroup>
