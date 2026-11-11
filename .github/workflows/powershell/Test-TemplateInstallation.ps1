@@ -58,7 +58,7 @@ if ($existingSources -match "LocalPackages") {
 
 dotnet nuget add source $localPackagesPath --name "LocalPackages"
 
-# Uninstall any existing Clean templates to avoid conflicts (for period name test)
+# Uninstall any existing Clean templates to avoid conflicts
 Write-Host "`nUninstalling any existing Clean templates..." -ForegroundColor Yellow
 dotnet new uninstall Umbraco.Community.Templates.Clean 2>&1 | Out-Null
 

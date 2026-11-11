@@ -263,13 +263,7 @@ flowchart TD
 
     PlaywrightTemplate --> UploadTemplateScreens[12. Upload Template Screenshots<br/>Save as workflow artifact]
 
-    UploadTemplateScreens --> TestPeriod[13. Test Template with Period in Name<br/>Issue #11 Fix Verification<br/>- Create project: Company.Website<br/>- Start site max 180s<br/>- Run browser tests]
-
-    TestPeriod --> PlaywrightPeriod[Run Browser Tests - Period Name<br/>- Navigate home page<br/>- Discover internal links<br/>- Visit up to 10 pages<br/>- Test Umbraco login<br/>- Capture screenshots]
-
-    PlaywrightPeriod --> UploadPeriodScreens[14. Upload Period Name Screenshots<br/>Save as workflow artifact]
-
-    UploadPeriodScreens --> Summary[15. Build Summary<br/>- Display version, PR number, branch<br/>- List generated packages<br/>- Show GitHub Packages link]
+    UploadTemplateScreens --> Summary[13. Build Summary<br/>- Display version, PR number, branch<br/>- List generated packages<br/>- Show GitHub Packages link]
 
     Summary --> End2([End: Success])
 
@@ -281,10 +275,8 @@ flowchart TD
     style CheckPR fill:#e6e6fa
     style PlaywrightPkg fill:#ffe6cc
     style PlaywrightTemplate fill:#ffe6cc
-    style PlaywrightPeriod fill:#ffe6cc
     style TestPkg fill:#e6f3ff
     style TestTemplate fill:#e6f3ff
-    style TestPeriod fill:#e6f3ff
 ```
 
 ## Technical Details
@@ -504,17 +496,12 @@ flowchart TD
     
     TestTemplate --> UploadTplScreenshots[12. Upload Template Screenshots<br/>Save screenshots as artifacts<br/>Always runs]
     
-    UploadTplScreenshots --> TestPeriod[13. Test Period Name Template<br/>Verify Issue #11 fix<br/>Create project: Company.Website<br/>Run same tests]
-    
-    TestPeriod --> UploadPeriodScreenshots[14. Upload Period Test Screenshots<br/>Save screenshots as artifacts<br/>Always runs]
-    
-    UploadPeriodScreenshots --> Summary[15. Build Summary<br/>Display version, packages, links<br/>Always runs]
+    UploadTplScreenshots --> Summary[13. Build Summary<br/>Display version, packages, links<br/>Always runs]
     
     Summary --> End([End: Success])
     
     style TestPackage fill:#e6f3ff
     style TestTemplate fill:#e6f3ff
-    style TestPeriod fill:#e6f3ff
     style Summary fill:#ccffcc
 ```
 
@@ -548,12 +535,6 @@ The workflow implements comprehensive testing:
 **What**: Tests using Clean template to create new project  
 **How**: Installs template, creates project, starts site  
 **Validates**: Template installation, project generation, site functionality
-
-### 3. Period Name Test (Issue #11)
-
-**What**: Tests template with period in project name  
-**How**: Creates project named "Company.Website"  
-**Validates**: Fix for Issue #11 works correctly
 
 All tests use Playwright for automated browser testing and generate screenshots for visual verification.
 

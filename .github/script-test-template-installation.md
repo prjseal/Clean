@@ -14,7 +14,7 @@ Validates that the Clean template can be successfully installed and used to crea
 
 ## When It's Used
 
-- **PR Workflow**: After package installation tests, run twice (normal name and period name test)
+- **PR Workflow**: After package installation tests, when the `run-template-tests` input is set on a manual run
 
 ## Parameters
 
@@ -62,7 +62,7 @@ The script handles various project name formats:
 
 - **Default**: `TestTemplateProject`
 - **Custom**: Any name (e.g., `MyProject`)
-- **With Periods**: `Company.Website` (tests Issue #11 fix)
+- **With Periods**: `Company.Website`
 
 Project names with special characters are sanitized for directory names:
 - `Company.Website` → directory: `test-template-Company-Website`
@@ -115,33 +115,9 @@ Running Playwright tests...
 Screenshots saved to: test-template-TestTemplateProject/TestTemplateProject/screenshots/
 ```
 
-## Period Name Test (Issue #11)
-
-The workflow runs this test twice:
-
-1. **Normal Name**: `TestTemplateProject`
-2. **Period Name**: `Company.Website`
-
-The period test verifies fix for [Issue #11](https://github.com/prjseal/Clean/issues/11):
-
-```yaml
-- name: Test Template with Period in Name - Verify Fix for Issue #11
-  shell: pwsh
-  run: |
-    ./.github/workflows/powershell/Test-TemplateInstallation.ps1 `
-      -Version "${{ steps.version.outputs.version }}" `
-      -WorkspacePath "${{ github.workspace }}" `
-      -ProjectName "Company.Website"
-```
-
 ## Screenshots Generated
 
-### Default Name Test
 - Located in: `test-template-TestTemplateProject/TestTemplateProject/screenshots/`
-- Files: homepage.png, login-page.png, backoffice-dashboard.png
-
-### Period Name Test
-- Located in: `test-template-Company-Website/Company.Website/screenshots/`
 - Files: homepage.png, login-page.png, backoffice-dashboard.png
 
 ## Template Installation Command
@@ -181,18 +157,6 @@ Unable to find template 'umbraco-starter-clean'
 - Check template installation output
 - Verify package exists in local artifacts
 
-### Issue: Project Creation Fails with Period Name
-
-**Symptoms**:
-Project with period in name fails to create
-
-**Cause**:
-- Bug in template (should be fixed in Issue #11)
-
-**Solution**:
-- Verify template version includes Issue #11 fix
-- Check template configuration files
-
 ### Issue: Site Fails to Start
 
 **Symptoms**:
@@ -214,13 +178,11 @@ Timeout reached! Site failed to start.
 
 - [workflow-pr.md](workflow-pr.md) - Parent workflow
 - [script-test-package-installation.md](script-test-package-installation.md) - Package testing
-- GitHub Issue #11 - Period in project name fix
 
 ## Notes
 
 - **Tests template installation and usage**
 - **Supports custom project names**
-- **Validates Issue #11 fix** (period in name)
 - **Uses Playwright** for automated testing
 - **Generates screenshots** for verification
 - **Uninstalls existing templates** to avoid conflicts

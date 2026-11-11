@@ -11,11 +11,6 @@ on:
         required: false
         type: boolean
         default: false
-      run-period-name-tests:
-        description: 'Run Template with Period in Name tests'
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   build-packages:
@@ -117,25 +112,6 @@ jobs:
         with:
           name: template-screenshots-${{ steps.version.outputs.version }}
           path: test-template-TestTemplateProject/TestTemplateProject/screenshots/*.png
-          if-no-files-found: warn
-
-      - name: Test Template with Period in Name - Verify Fix for Issue #11
-        if: inputs.run-period-name-tests == true
-        shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Testing Template with Period in Name (Issue #11 Fix)" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-          ./.github/workflows/powershell/Test-TemplateInstallation.ps1 -Version "${{ steps.version.outputs.version }}" -WorkspacePath "${{ github.workspace }}" -ProjectName "Company.Website"
-
-      - name: Upload Period Name Test Screenshots
-        if: always() && inputs.run-period-name-tests == true
-        uses: actions/upload-artifact@v4
-        with:
-          name: period-name-test-screenshots-${{ steps.version.outputs.version }}
-          path: test-template-Company-Website/Company.Website/screenshots/*.png
           if-no-files-found: warn
 
       - name: Build Summary
