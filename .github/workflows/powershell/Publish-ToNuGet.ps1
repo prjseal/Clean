@@ -8,17 +8,23 @@
     for each package.
 
 .PARAMETER ApiKey
-    The NuGet API key for authentication
+    The short-lived nuget.org API key from the NuGet/login step (trusted publishing).
+    In the release workflow this is ${{ steps.nuget-login.outputs.NUGET_API_KEY }}, passed in
+    through the NUGET_API_KEY environment variable. The key is valid for 1 hour.
 
 .PARAMETER PackagesPath
     Path to the directory containing .nupkg files (default: .artifacts/nuget)
 
 .EXAMPLE
+    # In release-nuget.yml, after the NuGet/login step (id: nuget-login):
+    #   env:
+    #     NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
     .\Publish-ToNuGet.ps1 -ApiKey $env:NUGET_API_KEY
 #>
 
 param(
     [Parameter(Mandatory = $true)]
+    [AllowEmptyString()]
     [string]$ApiKey,
 
     [Parameter(Mandatory = $false)]
@@ -31,11 +37,15 @@ Write-Host "================================================" -ForegroundColor C
 
 # Verify API key is set
 if ([string]::IsNullOrWhiteSpace($ApiKey)) {
-    Write-Host "::error::NUGET_API_KEY secret is not set. Please add it to your repository secrets." -ForegroundColor Red
-    Write-Host "To add the secret:" -ForegroundColor Yellow
-    Write-Host "1. Go to https://www.nuget.org/account/apikeys to create an API key" -ForegroundColor Yellow
-    Write-Host "2. Add it to GitHub: Settings -> Secrets and variables -> Actions -> New repository secret" -ForegroundColor Yellow
-    Write-Host "3. Name it 'NUGET_API_KEY' and paste your NuGet API key" -ForegroundColor Yellow
+    Write-Host "::error::No NuGet API key was provided. The key comes from the 'NuGet login (OIDC trusted publishing)' step (NuGet/login), which did not produce one." -ForegroundColor Red
+    Write-Host "This workflow publishes with nuget.org trusted publishing, not a stored API key. Check:" -ForegroundColor Yellow
+    Write-Host "1. The nuget.org trusted publishing policy (username menu -> Trusted Publishing):" -ForegroundColor Yellow
+    Write-Host "   repository owner and repository match this repo, workflow file is 'release-nuget.yml'" -ForegroundColor Yellow
+    Write-Host "   (file name only), and the policy is active (it is temporary for 7 days until the first publish)" -ForegroundColor Yellow
+    Write-Host "2. The 'NUGET_USER' repository secret is set to the nuget.org profile name (not the email address)" -ForegroundColor Yellow
+    Write-Host "3. The job has 'permissions: id-token: write'" -ForegroundColor Yellow
+    Write-Host "4. The publish step passes NUGET_API_KEY: `${{ steps.nuget-login.outputs.NUGET_API_KEY }}" -ForegroundColor Yellow
+    Write-Host "See https://learn.microsoft.com/en-gb/nuget/nuget-org/trusted-publishing" -ForegroundColor Yellow
     exit 1
 }
 
