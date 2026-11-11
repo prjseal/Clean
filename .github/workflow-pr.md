@@ -130,6 +130,15 @@ The workflow triggers automatically on:
 - **Pull Request updated** (new commits pushed)
 - **Pull Request synchronized** (rebased or updated)
 
+PRs into `main` use the `pull_request_target` event. GitHub always runs `pull_request_target` workflows
+from the default branch (`main`), whatever branch the PR targets. `main`'s copy can't build other
+major versions, such as Clean 19 on .NET 11.
+
+PRs into `dev/` branches therefore use the `pull_request` event, which runs the PR's own copy of the
+workflow. For PRs from branches in this repository, the build works exactly as it does for `main`. For
+PRs from forks, GitHub gives the workflow a read-only token and no secrets, so publishing to GitHub
+Packages and posting the screenshot comment fail.
+
 ## What It Does
 
 The PR workflow performs the following operations:

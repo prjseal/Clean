@@ -1,9 +1,15 @@
 name: PR - Build NuGet Packages
 
 on:
+  # pull_request_target always runs the copy of this workflow on the default branch (main),
+  # which can't build other major versions. PRs into dev/ branches use pull_request, which runs
+  # the PR's own copy of the workflow. Fork PRs into dev/ get a read-only token, so they can't
+  # publish packages or comment.
   pull_request_target:
     branches:
       - main
+  pull_request:
+    branches:
       - 'dev/**'
   workflow_dispatch:
     inputs:
@@ -35,7 +41,7 @@ jobs:
           dotnet-version: '11.0.x'
 
       - name: Configure custom NuGet sources from PR description
-        if: github.event_name == 'pull_request_target'
+        if: github.event_name != 'workflow_dispatch'
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -92,7 +98,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Post first screenshot as PR comment
-        if: always() && github.event_name == 'pull_request_target'
+        if: always() && github.event_name != 'workflow_dispatch'
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
