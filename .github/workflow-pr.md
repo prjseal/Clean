@@ -4,7 +4,7 @@ This document describes the automated PR workflow for the Clean Umbraco starter 
 
 ## Overview
 
-The PR workflow automatically builds, tests, and publishes development packages to GitHub Packages whenever a pull request is opened or updated against the `main` branch. This ensures that all changes are validated before merging and provides immediate access to pre-release packages for testing.
+The PR workflow automatically builds, tests, and publishes development packages to GitHub Packages whenever a pull request is opened or updated against the `main` branch or a `dev/` branch (such as `dev/v19`). This ensures that all changes are validated before merging and provides immediate access to pre-release packages for testing.
 
 ## Workflow File
 
@@ -126,7 +126,7 @@ nuget-source: https://www.myget.org/F/myfeed/api/v3/index.json
 ## When Does It Run?
 
 The workflow triggers automatically on:
-- **Pull Request opened** to the `main` branch
+- **Pull Request opened** to the `main` branch or a `dev/` branch
 - **Pull Request updated** (new commits pushed)
 - **Pull Request synchronized** (rebased or updated)
 
@@ -424,7 +424,7 @@ Each major step displays:
 
 | Feature | PR Workflow | Release Workflow |
 |---------|-------------|------------------|
-| **Trigger** | Pull requests to main | GitHub Release published |
+| **Trigger** | Pull requests to main or `dev/` branches | GitHub Release published |
 | **Version Format** | `{version}-ci.{build}` | `{version}` (from git tag) |
 | **Publish Target** | GitHub Packages | NuGet.org |
 | **Testing** | Full E2E with screenshots | None (pre-tested in PR) |
@@ -469,11 +469,11 @@ This ensures high quality and prevents regressions before code reaches productio
 
 ## Workflow Steps
 
-The PR build workflow is triggered when a pull request is opened or updated targeting the main branch, and performs the following sequence:
+The PR build workflow is triggered when a pull request is opened or updated targeting the main branch or a `dev/` branch, and performs the following sequence:
 
 ```mermaid
 flowchart TD
-    Start([Pull Request to Main]) --> Checkout[1. Checkout Repository<br/>Checkout PR head SHA<br/>Fetch full git history]
+    Start([Pull Request to Main or dev/ branch]) --> Checkout[1. Checkout Repository<br/>Checkout PR head SHA<br/>Fetch full git history]
     Checkout --> DotNet[2. Setup .NET 11<br/>Install .NET 11 SDK]
     
     DotNet --> CustomSources[3. Configure Custom NuGet Sources<br/>Parse PR description<br/>Add custom sources if present]
