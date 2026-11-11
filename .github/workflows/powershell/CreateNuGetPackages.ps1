@@ -587,19 +587,9 @@ foreach ($file in $csprojFiles) {
         }
     }
 
-    # Update any PackageReference elements that reference Clean.* packages
-    $cleanPackageRefs = $xml.SelectNodes("//ns:PackageReference[starts-with(@Include, 'Clean.')]", $nsmgr)
-    foreach ($packageRef in $cleanPackageRefs) {
-        if ($packageRef.HasAttribute("Version")) {
-            $currentVersion = $packageRef.GetAttribute("Version")
-            if ($currentVersion -ne $Version) {
-                $packageRef.SetAttribute("Version", $Version)
-                $fileModified = $true
-                $packageName = $packageRef.GetAttribute("Include")
-                $updatedFiles += "$($file.FullName) (PackageReference: $packageName)"
-            }
-        }
-    }
+    # Clean.csproj references Clean.Core and Clean.Headless as projects, so there are no
+    # Clean.* package versions to update here: dotnet pack turns those project references
+    # into package dependencies at the versions set above.
 
     # Save the file if any modifications were made
     if ($fileModified) {
@@ -776,7 +766,8 @@ try {
         }
     }
 
-    # Step 3: Build and pack Clean (depends on Clean.Core and Clean.Headless)
+    # Step 3: Build and pack Clean (its project references to Clean.Core and Clean.Headless
+    # become package dependencies on the versions packed above)
     if ($cleanPath) {
         Write-Host "`n=== Building Clean ==="
 

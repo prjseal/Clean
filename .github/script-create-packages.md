@@ -215,7 +215,7 @@ The `update-packages.yml` workflow does NOT use this script. It uses `UpdateThir
 - **InformationalVersion:** Set to base version without suffix (e.g., `7.0.0`)
 - **AssemblyVersion:** Set to base version without suffix (e.g., `7.0.0`)
 - **FileVersion:** Set to the four-part base version (e.g., `7.0.0.0`), only in projects that already have a `<FileVersion>`
-- **PackageReference for Clean.* packages:** Updated to match the new version
+- **Clean.* dependencies:** Nothing to update. `Clean.csproj` references `Clean.Core` and `Clean.Headless` as projects, and `dotnet pack` turns those into package dependencies at the versions set above
 
 ### 6. Clean Build Environment
 

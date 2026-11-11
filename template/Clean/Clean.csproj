@@ -39,8 +39,11 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Web.Website" Version="19.0.0-beta1" />
-    <PackageReference Include="Clean.Core" Version="19.0.0-rc01" />
-    <PackageReference Include="Clean.Headless" Version="19.0.0-rc01" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- dotnet pack turns these into package dependencies on Clean.Core and Clean.Headless at their own package versions -->
+    <ProjectReference Include="..\Clean.Core\Clean.Core.csproj" />
+    <ProjectReference Include="..\Clean.Headless\Clean.Headless.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />

@@ -51,7 +51,10 @@ Updates in .csproj files:
 - `<InformationalVersion>` (base version without suffix)
 - `<AssemblyVersion>` (base version without suffix)
 - `<FileVersion>` (four-part base version, e.g. `8.0.2.0`; only where the project already sets one)
-- `<PackageReference>` for Clean.* packages
+
+`Clean.csproj` references `Clean.Core` and `Clean.Headless` as projects, not packages, so no
+Clean.* package versions need updating: `dotnet pack` turns those project references into
+package dependencies at the versions set above.
 
 ## Output
 
