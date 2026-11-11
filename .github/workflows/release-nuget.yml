@@ -11,6 +11,7 @@ jobs:
     permissions:
       contents: write       # Allow pushing branches and uploading release assets
       pull-requests: write  # Allow creating pull requests
+      id-token: write       # Allow GitHub OIDC tokens for nuget.org trusted publishing
 
     steps:
       - name: Checkout repository
@@ -55,10 +56,20 @@ jobs:
           path: .artifacts/nuget/*.nupkg
           if-no-files-found: error
 
+      # Trusted publishing: exchanges the GitHub OIDC token for a nuget.org API key that lasts
+      # 1 hour. Runs right before the push because package creation takes several minutes.
+      # Needs a nuget.org trusted publishing policy for this repo and workflow file, and the
+      # NUGET_USER secret set to the nuget.org profile name (not the email address).
+      - name: NuGet login (OIDC trusted publishing)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Publish to NuGet.org
         shell: pwsh
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
           ./.github/workflows/powershell/Publish-ToNuGet.ps1 -ApiKey $env:NUGET_API_KEY
 

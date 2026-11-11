@@ -7,6 +7,7 @@
 - Updated uSync from 18.0.0 to 18.3.1
 - Regenerated ModelsBuilder models for Umbraco 18.3.1
 - Release script now keeps `FileVersion` in step with the package version
+- Release workflow publishes to NuGet.org with trusted publishing (OIDC) instead of a long-lived API key
 
 ### Security
 - Fixed Delivery API leaking Public Access protected content through Content Picker / Multi-Node Tree Picker expansion ([GHSA-wr57-hqmp-fgvh](https://github.com/advisories/GHSA-wr57-hqmp-fgvh)), via the Umbraco 18.3.1 update

@@ -84,7 +84,7 @@ See [general-consuming-packages.md](general-consuming-packages.md) for consumpti
 - Public distribution
 - Production use
 
-**Authentication**: Requires NuGet API key
+**Authentication**: nuget.org [trusted publishing](https://learn.microsoft.com/en-gb/nuget/nuget-org/trusted-publishing) (GitHub OIDC). The release workflow's `NuGet/login` step exchanges a GitHub OIDC token for a short-lived nuget.org API key (valid for 1 hour). No long-lived API key is stored in the repository.
 
 **Manual Publishing**:
 - Triggered by creating a GitHub Release
@@ -95,24 +95,33 @@ See [general-consuming-packages.md](general-consuming-packages.md) for consumpti
 
 ### Prerequisites
 
-1. **NuGet API Key Setup** (One-time)
+1. **NuGet Trusted Publishing Setup** (One-time)
 
-   a. Create API key:
-   - Visit https://www.nuget.org/account/apikeys
-   - Click "Create"
-   - Key name: `Clean-GitHub-Actions`
-   - Glob pattern: `Clean.*` and `Umbraco.Community.Templates.Clean`
-   - Select "Push" and "Push new packages and package versions"
-   - Click "Create"
-   - Copy the API key (shown once only)
+   a. Create a trusted publishing policy on nuget.org:
+   - Sign in to nuget.org as the account that owns the packages (`prjseal`)
+   - Open the username menu → **Trusted Publishing** and add a policy:
+     - Owner: `prjseal`
+     - Repository Owner: `prjseal`
+     - Repository: `Clean`
+     - Workflow File: `release-nuget.yml` (file name only, without `.github/workflows/`)
+     - Environment: leave empty
+   - Make sure the policy covers pushing new versions of `Clean`, `Clean.Core`, `Clean.Headless`
+     and `Umbraco.Community.Templates.Clean`
+   - A new policy is "temporarily active" for 7 days. The first successful publish within that
+     window locks it to the repository and makes it permanently active. If the window lapses,
+     restart it from nuget.org.
 
-   b. Add to GitHub Secrets:
+   b. Add the nuget.org user name to GitHub Secrets:
    - Go to repository **Settings**
    - Navigate to **Secrets and variables** → **Actions**
    - Click **New repository secret**
-   - Name: `NUGET_API_KEY`
-   - Value: Paste your NuGet API key
+   - Name: `NUGET_USER`
+   - Value: the nuget.org **profile name** (`prjseal`), not the email address
    - Click **Add secret**
+   - Or from the command line: `gh secret set NUGET_USER --repo prjseal/Clean`
+
+   The release job also needs `permissions: id-token: write`, which is already set in
+   `release-nuget.yml`.
 
 2. **Version Decision**
 
@@ -303,7 +312,7 @@ The Clean packages maintain version alignment with Umbraco CMS:
 1. Extract version from release tag
 2. Validate version format
 3. Build packages with release version
-4. Publish to NuGet.org (requires `NUGET_API_KEY`)
+4. Log in to NuGet.org with trusted publishing (`NuGet/login`, needs the nuget.org policy and the `NUGET_USER` secret) and publish with the short-lived key it returns
 5. Upload to release assets
 6. Update README.md and Umbraco marketplace README files with latest Umbraco and Clean versions
 7. Commit version updates to `main` branch (with `[skip ci]` to prevent triggering workflows)
@@ -331,15 +340,33 @@ The Clean packages maintain version alignment with Umbraco CMS:
 
 ## Troubleshooting
 
-### Release Workflow Fails with "NUGET_API_KEY secret is not set"
+### Release Workflow Fails at "NuGet login (OIDC trusted publishing)"
 
-**Problem**: The NuGet API key is missing from GitHub secrets.
+**Problem**: `NuGet/login` could not exchange the GitHub OIDC token for a nuget.org API key.
+
+**Possible Causes**:
+1. **No matching policy**: There is no trusted publishing policy on nuget.org for repository
+   owner `prjseal`, repository `Clean`
+2. **Wrong workflow file name**: The policy's workflow file must be `release-nuget.yml` (file name
+   only, without `.github/workflows/`)
+3. **Policy inactive**: A new policy is only temporarily active for 7 days until the first
+   successful publish. If that window lapsed, restart it from nuget.org
+4. **`NUGET_USER` wrong**: The secret is missing, or set to an email address instead of the
+   nuget.org profile name (`prjseal`)
+5. **Missing permission**: The job's `permissions` block must include `id-token: write`
+
+**Solution**: Fix the policy or secret, then re-run the failed workflow. If the publish step
+reports "No NuGet API key was provided", the login step produced no key; check the same list.
+
+### Publish Fails with 403 (Forbidden)
+
+**Problem**: Login succeeded but `dotnet nuget push` is rejected with 403.
 
 **Solution**:
-1. Create API key at https://www.nuget.org/account/apikeys
-2. Add to GitHub: Settings → Secrets → Actions → New secret
-3. Name: `NUGET_API_KEY`
-4. Re-run the failed workflow
+- Check the trusted publishing policy's owner is the account that owns the package
+  (`prjseal`), and that the policy covers the package being pushed
+- The short-lived key lasts 1 hour. The login step runs immediately before the publish step, so
+  re-run the workflow rather than reusing an old key
 
 ### Package Already Exists on NuGet.org
 
@@ -374,7 +401,7 @@ Use semantic versioning format:
 **Possible Causes**:
 1. **Indexing Delay**: Wait 5-10 minutes for NuGet to index
 2. **Package ID Ownership**: Ensure you own the package ID on NuGet.org
-3. **API Key Permissions**: Verify API key has push permissions for the package ID pattern
+3. **Trusted Publishing Policy**: Verify the nuget.org trusted publishing policy covers the package ID and is active
 
 **Solution**:
 ```bash
