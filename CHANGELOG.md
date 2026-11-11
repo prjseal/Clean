@@ -14,13 +14,22 @@ Pre-release of Clean for Umbraco 19. From this release, the Clean major version 
 - All GitHub workflows set up .NET 11
 - README and Umbraco Marketplace files cover Umbraco 19, with Umbraco 18 now pointing to the `8.x` releases and the `dev/v8` branch
 - The release workflow updates the README install commands for Clean 8.x and 19.x releases
+- GitHub workflows use the latest action versions (`actions/checkout`, `setup-dotnet`, `setup-node` and `upload-artifact`), which run on Node.js 24 instead of the deprecated Node.js 20, and the test workflows install Node.js 26
+- The PR build now runs for pull requests into `dev/` branches as well as `main`
+
+### Security
+- `Clean.Headless` pins `System.Security.Cryptography.Xml` and `Microsoft.AspNetCore.WebUtilities` at 11.0.0, which fixes [GHSA-7hqp-7c5m-4vq6](https://github.com/advisories/GHSA-7hqp-7c5m-4vq6), [GHSA-c399-9853-6jmj](https://github.com/advisories/GHSA-c399-9853-6jmj), [GHSA-r955-8q5j-3h83](https://github.com/advisories/GHSA-r955-8q5j-3h83) and [GHSA-x33c-w48q-qrgc](https://github.com/advisories/GHSA-x33c-w48q-qrgc) in Umbraco 19.0.0-beta1's own dependencies
+
+### Fixed
+- The inline SVG tag helper no longer throws when an SVG file has no `<svg>` element and a CSS class or `ensure-viewbox` is set
+- The build no longer shows nullable or obsolete-API warnings
 
 ### Removed
 - The custom Element library migration and its embedded config files. Its migration step now runs a no-op, so sites that already ran it can still upgrade
 - `Cache=Shared` from the development SQLite connection string, which Umbraco 19 removes on every start
 
 ### Known issues
-- Umbraco 19 is still in beta. The build shows security warnings from Umbraco's own dependencies (`System.Security.Cryptography.Xml` 10.0.11 and the pre-release `Microsoft.AspNetCore.WebUtilities`)
+- Umbraco 19 is still in beta
 - A fresh install writes an `Imaging:HMACSecretKey` into `appsettings.json` on first run
 
 ## [8.0.2] - 2026-11-11
