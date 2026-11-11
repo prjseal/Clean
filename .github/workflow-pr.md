@@ -14,6 +14,8 @@ Location: `.github/workflows/pr-build-packages.yml`
 
 The PR workflow supports specifying custom NuGet package sources directly in the PR description. This is useful for testing with pre-release packages from feeds like Umbraco's development feed, MyGet, or Azure DevOps.
 
+Custom sources only apply to pull request runs. A manual run (`workflow_dispatch`) has no PR description, so it skips this step and uses the default NuGet sources.
+
 ### How to Use
 
 Add one or more `nuget-source:` lines anywhere in your PR description:

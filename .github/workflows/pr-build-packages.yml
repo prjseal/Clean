@@ -39,6 +39,7 @@ jobs:
           dotnet-version: '11.0.x'
 
       - name: Configure custom NuGet sources from PR description
+        if: github.event_name == 'pull_request_target'
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -141,4 +142,4 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          ./.github/workflows/powershell/Show-BuildSummary.ps1 -Version "${{ steps.version.outputs.version }}" -PrNumber "${{ github.event.pull_request.number }}" -Branch "${{ github.head_ref }}" -Actor "${{ github.actor }}" -Repository "${{ github.repository }}"
+          ./.github/workflows/powershell/Show-BuildSummary.ps1 -Version "${{ steps.version.outputs.version || 'not created' }}" -PrNumber "${{ github.event.pull_request.number || 'none (manual run)' }}" -Branch "${{ github.head_ref || github.ref_name }}" -Actor "${{ github.actor }}" -Repository "${{ github.repository }}"
