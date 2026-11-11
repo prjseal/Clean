@@ -68,7 +68,7 @@ NuGet follows SemVer 2.0 precedence rules:
 **Authentication**: Requires GitHub PAT with `read:packages` scope
 
 **Automatic Publishing**:
-- Every PR to `main` branch
+- Every PR to the `main` branch or a `dev/` branch
 - Version format: `{latest-stable}-ci.b{ci-build-number}` (7-digit zero-padded with 'b' prefix)
 - Example: `7.0.0-ci.b0000123`
 - The 'b' prefix ensures SemVer compliance (alphanumeric identifiers allow leading zeros)
@@ -287,7 +287,7 @@ The Clean packages maintain version alignment with Umbraco CMS:
 
 ### PR Build Workflow (`.github/workflows/pr-build-packages.yml`)
 
-**Trigger**: Pull request to `main` branch
+**Trigger**: Pull request to the `main` branch or a `dev/` branch
 
 **Process**:
 1. Query NuGet.org for latest stable version
