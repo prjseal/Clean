@@ -6819,6 +6819,59 @@
             ],
             "type": "object"
         },
+        "ManifestEntityPublishAwareness": {
+            "description": "Opts entity types in to publish awareness, so entities of those types that are referenced by content being\npublished can be reported when they need attention.",
+            "properties": {
+                "alias": {
+                    "description": "The alias of the extension, ensure it is unique",
+                    "type": "string"
+                },
+                "api": {
+                    "type": "string"
+                },
+                "forEntityTypes": {
+                    "description": "The entity types this extension decides publish awareness for.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "js": {
+                    "description": "The file location of the javascript file to load",
+                    "type": "string"
+                },
+                "kind": {
+                    "description": "The kind of the extension, used to group extensions together",
+                    "examples": [
+                        "button"
+                    ]
+                },
+                "meta": {
+                    "$ref": "#/definitions/MetaEntityPublishAwareness"
+                },
+                "name": {
+                    "description": "The friendly name of the extension",
+                    "type": "string"
+                },
+                "type": {
+                    "const": "entityPublishAwareness",
+                    "description": "The type of extension such as dashboard etc...",
+                    "type": "string"
+                },
+                "weight": {
+                    "description": "Extensions such as dashboards are ordered by weight with higher numbers being first in the list",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "alias",
+                "forEntityTypes",
+                "meta",
+                "name",
+                "type"
+            ],
+            "type": "object"
+        },
         "ManifestEntityUserPermission": {
             "properties": {
                 "alias": {
@@ -9015,6 +9068,52 @@
                 },
                 "type": {
                     "const": "propertyValueCloner",
+                    "description": "The type of extension such as dashboard etc...",
+                    "type": "string"
+                },
+                "weight": {
+                    "description": "Extensions such as dashboards are ordered by weight with higher numbers being first in the list",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "alias",
+                "forEditorAlias",
+                "name",
+                "type"
+            ],
+            "type": "object"
+        },
+        "ManifestPropertyValueEntityReference": {
+            "description": "Registers a resolver for the entities a property editor's value directly references.",
+            "properties": {
+                "alias": {
+                    "description": "The alias of the extension, ensure it is unique",
+                    "type": "string"
+                },
+                "api": {
+                    "type": "string"
+                },
+                "forEditorAlias": {
+                    "description": "The alias of the property editor schema whose values this resolver handles.",
+                    "type": "string"
+                },
+                "js": {
+                    "description": "The file location of the javascript file to load",
+                    "type": "string"
+                },
+                "kind": {
+                    "description": "The kind of the extension, used to group extensions together",
+                    "examples": [
+                        "button"
+                    ]
+                },
+                "name": {
+                    "description": "The friendly name of the extension",
+                    "type": "string"
+                },
+                "type": {
+                    "const": "propertyValueEntityReference",
                     "description": "The type of extension such as dashboard etc...",
                     "type": "string"
                 },
@@ -14284,7 +14383,7 @@
                     "type": "object"
                 },
                 "defaultView": {
-                    "description": "The default view of the provider that is shown to the user.\nIf no element is provided, then the button will be rendered as a {@link UUIButtonElement} using these options.",
+                    "description": "The default view of the provider that is shown to the user.\nIf no element is provided, then the button will be rendered as a button using these options.",
                     "properties": {
                         "color": {
                             "default": "'secondary'",
@@ -14508,6 +14607,10 @@
                     ],
                     "type": "string"
                 },
+                "itemRepositoryAlias": {
+                    "description": "Alias of the item repository used by the modal to present the affected items. Omit to skip publish-awareness\nof inbound references entirely.",
+                    "type": "string"
+                },
                 "label": {
                     "description": "The friendly name of the action to perform",
                     "examples": [
@@ -14522,6 +14625,10 @@
                 },
                 "publishingRepositoryAlias": {
                     "description": "Alias of the publishing repository used to perform the publish operation.",
+                    "type": "string"
+                },
+                "referenceRepositoryAlias": {
+                    "description": "Alias of the reference repository used by the modal to show how many items reference this entity. Omit to skip\npublish-awareness of inbound references entirely.",
                     "type": "string"
                 },
                 "variantPublishedNotificationMessage": {
@@ -15379,6 +15486,19 @@
         "MetaEntityItemRef": {
             "type": "object"
         },
+        "MetaEntityPublishAwareness": {
+            "description": "Meta for {@link ManifestEntityPublishAwareness}.",
+            "properties": {
+                "itemRepositoryAlias": {
+                    "description": "The item repository alias used to batch-load items of this entity type by unique.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "itemRepositoryAlias"
+            ],
+            "type": "object"
+        },
         "MetaEntityUserPermission": {
             "properties": {
                 "description": {
@@ -15667,6 +15787,11 @@
         },
         "MetaPropertyEditorUi": {
             "properties": {
+                "deprecated": {
+                    "default": false,
+                    "description": "Mark a Property Editor as `deprecated` when it should no longer be possible to create new DataTypes that use it.",
+                    "type": "boolean"
+                },
                 "group": {
                     "default": "Common",
                     "description": "The group that this property editor UI belongs to, which will be used to group\nthe property editor UIs in the property editor picker.\nIf not specified, the property editor UI will be grouped under \"Common\".\n\nCore property editors use localization keys prefixed with `#` (e.g. `\"#propertyEditorUIGroups_common\"`).\nExternal packages can use either display-ready names (e.g. `\"My Group\"`) or camelCase names\n(e.g. `\"myGroup\"`) which will be automatically converted to title case.",
@@ -15713,10 +15838,6 @@
                     "type": "object"
                 },
                 "supportsReadOnly": {
-                    "type": "boolean"
-                },
-                "supportsVariantChange": {
-                    "default": false,
                     "type": "boolean"
                 }
             },
@@ -17063,6 +17184,9 @@
                         "$ref": "#/definitions/ManifestPropertyValueCloner"
                     },
                     {
+                        "$ref": "#/definitions/ManifestPropertyValueEntityReference"
+                    },
+                    {
                         "$ref": "#/definitions/ManifestPropertyEditorUi"
                     },
                     {
@@ -17259,6 +17383,9 @@
                     },
                     {
                         "$ref": "#/definitions/ManifestEntityBulkActionDeleteKind"
+                    },
+                    {
+                        "$ref": "#/definitions/ManifestEntityPublishAwareness"
                     },
                     {
                         "$ref": "#/definitions/ManifestEntityActionContentPublishKind"

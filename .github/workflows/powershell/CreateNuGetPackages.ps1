@@ -448,7 +448,7 @@ try {
 
         # Paths
         $packageXmlPath = Join-Path $tempExtractPath "package.xml"
-        $usyncConfigPath = Join-Path $CurrentDir "template\Clean.Blog\uSync\v18\DataTypes\BlockListMainContent.config"
+        $usyncConfigPath = Join-Path $CurrentDir "template\Clean.Blog\uSync\v19\DataTypes\BlockListMainContent.config"
 
         if ((Test-Path $packageXmlPath) -and (Test-Path $usyncConfigPath)) {
             # Call the PowerShell function to fix labels
@@ -498,7 +498,7 @@ if ($umbracoProcess -and !$umbracoProcess.HasExited) {
 }
 
 if ($CreateElementLibraryItems) {
-    $elementLibrarySource = Join-Path $CurrentDir "template\Clean.Blog\uSync\v18\Element"
+    $elementLibrarySource = Join-Path $CurrentDir "template\Clean.Blog\uSync\v19\Element"
     $elementLibraryDest   = Join-Path $CurrentDir "template\Clean\Migrations\ElementLibrary"
     if (Test-Path $elementLibrarySource) {
         New-Item -ItemType Directory -Path $elementLibraryDest -Force | Out-Null
