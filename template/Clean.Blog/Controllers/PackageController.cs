@@ -30,6 +30,7 @@ public class PackageController : CreatedPackageControllerBase
     private readonly IPartialViewService _partialViewService;
     private readonly IStylesheetService _stylesheetService;
     private readonly IDictionaryItemService _dictionaryItemService;
+    private readonly IElementService _elementService;
     private readonly ILogger<PackageController> _logger;
 
     public PackageController(
@@ -45,6 +46,7 @@ public class PackageController : CreatedPackageControllerBase
         IPartialViewService partialViewService,
         IStylesheetService stylesheetService,
         IDictionaryItemService dictionaryItemService,
+        IElementService elementService,
         ILogger<PackageController> logger)
     {
         _packagingService = packagingService;
@@ -59,6 +61,7 @@ public class PackageController : CreatedPackageControllerBase
         _partialViewService = partialViewService;
         _stylesheetService = stylesheetService;
         _dictionaryItemService = dictionaryItemService;
+        _elementService = elementService;
         _logger = logger;
     }
 
@@ -125,9 +128,20 @@ public class PackageController : CreatedPackageControllerBase
         package.MediaLoadChildNodes = true;
         _logger.LogInformation("Retrieved {Count} root media items.", mediaUdis.Count);
 
-        var documentTypes = _contentTypeService.GetAll().Select(dt => dt.Key.ToString()).ToList();
+        var allDocumentTypes = _contentTypeService.GetAll().ToList();
+        var documentTypes = allDocumentTypes.Select(dt => dt.Key.ToString()).ToList();
         package.DocumentTypes = documentTypes;
         _logger.LogInformation("Retrieved {Count} document types.", documentTypes.Count);
+
+        var elementTypeIds = allDocumentTypes.Where(dt => dt.IsElement).Select(dt => dt.Id).ToArray();
+        var elements = elementTypeIds.Length == 0
+            ? []
+            : _elementService.GetPagedOfTypes(elementTypeIds, 0, int.MaxValue, out _, null!, null!)
+                .Where(e => e.Trashed == false)
+                .Select(e => e.Key)
+                .ToList();
+        package.Elements = elements;
+        _logger.LogInformation("Retrieved {Count} element library items.", elements.Count);
 
         var mediaTypes = _mediaTypeService.GetAll().Where(x => x.Alias == "Image").Select(mt => mt.Key.ToString()).ToList();
         package.MediaTypes = mediaTypes;
