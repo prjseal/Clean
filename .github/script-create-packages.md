@@ -22,7 +22,7 @@ The `CreateNuGetPackages.ps1` script automates the process of creating NuGet pac
   - The version number to use for all NuGet packages
   - Format: `X.Y.Z` or `X.Y.Z-suffix` (e.g., `7.0.0` or `7.0.0-rc1`)
   - Used for PackageVersion in .csproj files
-  - Base version (without suffix) used for AssemblyVersion and InformationalVersion
+  - Base version (without suffix) used for AssemblyVersion and InformationalVersion, and in four-part form for FileVersion
 
 ### Example Usage
 
@@ -214,6 +214,7 @@ The `update-packages.yml` workflow does NOT use this script. It uses `UpdateThir
 - **PackageVersion / Version:** Set to the full version (e.g., `7.0.0-rc1`)
 - **InformationalVersion:** Set to base version without suffix (e.g., `7.0.0`)
 - **AssemblyVersion:** Set to base version without suffix (e.g., `7.0.0`)
+- **FileVersion:** Set to the four-part base version (e.g., `7.0.0.0`), only in projects that already have a `<FileVersion>`
 - **PackageReference for Clean.* packages:** Updated to match the new version
 
 ### 6. Clean Build Environment
