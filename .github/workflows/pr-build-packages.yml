@@ -23,13 +23,14 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        # Pinned to v6: this runs on pull_request_target, and v7 refuses to check out fork PR heads
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Setup .NET 11
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '11.0.x'
 
@@ -62,7 +63,7 @@ jobs:
           ./.github/workflows/powershell/CreateNuGetPackages.ps1 -Version "${{ steps.version.outputs.version }}"
 
       - name: Upload NuGet packages as artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages-${{ steps.version.outputs.version }}
           path: .artifacts/nuget/*.nupkg
@@ -84,7 +85,7 @@ jobs:
 
       - name: Upload Screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: package-test-screenshots-${{ steps.version.outputs.version }}
           path: test-installation/screenshots/*.png
@@ -108,7 +109,7 @@ jobs:
 
       - name: Upload Template Screenshots
         if: always() && inputs.run-template-tests == true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: template-screenshots-${{ steps.version.outputs.version }}
           path: test-template-TestTemplateProject/TestTemplateProject/screenshots/*.png

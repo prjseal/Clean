@@ -545,7 +545,7 @@ The script is designed to integrate with OWASP ZAP security scanning workflows:
 ```yaml
 - name: Upload ZAP Scan Report (JSON)
   if: always()
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v7
   with:
     name: zap-scan-report-json
     path: report_json.json

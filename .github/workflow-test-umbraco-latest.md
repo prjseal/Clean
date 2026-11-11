@@ -86,7 +86,7 @@ flowchart TD
 
     Checkout --> SetupDotNet[2. Setup .NET 11<br/>Install .NET 11 SDK]
 
-    SetupDotNet --> SetupNode[3. Setup Node.js 20<br/>For Playwright]
+    SetupDotNet --> SetupNode[3. Setup Node.js 26<br/>For Playwright]
 
     SetupNode --> RunScript[4. Run Test-LatestNuGetPackages Script<br/>Pass all parameters]
 

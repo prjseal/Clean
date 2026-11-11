@@ -334,7 +334,7 @@ The script is designed to integrate with workflows as a cleanup step:
 ```yaml
 - name: Upload ZAP Scan Report (HTML)
   if: always()
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v7
   with:
     name: zap-scan-report-html
     path: report_html.html

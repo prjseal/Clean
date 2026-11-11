@@ -87,7 +87,7 @@ Sanitized version: 7-0-1-ci-42
     ./.github/workflows/scripts/sanitize-version-numbers.sh "${{ steps.setup-site.outputs.clean_template_version }}"
 
 - name: Upload Artifact
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v7
   with:
     name: zap-scan-report-html-clean-template-${{ steps.sanitize-versions.outputs.template_version_safe }}
     path: report_html.html
@@ -243,19 +243,19 @@ The script is designed to integrate with workflows that create versioned artifac
 
 ```yaml
 - name: Upload ZAP Scan Report (HTML)
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v7
   with:
     name: zap-scan-report-html-clean-template-${{ steps.sanitize-versions.outputs.template_version_safe }}
     path: report_html.html
 
 - name: Upload ZAP Scan Report (Markdown)
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v7
   with:
     name: zap-scan-report-markdown-clean-template-${{ steps.sanitize-versions.outputs.template_version_safe }}
     path: report_md.md
 
 - name: Upload ZAP Scan Report (JSON)
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v7
   with:
     name: zap-scan-report-json-clean-template-${{ steps.sanitize-versions.outputs.template_version_safe }}
     path: report_json.json

@@ -88,7 +88,7 @@ namespace Clean.Migrations
                     continue;
                 }
 
-                var publishResult = _elementService.Publish(element, ["*"], Constants.Security.SuperUserId);
+                var publishResult = _elementService.Publish(element, ["*"]);
                 _logger.LogInformation("Result of publishing element '{elementName}' = {publishResult}", element.Name, publishResult.Result.ToString());
             }
         }
