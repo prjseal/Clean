@@ -5,6 +5,7 @@
     <Version>19.0.0-beta01</Version>
     <InformationalVersion>19.0.0</InformationalVersion>
     <TargetFramework>net11.0</TargetFramework>
+    <Nullable>enable</Nullable>
     <Authors>Paul Seal</Authors>
     <ContentTargetFolders>.</ContentTargetFolders>
     <Product>Clean</Product>

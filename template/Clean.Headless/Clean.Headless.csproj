@@ -24,6 +24,10 @@
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Web.Website" Version="19.0.0-beta1" />
     <PackageReference Include="Umbraco.Cms.Api.Common" Version="19.0.0-beta1" />
+    <!-- Pin patched versions of vulnerable transitive dependencies of Umbraco.Cms.Api.Common 19.0.0-beta1.
+         Remove once Umbraco ships a build that references fixed versions. -->
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="11.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="11.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Revalidate\" />
