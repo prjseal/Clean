@@ -9,6 +9,7 @@ First off, thank you for considering contributing to the Clean Starter Kit! It's
 - [Important: Understanding uSync](#important-understanding-usync)
 - [Development Workflow](#development-workflow)
 - [Database Changes and uSync](#database-changes-and-usync)
+- [Regenerating Models Builder Models](#regenerating-models-builder-models)
 - [Making Changes](#making-changes)
 - [Testing Your Changes](#testing-your-changes)
 - [Submitting Changes](#submitting-changes)
@@ -158,6 +159,48 @@ After exporting your changes, test that they import correctly:
 3. **Verify that uSync imports your changes** on first boot
 4. **Check the Umbraco backoffice** to ensure everything is configured correctly
 
+## Regenerating Models Builder Models
+
+The strongly typed models in `template/Clean.Models/*.generated.cs` are committed to source control. Clean.Blog runs Models Builder in `SourceCodeManual` mode, so the models only change when you regenerate them.
+
+**Regenerate the models and commit them** after either of these:
+
+- **A schema change** - adding, removing or editing a Document Type, Element Type, Media Type, Member Type, Composition or property
+- **A package version update** - any change to the `Umbraco.Cms.*` package versions (major, minor or patch), so the `Umbraco.ModelsBuilder.Embedded` version stamps match the version being shipped
+
+### How to Regenerate
+
+1. **Run Clean.Blog** and wait for it to finish starting (including any unattended upgrade):
+   ```bash
+   dotnet run --project template/Clean.Blog
+   ```
+
+2. **Generate the models**, either:
+   - in the backoffice: **Settings > Models Builder > Generate models**, or
+   - through the Management API, using the API client that `appsettings.Development.json` provisions on startup (`uSync:Command:ClientId` and `uSync:Command:Secret`):
+     ```bash
+     # Get a bearer token
+     curl -k -X POST https://localhost:44340/umbraco/management/api/v1/security/back-office/token \
+       -d "grant_type=client_credentials&client_id=<ClientId>&client_secret=<Secret>"
+
+     # Generate the models (expect a 200 response)
+     curl -k -X POST -H "Authorization: Bearer <access_token>" \
+       https://localhost:44340/umbraco/management/api/v1/models-builder/build
+     ```
+
+3. **Build the models project** to make sure it compiles:
+   ```bash
+   dotnet build template/Clean.Models/Clean.Models.csproj
+   ```
+
+4. **Review and commit the changes:**
+   ```bash
+   git diff template/Clean.Models/
+   git add template/Clean.Models/
+   git commit -m "Regenerate Models Builder models"
+   ```
+   After a package-only update the diff should contain only version stamps. Any other change means the schema and the committed models had drifted apart, so mention it in your pull request.
+
 ## Development Workflow
 
 ### 1. Keep Your Fork Up to Date
@@ -292,6 +335,7 @@ If your changes affect multiple Umbraco versions:
 - [ ] Changes have been tested locally
 - [ ] Database/schema changes are exported to uSync config files
 - [ ] uSync import has been tested on a fresh installation
+- [ ] Models Builder models are regenerated and committed after schema changes or Umbraco package updates
 - [ ] Documentation has been updated (if applicable)
 - [ ] Commit messages are clear and descriptive
 - [ ] Code follows existing style and patterns

@@ -50,6 +50,7 @@ Updates in .csproj files:
 - `<Version>` or `<PackageVersion>`
 - `<InformationalVersion>` (base version without suffix)
 - `<AssemblyVersion>` (base version without suffix)
+- `<FileVersion>` (four-part base version, e.g. `8.0.2.0`; only where the project already sets one)
 - `<PackageReference>` for Clean.* packages
 
 ## Output

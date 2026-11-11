@@ -25,3 +25,6 @@
 template/Clean.Blog/wwwroot/media/created-packages/Clean/package.zip
 template/Clean/Migrations/ElementLibrary/
 .claude/
+
+# Local environment secrets
+.env

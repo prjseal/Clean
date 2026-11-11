@@ -524,6 +524,11 @@ $umbracoVersion = $null
 # Extract base version without suffix (e.g., "7.0.0-rc1" -> "7.0.0")
 $baseVersion = $Version -replace '-.*$', ''
 
+# FileVersion uses the four-part form (e.g., "8.0.2" -> "8.0.2.0")
+$fileVersionParts = @($baseVersion.Split('.'))
+while ($fileVersionParts.Count -lt 4) { $fileVersionParts += '0' }
+$fileVersion = ($fileVersionParts | Select-Object -First 4) -join '.'
+
 foreach ($file in $csprojFiles) {
     [xml]$xml = Get-Content $file.FullName
 
@@ -535,6 +540,7 @@ foreach ($file in $csprojFiles) {
     $versionNode = $xml.SelectSingleNode("//ns:Version", $nsmgr)
     $informationalVersionNode = $xml.SelectSingleNode("//ns:InformationalVersion", $nsmgr)
     $assemblyVersionNode = $xml.SelectSingleNode("//ns:AssemblyVersion", $nsmgr)
+    $fileVersionNode = $xml.SelectSingleNode("//ns:FileVersion", $nsmgr)
     $fileModified = $false
 
     if ($packageVersionNode) {
@@ -593,6 +599,15 @@ foreach ($file in $csprojFiles) {
             $propertyGroup.AppendChild($newNode) | Out-Null
             $fileModified = $true
             $updatedFiles += "$($file.FullName) (AssemblyVersion added)"
+        }
+    }
+
+    # Update FileVersion to the four-part base version, only where the project already sets one
+    if ($fileVersionNode) {
+        if ($fileVersionNode.InnerText -ne $fileVersion) {
+            $fileVersionNode.InnerText = $fileVersion
+            $fileModified = $true
+            $updatedFiles += "$($file.FullName) (FileVersion)"
         }
     }
 
