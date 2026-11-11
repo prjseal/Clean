@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyVersion>8.0.2</AssemblyVersion>
-    <FileVersion>8.0.2.0</FileVersion>
-    <Version>8.0.2</Version>
-    <InformationalVersion>8.0.2</InformationalVersion>
-    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyVersion>19.0.0</AssemblyVersion>
+    <FileVersion>19.0.0.0</FileVersion>
+    <Version>19.0.0-rc01</Version>
+    <InformationalVersion>19.0.0</InformationalVersion>
+    <TargetFramework>net11.0</TargetFramework>
     <Authors>Paul Seal</Authors>
     <ContentTargetFolders>.</ContentTargetFolders>
     <Product>Clean</Product>
@@ -36,12 +36,14 @@
     <None Remove="Migrations\package.zip" />
     <None Remove="Views\Components\Pagination\default.cshtml" />
     <EmbeddedResource Include="Migrations\package.zip" />
-    <EmbeddedResource Include="Migrations\ElementLibrary\*.config" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.Website" Version="18.3.1" />
-    <PackageReference Include="Clean.Core" Version="8.0.2" />
-    <PackageReference Include="Clean.Headless" Version="8.0.2" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="19.0.0-beta1" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- dotnet pack turns these into package dependencies on Clean.Core and Clean.Headless at their own package versions -->
+    <ProjectReference Include="..\Clean.Core\Clean.Core.csproj" />
+    <ProjectReference Include="..\Clean.Headless\Clean.Headless.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />

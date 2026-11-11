@@ -12,18 +12,6 @@ param(
 # ============================================================================
 $FixBlockListLabels = $true
 
-# ============================================================================
-# TEMPORARY WORKAROUND - Remove when Umbraco supports element library items
-# natively in the package XML format.
-#
-# Set to $false to disable copying element library configs into Clean.
-# When removing: delete CreateElementLibraryMigration.cs, remove its To<>
-# step from StarterKitPackageMigrationPlan.cs, remove the EmbeddedResource
-# line for Migrations\ElementLibrary\*.config from Clean.csproj, and delete
-# the Migrations\ElementLibrary folder.
-# ============================================================================
-$CreateElementLibraryItems = $true
-
 function Fix-BlockListLabels {
     param(
         [Parameter(Mandatory = $true)]
@@ -448,7 +436,7 @@ try {
 
         # Paths
         $packageXmlPath = Join-Path $tempExtractPath "package.xml"
-        $usyncConfigPath = Join-Path $CurrentDir "template\Clean.Blog\uSync\v18\DataTypes\BlockListMainContent.config"
+        $usyncConfigPath = Join-Path $CurrentDir "template\Clean.Blog\uSync\v19\DataTypes\BlockListMainContent.config"
 
         if ((Test-Path $packageXmlPath) -and (Test-Path $usyncConfigPath)) {
             # Call the PowerShell function to fix labels
@@ -495,18 +483,6 @@ catch {
 if ($umbracoProcess -and !$umbracoProcess.HasExited) {
     Write-Host "Stopping Umbraco process with ID: $($umbracoProcess.Id)"
     Stop-Process -Id $umbracoProcess.Id -Force
-}
-
-if ($CreateElementLibraryItems) {
-    $elementLibrarySource = Join-Path $CurrentDir "template\Clean.Blog\uSync\v18\Element"
-    $elementLibraryDest   = Join-Path $CurrentDir "template\Clean\Migrations\ElementLibrary"
-    if (Test-Path $elementLibrarySource) {
-        New-Item -ItemType Directory -Path $elementLibraryDest -Force | Out-Null
-        Copy-Item -Path "$elementLibrarySource\*.config" -Destination $elementLibraryDest -Force
-        Write-Host "Copied element library configs to Clean\Migrations\ElementLibrary" -ForegroundColor Green
-    } else {
-        Write-Host "Warning: element library source folder not found at $elementLibrarySource" -ForegroundColor Yellow
-    }
 }
 
 # update the Version and PackageVersion in all .csproj files except Clean.Blog.csproj and Clean.Models.csproj
@@ -611,19 +587,9 @@ foreach ($file in $csprojFiles) {
         }
     }
 
-    # Update any PackageReference elements that reference Clean.* packages
-    $cleanPackageRefs = $xml.SelectNodes("//ns:PackageReference[starts-with(@Include, 'Clean.')]", $nsmgr)
-    foreach ($packageRef in $cleanPackageRefs) {
-        if ($packageRef.HasAttribute("Version")) {
-            $currentVersion = $packageRef.GetAttribute("Version")
-            if ($currentVersion -ne $Version) {
-                $packageRef.SetAttribute("Version", $Version)
-                $fileModified = $true
-                $packageName = $packageRef.GetAttribute("Include")
-                $updatedFiles += "$($file.FullName) (PackageReference: $packageName)"
-            }
-        }
-    }
+    # Clean.csproj references Clean.Core and Clean.Headless as projects, so there are no
+    # Clean.* package versions to update here: dotnet pack turns those project references
+    # into package dependencies at the versions set above.
 
     # Save the file if any modifications were made
     if ($fileModified) {
@@ -800,7 +766,8 @@ try {
         }
     }
 
-    # Step 3: Build and pack Clean (depends on Clean.Core and Clean.Headless)
+    # Step 3: Build and pack Clean (its project references to Clean.Core and Clean.Headless
+    # become package dependencies on the versions packed above)
     if ($cleanPath) {
         Write-Host "`n=== Building Clean ==="
 

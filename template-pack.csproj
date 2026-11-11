@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <PackageVersion>8.0.2</PackageVersion>
+    <PackageVersion>19.0.0-rc01</PackageVersion>
     <PackageType>Template</PackageType>
     <PackageId>Umbraco.Community.Templates.Clean</PackageId>
     <Title>Umbraco.Community.Templates.Clean</Title>
     <Authors>Paul Seal</Authors>
     <Description>Clean Starter Kit Template for Umbraco</Description>
     <PackageTags>dotnet-new;templates;umbraco</PackageTags>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <IncludeContentInPack>true</IncludeContentInPack>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <ContentTargetFolders>content</ContentTargetFolders>
@@ -20,8 +20,8 @@
     <PackageProjectUrl>https://github.com/prjseal/Clean</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <InformationalVersion>8.0.2</InformationalVersion>
-    <AssemblyVersion>8.0.2</AssemblyVersion>
+    <InformationalVersion>19.0.0</InformationalVersion>
+    <AssemblyVersion>19.0.0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="template\**\*" Exclude="template\**\bin\**;template\**\obj\**,template\.vs\**,template\**\created-packages\**" />
