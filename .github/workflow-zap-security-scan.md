@@ -152,7 +152,7 @@ flowchart TD
 
     Proceed --> Checkout[1. Checkout Repository<br/>Fetch .zap rules and scripts]
 
-    Checkout --> SetupDotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+    Checkout --> SetupDotNet[2. Setup .NET 11<br/>Install .NET 11 SDK]
 
     SetupDotNet --> SetupNode[3. Setup Node.js 20<br/>For template tooling]
 

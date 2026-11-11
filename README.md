@@ -6,9 +6,9 @@
 [![License](https://img.shields.io/github/license/prjseal/Clean?label=License)](https://github.com/prjseal/Clean/blob/main/LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/prjseal/Clean?label=Stars)](https://github.com/prjseal/Clean/stargazers)
 
-A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 18.
+A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 19.
 
-Clean targets **Umbraco 18 (STS)**. For complete version mapping for previous versions, see the [Versioning and Releases](https://github.com/prjseal/Clean/blob/main/.github/workflow-versioning-releases.md#version-mapping) documentation.
+Clean targets **Umbraco 19 (STS)**, currently in beta. From version 19, the Clean major version matches the Umbraco major version. For complete version mapping for previous versions, see the [Versioning and Releases](https://github.com/prjseal/Clean/blob/main/.github/workflow-versioning-releases.md#version-mapping) documentation.
 
 For detailed information about the package architecture and the different NuGet packages, see the [Package Architecture](https://github.com/prjseal/Clean/blob/main/.github/clean-packages.md) documentation.
 
@@ -24,17 +24,19 @@ The project uses automated workflows for continuous integration and deployment. 
 
 ### Prerequisites
 
-Download and install the latest [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) or higher for your operating system (Windows, Mac, or Linux).
+Download and install the latest [.NET 11 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/11.0) or higher for your operating system (Windows, Mac, or Linux).
 
 ---
 
-## Umbraco 18 (STS)
+## Umbraco 19 (STS)
+
+> **🧪 Pre-release**: Clean 19 is in beta and runs on Umbraco 19.0.0-beta1. Use it to try out Umbraco 19, not for production sites. Clean for Umbraco 19 needs the [.NET 11 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/11.0).
 
 ### NuGet Package Method
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::18.0.0 --force
+dotnet new install Umbraco.Templates::19.0.0-beta1 --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
@@ -42,7 +44,7 @@ dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --emai
 dotnet sln add "MyProject"
 
 # Add Clean package
-dotnet add "MyProject" package Clean --version 8.0.0
+dotnet add "MyProject" package Clean --version 19.0.0-beta01
 
 # Run the project
 dotnet run --project "MyProject"
@@ -56,14 +58,14 @@ dotnet run --project "MyProject"
 
 ```powershell
 dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 8.0.0
+dotnet add "MyProject" package Clean.Core --version 19.0.0-beta01
 ```
 
 ### dotnet Template Method
 
 ```powershell
 # Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::8.0.0 --force
+dotnet new install Umbraco.Community.Templates.Clean::19.0.0-beta01 --force
 
 # Create a new project using the template
 dotnet new umbraco-starter-clean -n MyProject
@@ -81,11 +83,18 @@ dotnet run --project "MyProject.Blog"
 
 > **✨ Note**: As of version 8.0.0, the template now supports periods in project names (e.g., `Company.Website`).
 
+## Umbraco 18 (STS)
+
+If you need to use Clean with Umbraco 18 (STS), use the latest `8.x` release. The `dev/v8` branch on GitHub is where ongoing Umbraco 18 development takes place.
+
+- **NuGet**: `dotnet add package Clean --version 8.0.2`
+- **Branch**: [dev/v8](https://github.com/prjseal/Clean/tree/dev/v8)
+
 ## Umbraco 17 (LTS)
 
 If you need to use Clean with Umbraco 17 (LTS), use the latest `7.x` release. The `dev/v7` branch on GitHub is where ongoing Umbraco 17 development takes place.
 
-- **NuGet**: `dotnet add package Clean --version 7.0.7`
+- **NuGet**: `dotnet add package Clean --version 7.0.8`
 - **Branch**: [dev/v7](https://github.com/prjseal/Clean/tree/dev/v7)
 
 ## Umbraco 13 (LTS)

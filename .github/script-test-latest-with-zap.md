@@ -604,7 +604,7 @@ The script is designed to integrate with OWASP ZAP security scanning workflows:
 
 The script requires the following to be pre-installed:
 
-- **.NET 10 SDK**: For template installation and project creation
+- **.NET 11 SDK**: For template installation and project creation
 - **Node.js 20+**: Required by Clean Blog template
 - **PowerShell 7+**: For script execution
 

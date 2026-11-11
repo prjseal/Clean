@@ -275,9 +275,11 @@ The Clean packages maintain version alignment with Umbraco CMS:
 | 6.x.x | 16.x | STS | .NET 9 |
 | 7.x.x | 17.x | LTS | .NET 10 |
 | 8.x.x | 18.x | STS | .NET 10 |
+| 19.x.x | 19.x | STS | .NET 11 |
 
 **Versioning Guidelines**:
 - Major version changes when targeting new Umbraco major version
+- From Umbraco 19, the Clean major version matches the Umbraco major version (Clean 8.x is followed by Clean 19.x)
 - Minor/Patch versions for features and fixes within the same Umbraco version
 - Pre-release versions during Umbraco preview/RC periods
 
@@ -577,7 +579,7 @@ The release workflow is triggered when a GitHub release is published and perform
 ```mermaid
 flowchart TD
     Start([GitHub Release Published]) --> Checkout[1. Checkout Repository<br/>Fetch full git history]
-    Checkout --> DotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+    Checkout --> DotNet[2. Setup .NET 11<br/>Install .NET 11 SDK]
     
     DotNet --> ExtractVersion[3. Extract Release Version<br/>Parse tag, validate SemVer<br/>Remove 'v' prefix]
     ExtractVersion --> ShowVersion[4. Display Version Info<br/>Show tag, version, prerelease status]
