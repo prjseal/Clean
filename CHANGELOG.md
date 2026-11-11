@@ -1,6 +1,6 @@
 # Changelog
 
-## [8.0.2] - Unreleased
+## [8.0.2] - 2026-11-11
 
 ### Changed
 - Updated Umbraco CMS from 18.0.1 to 18.3.1
