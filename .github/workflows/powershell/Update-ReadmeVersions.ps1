@@ -36,11 +36,14 @@ else {
 }
 
 # Map Clean major version to Umbraco major version
-# Note: Only Clean v4.x (Umbraco 13) and v7.x (Umbraco 17) are actively maintained
+# Note: Clean v4.x (Umbraco 13), v7.x (Umbraco 17), v8.x (Umbraco 18) and v19.x (Umbraco 19) are actively maintained
 # Clean v5 (Umbraco 15) and v6 (Umbraco 16) are no longer maintained
+# From Umbraco 19, the Clean major version matches the Umbraco major version
 $umbracoMajorMap = @{
     4 = 13
     7 = 17
+    8 = 18
+    19 = 19
 }
 
 if (-not $umbracoMajorMap.ContainsKey($cleanMajor)) {

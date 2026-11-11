@@ -89,7 +89,7 @@ This means:
 The uSync configuration files are located in:
 ```
 template/Clean.Blog/uSync/
-└── v18/                    # Umbraco 18 configuration
+└── v19/                    # Umbraco 19 configuration
     ├── Content/           # Content nodes
     ├── ContentTypes/      # Document Types
     ├── DataTypes/         # Data Type definitions
@@ -425,6 +425,7 @@ The Clean Starter Kit supports multiple versions of Umbraco:
 | 6.x          | 16              | .NET 9       | STS          |
 | 7.x          | 17              | .NET 10      | LTS          |
 | 8.x          | 18              | .NET 10      | STS          |
+| 19.x         | 19              | .NET 11      | STS          |
 
 When contributing:
 - **Target the appropriate version** for your changes

@@ -230,7 +230,7 @@ Here's the complete sequence:
 ```mermaid
 flowchart TD
     Start([PR Opened/Updated]) --> Checkout[1. Checkout Repository<br/>Fetch full git history]
-    Checkout --> DotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+    Checkout --> DotNet[2. Setup .NET 11<br/>Install .NET 11 SDK]
 
     DotNet --> CheckPR{3. Custom NuGet<br/>Sources in PR?}
     CheckPR -->|Yes| ConfigSources[Configure Custom Sources<br/>- Parse nuget-source: lines from PR<br/>- Add to NuGet config<br/>- List configured sources]
@@ -480,7 +480,7 @@ The PR build workflow is triggered when a pull request is opened or updated targ
 ```mermaid
 flowchart TD
     Start([Pull Request to Main]) --> Checkout[1. Checkout Repository<br/>Checkout PR head SHA<br/>Fetch full git history]
-    Checkout --> DotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+    Checkout --> DotNet[2. Setup .NET 11<br/>Install .NET 11 SDK]
     
     DotNet --> CustomSources[3. Configure Custom NuGet Sources<br/>Parse PR description<br/>Add custom sources if present]
     

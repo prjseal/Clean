@@ -449,7 +449,7 @@ Existing PR: https://github.com/{owner}/{repo}/pull/123
 ```mermaid
 flowchart TD
     Start([Trigger: Schedule or Manual]) --> Checkout[1. Checkout Repository<br/>fetch-depth: 0]
-    Checkout --> DotNet[2. Setup .NET 10<br/>Installs .NET 10.0.x SDK]
+    Checkout --> DotNet[2. Setup .NET 11<br/>Installs .NET 11.0.x SDK]
     DotNet --> CustomSources{3. Custom NuGet<br/>Sources Provided?}
 
     CustomSources -->|Yes| ConfigSources[Configure Custom Sources<br/>- Parse comma-separated URLs<br/>- Add each with dotnet nuget add source<br/>- List configured sources]

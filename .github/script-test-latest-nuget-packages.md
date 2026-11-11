@@ -549,7 +549,7 @@ The script creates the following in the test directory:
 
 The script requires the following to be pre-installed:
 
-- **.NET 10 SDK**: For Umbraco project creation and package management
+- **.NET 11 SDK**: For Umbraco project creation and package management
 - **Node.js 20+**: For Playwright installation
 - **npm**: For Playwright package installation
 - **PowerShell 7+**: For script execution
