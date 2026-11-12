@@ -1,5 +1,24 @@
 # Changelog
 
+## [19.0.0-rc01] - 2026-11-12
+
+Release candidate of Clean for Umbraco 19.
+
+### Changed
+- Updated Umbraco CMS from 19.0.0-beta1 to 19.0.0-rc1
+- Updated uSync from 19.0.0-beta01 to 19.0.0-rc1
+- Regenerated ModelsBuilder models for Umbraco 19.0.0-rc1
+- Updated the Umbraco package schema (`umbraco-package-schema.json`) for Umbraco 19.0.0-rc1
+- README and Umbraco Marketplace install commands use Umbraco.Templates 19.0.0-rc1 and Clean 19.0.0-rc01
+
+### Security
+- `Clean.Headless` no longer pins `Microsoft.AspNetCore.WebUtilities`, because Umbraco 19.0.0-rc1 references a fixed version
+- `Clean.Headless` still pins `System.Security.Cryptography.Xml` at 11.0.0, because Umbraco 19.0.0-rc1 still brings in the vulnerable 10.0.11 through OpenIddict
+
+### Known issues
+- Umbraco 19 is still a release candidate
+- A fresh install writes an `Imaging:HMACSecretKey` into `appsettings.json` on first run
+
 ## [19.0.0-beta01] - 2026-11-11
 
 Pre-release of Clean for Umbraco 19. From this release, the Clean major version matches the Umbraco major version, so Clean 8.x is followed by Clean 19.x.
