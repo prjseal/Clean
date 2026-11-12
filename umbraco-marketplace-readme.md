@@ -59,13 +59,13 @@ dotnet CLI template for creating new projects. Use `dotnet new umbraco-starter-c
 
 ## Umbraco 19 (STS)
 
-> **🧪 Pre-release**: Clean 19 is in beta and runs on Umbraco 19.0.0-beta1. Use it to try out Umbraco 19, not for production sites. Clean for Umbraco 19 needs the [.NET 11 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/11.0).
+> **🧪 Pre-release**: Clean 19 is a release candidate and runs on Umbraco 19.0.0-rc1. Use it to try out Umbraco 19, not for production sites. Clean for Umbraco 19 needs the [.NET 11 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/11.0).
 
 ### NuGet Package Method
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::19.0.0-beta1 --force
+dotnet new install Umbraco.Templates::19.0.0-rc1 --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
@@ -73,7 +73,7 @@ dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --emai
 dotnet sln add "MyProject"
 
 # Add Clean package
-dotnet add "MyProject" package Clean --version 19.0.0-beta01
+dotnet add "MyProject" package Clean --version 19.0.0-rc01
 
 # Run the project
 dotnet run --project "MyProject"
@@ -87,14 +87,14 @@ dotnet run --project "MyProject"
 
 ```powershell
 dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 19.0.0-beta01
+dotnet add "MyProject" package Clean.Core --version 19.0.0-rc01
 ```
 
 ### dotnet Template Method
 
 ```powershell
 # Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::19.0.0-beta01 --force
+dotnet new install Umbraco.Community.Templates.Clean::19.0.0-rc01 --force
 
 # Create a new project using the template
 dotnet new umbraco-starter-clean -n MyProject

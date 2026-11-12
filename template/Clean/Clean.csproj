@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyVersion>19.0.0</AssemblyVersion>
     <FileVersion>19.0.0.0</FileVersion>
-    <Version>19.0.0-beta01</Version>
+    <Version>19.0.0-rc01</Version>
     <InformationalVersion>19.0.0</InformationalVersion>
     <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -39,7 +39,7 @@
     <EmbeddedResource Include="Migrations\package.zip" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.Website" Version="19.0.0-beta1" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="19.0.0-rc1" />
   </ItemGroup>
   <ItemGroup>
     <!-- dotnet pack turns these into package dependencies on Clean.Core and Clean.Headless at their own package versions -->

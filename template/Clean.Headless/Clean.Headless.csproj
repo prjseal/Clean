@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyVersion>19.0.0</AssemblyVersion>
     <FileVersion>19.0.0.0</FileVersion>
-    <Version>19.0.0-beta01</Version>
+    <Version>19.0.0-rc01</Version>
     <InformationalVersion>19.0.0</InformationalVersion>
     <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -22,12 +22,12 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.Website" Version="19.0.0-beta1" />
-    <PackageReference Include="Umbraco.Cms.Api.Common" Version="19.0.0-beta1" />
-    <!-- Pin patched versions of vulnerable transitive dependencies of Umbraco.Cms.Api.Common 19.0.0-beta1.
-         Remove once Umbraco ships a build that references fixed versions. -->
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="19.0.0-rc1" />
+    <PackageReference Include="Umbraco.Cms.Api.Common" Version="19.0.0-rc1" />
+    <!-- Pin a patched version of a vulnerable transitive dependency of Umbraco.Cms.Api.Common 19.0.0-rc1
+         (via OpenIddict.AspNetCore 7.7.2 > Microsoft.AspNetCore.DataProtection 10.0.11).
+         Remove once Umbraco ships a build that references a fixed version. -->
     <PackageReference Include="System.Security.Cryptography.Xml" Version="11.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="11.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Revalidate\" />
