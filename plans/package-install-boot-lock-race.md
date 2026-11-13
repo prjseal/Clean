@@ -108,6 +108,10 @@ Ruled out:
 
 Without load, 0 failures in 11 installs. With disk load during the boot, 1 failure in 10.
 
+The steps and scripts below are now committed as `tools/package-install-repro/` (`setup.sh`,
+`install-loop.sh`, `timeline.mjs`; see its `README.md` and the CLAUDE.md section "Test the
+package and template installs locally"). Use those; the copies below are the originals.
+
 1. Build the packages: `.github/workflows/powershell/CreateNuGetPackages.ps1 -Version 19.0.0-rc02`
    (writes `.artifacts/nuget`). If the global NuGet cache already has `Clean*` 19.0.0-rc02, delete
    `~/.nuget/packages/clean*/19.0.0-rc02` first, or the old build is used.
