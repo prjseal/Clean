@@ -10,3 +10,4 @@ to "Fixed in <version>" and remove Clean's workaround, if it has one.
 | Bug | Umbraco version | Status | Clean workaround |
 |---|---|---|---|
 | [SQLite lock race between the URL rebuild and Umbraco Search indexing](sqlite-url-rebuild-lock-race.md) | 19.0.0-rc1 | Not filed | Yes |
+| [Opening a Library block's settings and saving the page copies the element's content into the page](library-block-settings-copies-content-into-page.md) | 19.0.0-rc1 | Not filed | No |

@@ -202,7 +202,8 @@ and saving the page writes a copy of the element's content into the page's `cont
 an `expose` entry, under the element's key. The page still renders the Library element, but the
 published index picks up the copy, so after the element's text changes the page is still found by
 the old text. Saving a page without opening the dialog does not add the copy. The sample content
-does not contain one. Recorded in the CHANGELOG's known issues.
+does not contain one. Recorded in the CHANGELOG's known issues, and written up to raise in
+[umbraco-bugs/library-block-settings-copies-content-into-page.md](../umbraco-bugs/library-block-settings-copies-content-into-page.md).
 
 **Local testing note.** `Test-PackageInstallation.ps1` installs `Clean` 19.0.0-rc02 from
 `.artifacts/nuget`, but NuGet uses the global packages cache first. After regenerating the package
