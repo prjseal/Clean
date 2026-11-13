@@ -33,6 +33,9 @@
     <Folder Include="Revalidate\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Clean.Core\Clean.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />
     <None Include="../../README.md" Pack="true" PackPath="\" />
   </ItemGroup>

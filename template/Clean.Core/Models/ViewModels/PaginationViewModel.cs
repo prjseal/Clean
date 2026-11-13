@@ -19,5 +19,7 @@ namespace Clean.Core.Models.ViewModels
         public int PageNumberEnd => PageNumber + PageNumbersEitherSide <= PageCount
       ? PageNumber + PageNumbersEitherSide
       : PageCount;
+
+        public string GetPageUrl(int pageNumber) => $"{Url}{(Url.Contains('?') ? '&' : '?')}page={pageNumber}";
     }
 }
