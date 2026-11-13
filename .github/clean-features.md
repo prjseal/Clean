@@ -32,6 +32,7 @@ Related documentation:
 - A blog with paged article listings, author bylines, publish dates and category tags
 - Author profile pages and an authors listing
 - Site search with paged results
+- A 404 page for missing URLs
 - A contact form that sends an email
 - Lazy-loaded YouTube videos, a touch-friendly image carousel and highlighted code snippets with a copy button
 - Social icon links in the footer

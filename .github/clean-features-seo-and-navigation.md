@@ -50,19 +50,22 @@ Each toggle has a **More information** section in the backoffice that explains w
 <meta property="og:url" content="https://example.com/blog/codegarden-2026/" />
 <meta property="og:title" content="..." />
 <meta property="og:description" content="..." />
-<meta property="og:image" content="https://example.com/socialimage.png">
+<meta property="og:image" content="https://example.com/media/prxp1nco/codegarden.jpg?width=1200&amp;height=630&amp;v=...&amp;hmac=...">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 
 <meta name="twitter:card" content="summary_large_image">
-...
+<meta name="twitter:title" content="...">
+<meta name="twitter:description" content="...">
+<meta name="twitter:image" content="https://example.com/media/prxp1nco/codegarden.jpg?width=1200&amp;height=630&amp;v=...&amp;hmac=...">
 ```
 
 - The `<title>` is the page name followed by the **Navigation.SiteName** dictionary item.
 - The canonical URL and `og:url` are the page's absolute URL, using the Home page's domain.
 - A page without SEO fields (XML Sitemap) takes its robots settings from the nearest ancestor that has them.
+- The sharing image (`og:image` and `twitter:image`) is the page's **Main Image**, or the Home page's Main Image if the page has none. It is cropped to 1200 × 630 pixels, the size most social networks expect, and written as an absolute URL. If neither page has a Main Image, the image tags are left out.
 
-> **⚠️ Robots settings in the sample content.** The Is Indexable and Is Followable toggles are **off** on the sample pages, so every page renders `<meta name="robots" content="NOFOLLOW,NOINDEX" />`. This keeps a new site out of search engines while you build it. New pages you create default to on. Turn the toggles on for the sample pages you keep before you go live.
-
-> **ℹ️ Social sharing image.** The `og:image` and `twitter:image` tags point to `/socialimage.png` at the root of the site. The starter kit does not ship that file, so add your own image at `wwwroot/socialimage.png` (1200 × 630 pixels works well for most networks).
+> **⚠️ Robots settings in the sample content.** The Is Indexable and Is Followable toggles are **off** on the sample pages, so every page renders `<meta name="robots" content="NOFOLLOW,NOINDEX" />`. This keeps a new site out of search engines while you build it. New pages you create default to on. Turn the toggles on for the sample pages you keep before you go live. The "default on" setting is applied by the backoffice when a page is created there, so a page created in code or through the Management API without these values renders `NOFOLLOW,NOINDEX` until they are set.
 
 ---
 
@@ -75,10 +78,10 @@ Every page type except Home has three toggles, from the **Visibility Controls** 
 | Field | Alias | Effect |
 |-------|-------|--------|
 | Hide From Top Navigation | `hideFromTopNavigation` | Leaves the page out of the main navigation |
-| Hide From Search | `umbracoNaviHide` | Leaves the page out of article listings (the Latest Articles block), the authors list and the XML sitemap |
+| Hide From Search | `umbracoNaviHide` | Leaves the page out of search results, article listings (the Latest Articles block), the authors list and the XML sitemap |
 | Hide From XML Sitemap | `hideFromXMLSitemap` | Leaves the page, and the pages below it, out of the XML sitemap |
 
-**Hide From Search** uses Umbraco's built-in `umbracoNaviHide` alias, which Umbraco's `IsVisible()` extension method checks. Clean's views call `IsVisible()` when they list articles, authors and sitemap entries. The search page filters out the Error, Search and XML Sitemap page types, but it does not read this toggle, so a page with Hide From Search turned on can still appear in search results.
+**Hide From Search** uses Umbraco's built-in `umbracoNaviHide` alias, which Umbraco's `IsVisible()` extension method checks. Clean's views call `IsVisible()` when they list articles, authors and sitemap entries. Search leaves out pages with the toggle on, on the search page and in the search API (`GET /api/v1/search/getSearchResults`). In search the toggle applies to the page itself only, so the pages below it can still appear.
 
 ---
 
@@ -162,11 +165,8 @@ Fixed text in the views, such as button labels and form labels, comes from dicti
 | `Paging.Next` | Next | Pagination |
 | `Footer.CopyrightTitle` | Copyright | The footer |
 | `Footer.CopyrightStatement` | Clean Starter Kit | The footer |
-| `ArticleList.ViewAll` | View all posts | Not used by the Razor views |
-| `Paging.Page` | Page | Not used by the Razor views |
-| `Paging.Of` | of | Not used by the Razor views |
 
-The items not used by the Razor views are there for headless front ends, which can read every item through the dictionary API (`GET /api/v1/dictionary/getdictionarytranslations`). See [Headless/API Implementation](clean-headless-api.md).
+A headless front end can read every item through the dictionary API (`GET /api/v1/dictionary/getdictionarytranslations`). See [Headless/API Implementation](clean-headless-api.md).
 
 After installing Clean, save one dictionary item in the Translation section, as the [installation steps](../README.md#getting-started) say.
 

@@ -334,6 +334,7 @@ A search box with paged results. Each result shows the page's title (or name), i
 - The search term is the `q` query string parameter, for example `/search/?q=umbraco`. The page number is `page`.
 - Results come from `ISiteSearchService` in `Clean.Core`, which queries the published content index through Umbraco Search (`ISearcher`, with Examine as the default provider).
 - The Error, Search and XML Sitemap page types are left out of the results by a filter in the query.
+- Pages with **Hide From Search** turned on are left out the same way, so the result count and paging stay correct. See [Visibility](clean-features-seo-and-navigation.md#visibility).
 - Results are shown 10 per page.
 - The same service powers the headless search endpoint, `GET /api/v1/search/getSearchResults`. See [Headless/API Implementation](clean-headless-api.md#search).
 
@@ -358,11 +359,13 @@ The Search page has no Content tab. Its Hero tab holds Title, Subtitle and Main 
 
 **Document type:** Error
 
-A "Page not found" page made of content blocks, with a link back to the home page.
+A "Page not found" page made of content blocks, with a link back to the home page. It is also the site's 404 page.
 
 ![The error page](images/frontend/error.png)
 
-The sample content does not set this page as the site's 404 page, so a missing URL shows Umbraco's built-in "Page Not Found" page. To use the Error page instead, add its key to `Error404Collection` in `appsettings.json`:
+When no page matches a URL, Clean shows the Error page with a `404` status. It finds the page automatically: the first published Error page directly under Home (`ErrorPageLastChanceFinder` in `Clean.Core`). If there is no published Error page there, Umbraco's built-in "Page Not Found" page is shown instead.
+
+Umbraco's `Error404Collection` setting takes precedence. To use a different page as the 404 page, add its key to `Error404Collection` in `appsettings.json`:
 
 ```json
 {
@@ -381,7 +384,7 @@ The sample content does not set this page as the site's 404 page, so a missing U
 }
 ```
 
-`abd58ca0-c700-47f3-b7ab-6672583572ce` is the key of the sample Error page. If you create your own, copy its key from the **Info** view in the backoffice.
+`abd58ca0-c700-47f3-b7ab-6672583572ce` is the key of the sample Error page; replace it with the key of the page you want. Copy a page's key from its **Info** view in the backoffice.
 
 <details>
 <summary>Error tabs (Content, Hero, SEO, Visibility)</summary>
