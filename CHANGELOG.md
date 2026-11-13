@@ -33,6 +33,9 @@ Clean rebuilt as if it had been made on a fresh Umbraco 19 install, rather than 
 - Pagination links keep an existing query string
 - Articles without an author no longer throw on the article page, the article list and the search page
 - The template package no longer ships a database, logs or build output, which takes it from about 280 MB to about 116 MB
+- Missing pages show the Clean Error page with a 404 status, unless `Error404Collection` sets another page
+- Pages with Hide From Search turned on are left out of the search page and the search API
+- The social sharing image tags use the page's Main Image instead of a `/socialimage.png` that did not exist
 
 ### Removed
 - The unused `category` and `categoryList` document types and the empty `listPageSettings` element type, with their generated models. Categories are Library Elements
@@ -40,6 +43,7 @@ Clean rebuilt as if it had been made on a fresh Umbraco 19 install, rather than 
 - The legacy grid and unused block grid partial views
 - The `Global:SanitizeTinyMce`, `Content:AllowEditInvariantFromNonDefault`, `Content:MacroErrors` and `RuntimeMinification` settings, which Umbraco 19 does not use. Editing shared content from a non-default language is now the "Allow editing shared content" permission
 - The block label workaround in `CreateNuGetPackages.ps1`. Umbraco 19.0.0-rc1 exports block labels in the package
+- The unused `ArticleList.ViewAll`, `Paging.Page` and `Paging.Of` dictionary items
 
 ### Known issues
 - Umbraco 19 is still a release candidate
