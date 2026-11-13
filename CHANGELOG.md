@@ -4,6 +4,10 @@
 
 Clean rebuilt as if it had been made on a fresh Umbraco 19 install, rather than upgraded through 13, 17 and 18.
 
+### Added
+- Reusable blocks: Rich Text blocks in Content Rows can come from the Library. The sample content has a `Reusable Blocks` Library folder with a `Join the Umbraco Community` block, placed on the Codegarden 2026 and Meetups articles, so editing it once updates both. The Rich Text Row element type has Allow in Library turned on, which is how Umbraco 19 offers a block type from the Library tab of the block picker
+- `Clean.Core` turns on `Umbraco:CMS:Indexing:IndexExternalBlockElements` unless the site sets it, so the search page and the search API find a page by the text of its reusable blocks
+
 ### Changed
 - Umbraco's built-in Data Types match a fresh Umbraco 19.0.0-rc1 install: stock names (for example `Single Document Picker`, `Single Media Picker`, `URL Picker`, `Single Select Dropdown`) and stock config. They are filed under `Umbraco Defaults/<Family>` in the Data Types tree
 - Clean's own Data Types have plain Title Case names and are filed under `Clean/<Family>`. Their keys are unchanged:
@@ -51,11 +55,14 @@ Clean rebuilt as if it had been made on a fresh Umbraco 19 install, rather than 
 - Umbraco 19 sets `Umbraco:CMS:ModelsBuilder:ModelsMode` to `Nothing` by default unless the site references `Umbraco.Cms.DevelopmentMode.Backoffice`. Clean's views need generated models, so keep that package, which `dotnet new umbraco` adds by default
 - `Umbraco:CMS:Imaging:Memory:Enabled` and `Umbraco:CMS:ScheduledPublishing:AlignToClock` now default to `true` in Umbraco 19. Set them to `false` to keep the Umbraco 18 behaviour
 - `Connect Timeout` in the connection string no longer sets the database command timeout, which drops to 30 seconds. Set `Command Timeout` or `Umbraco:CMS:Global:DatabaseCommandTimeout` if a site relied on it
+- An existing site that upgrades `Clean.Core` gets `IndexExternalBlockElements` turned on. Rebuild the indexes in Settings > Search, then save and publish the pages that use reusable blocks, so the search finds them by the reusable blocks' text
 
 ### Known issues
 - Umbraco 19 is still a release candidate
 - A fresh install writes an `Imaging:HMACSecretKey` into `appsettings.json` on first run
 - An existing site that upgrades the `Clean` package does not get the renamed Data Types or folders, because the package import only runs on a site that has not installed Clean before
+- In the block list, a reusable block is labelled with its Library element's name, so a hidden reusable block does not show `[HIDDEN]` in the list. The label is shown in the block's Settings dialog
+- On Umbraco 19.0.0-rc1, opening a reusable block's Settings in the page editor and saving the page stores a copy of the Library element's content in the page. The page still renders the Library element, but the search index also picks up the copy, so a page can still be found by text that was later removed from the Library element
 
 ## [19.0.0-rc01] - 2026-11-12
 
