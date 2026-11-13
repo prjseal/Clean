@@ -11,7 +11,6 @@ Welcome to the comprehensive documentation for the Clean Starter Kit for Umbraco
 - [For Contributors and Developers](#for-contributors-and-developers)
 - [Package Management](#package-management)
 - [Workflow Documentation](#workflow-documentation)
-- [Technical References](#technical-references)
 
 ---
 
