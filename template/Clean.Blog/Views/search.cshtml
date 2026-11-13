@@ -1,15 +1,16 @@
 ﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Search>
 
+@using System.Globalization
+@using Clean.Core.Helpers
 @using Clean.Core.Models.ViewModels
+@using Clean.Core.Services
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels
-@using Umbraco.Cms.Core
-@using Clean.Core.Extensions
-@inject Umbraco.Cms.Core.IPublishedContentQuery publishedContentQuery
+@inject ISiteSearchService SiteSearchService
 
 @{
     Layout = "master.cshtml";
-    var searchQuery = Context.Request.Query["q"];
-    var docTypesToIgnore = new[] { Category.ModelTypeAlias, CategoryList.ModelTypeAlias, Error.ModelTypeAlias, Search.ModelTypeAlias, XMlsitemap.ModelTypeAlias };
+    var searchQuery = Context.Request.Query["q"].ToString();
+    var pageNumber = QueryStringHelper.GetIntFromQueryString(Context.Request.Query, "page", 1);
 }
 
 @await Html.PartialAsync("~/Views/Partials/pageHeader.cshtml", new PageHeaderViewModel(Model.Name, Model.Title, Model.Subtitle, Model.MainImage))
@@ -30,32 +31,33 @@
             <div class="col-lg-8 col-md-10 mx-auto">
                 @if (!string.IsNullOrWhiteSpace(searchQuery))
                 {
-                    var results = publishedContentQuery.Search(searchQuery).Where(x => !docTypesToIgnore.Contains(x.Content.ContentType.Alias));
-                    long resultCount = results != null && results.Any() ? results.Count() : 0;
-                    @Html.Raw(string.Format(Umbraco.GetDictionaryValue("Search.Results"), resultCount, searchQuery.ToString().StripHtml()))
-                    if (resultCount > 0)
+                    var results = await SiteSearchService.SearchAsync(searchQuery, CultureInfo.CurrentUICulture.Name, pageNumber);
+                    @Html.Raw(string.Format(Umbraco.GetDictionaryValue("Search.Results"), results.Total, searchQuery.StripHtml()))
+                    if (results.Items.Count > 0)
                     {
-                        foreach (var result in results)
+                        foreach (var result in results.Items)
                         {
+                            var header = result as IHeaderControls;
                             <div class="post-preview">
-                                <a href="@result.Content.Url()">
+                                <a href="@result.Url()">
                                     <h2 class="post-title">
-                                        @(result.Content.HasProperty("title") && result.Content.HasValue("title") && !string.IsNullOrWhiteSpace(result.Content.Value<string>("title")) ? result.Content.Value("title") : result.Content.Name)
+                                        @(!string.IsNullOrWhiteSpace(header?.Title) ? header.Title : result.Name)
                                     </h2>
-                                    @if (result.Content.HasProperty("subtitle") && result.Content.HasValue("subtitle") && !string.IsNullOrWhiteSpace(result.Content.Value<string>("subtitle")))
+                                    @if (!string.IsNullOrWhiteSpace(header?.Subtitle))
                                     {
-                                        <h3 class="post-subtitle">@(result.Content.Value<string>("subtitle"))</h3>
+                                        <h3 class="post-subtitle">@header.Subtitle</h3>
                                     }
                                 </a>
-                                @if (result.Content is IArticleControls article && ((result.Content.HasProperty("author") && result.Content.HasValue("author"))
-                               || (result.Content.HasProperty("articleDate") && result.Content.HasValue("articleDate") && result.Content.Value<DateTime>("articleDate") > DateTime.MinValue)))
+                                @if (result is IArticleControls article && (article.Author != null || article.ArticleDate > DateTime.MinValue))
                                 {
-                                    var author = article.Author;
                                     <p class="post-meta">
                                         @Umbraco.GetDictionaryValue("Article.Posted")
-                                        @Umbraco.GetDictionaryValue("Article.By")@Html.Raw("&nbsp;")@(author.Name)
+                                        @if (article.Author != null)
+                                        {
+                                            @Umbraco.GetDictionaryValue("Article.By")@Html.Raw("&nbsp;")@(article.Author.Name)
+                                        }
 
-                                        @if (article.ArticleDate != null && article.ArticleDate > DateTime.MinValue)
+                                        @if (article.ArticleDate > DateTime.MinValue)
                                         {
                                             @Umbraco.GetDictionaryValue("Article.On")
 
@@ -66,6 +68,7 @@
                             </div>
                         }
                         <hr>
+                        @await Component.InvokeAsync("Pagination", new { totalItems = (int)results.Total, url = $"{Model.Url()}?q={Uri.EscapeDataString(searchQuery)}", pageNumber = results.Page, pageSize = results.PageSize })
                     }
                 }
             </div>

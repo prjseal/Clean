@@ -5,7 +5,7 @@ namespace Clean.Core.Helpers
 {
     public static class SpacingHelper
     {
-        public static string GetSpacingClasses(string paddingTop, string paddingBottom, string paddingLeft, string paddingRight, string marginTop, string marginBottom, string marginLeft, string marginRight)
+        public static string GetSpacingClasses(string? paddingTop, string? paddingBottom, string? paddingLeft, string? paddingRight, string? marginTop, string? marginBottom, string? marginLeft, string? marginRight)
         {
             var classList = new List<string>();
             classList.Add(GetClassIfNotEmpty("pt-", paddingTop));
@@ -19,7 +19,7 @@ namespace Clean.Core.Helpers
             return string.Join(" ", classList.Where(x => !string.IsNullOrWhiteSpace(x)));
         }
 
-        private static string GetClassIfNotEmpty(string prefix, string value)
+        private static string GetClassIfNotEmpty(string prefix, string? value)
         {
             if (string.IsNullOrWhiteSpace(value) || value == "Unset")
             {

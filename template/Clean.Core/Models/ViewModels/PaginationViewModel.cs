@@ -4,7 +4,7 @@ namespace Clean.Core.Models.ViewModels
 {
     public class PaginationViewModel
     {
-        public string Url { get; set; }
+        public string Url { get; set; } = string.Empty;
         public int TotalItems { get; set; }
         public int PageNumber { get; set; }
         public int PageCount => (int)Math.Ceiling((double)TotalItems / (double)PageSize);
@@ -19,5 +19,7 @@ namespace Clean.Core.Models.ViewModels
         public int PageNumberEnd => PageNumber + PageNumbersEitherSide <= PageCount
       ? PageNumber + PageNumbersEitherSide
       : PageCount;
+
+        public string GetPageUrl(int pageNumber) => $"{Url}{(Url.Contains('?') ? '&' : '?')}page={pageNumber}";
     }
 }

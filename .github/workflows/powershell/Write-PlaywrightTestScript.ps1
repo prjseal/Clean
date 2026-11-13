@@ -87,7 +87,7 @@ const path = require('path');
   let counter = 1;
   try {
     console.log('Navigating to home page...');
-    await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
+    const homeResponse = await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
 
     // Take screenshot of home page
     await page.screenshot({
@@ -95,6 +95,15 @@ const path = require('path');
       fullPage: true,
     });
     console.log('Screenshot saved: 01-home.png');
+
+    // A site that failed to boot still listens and serves an error page, so stop here
+    // rather than failing later on the login page
+    const homeStatus = homeResponse ? homeResponse.status() : 0;
+    const homeHtml = await page.content();
+    if (homeStatus >= 500 || homeHtml.includes('BootFailedException')) {
+      const homeText = (await page.innerText('body')).split('\n').filter((line) => line.trim()).slice(0, 8).join('\n');
+      throw new Error('The home page returned HTTP ' + homeStatus + ' and did not render. The site did not boot:\n' + homeText);
+    }
 
     // Find all internal links on the page
     const links = await page.evaluate((baseUrl) => {

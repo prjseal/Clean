@@ -8,7 +8,7 @@
         {
             foreach (var content in contentItems.Where(x => x.IsVisible()))
             {
-                if (!(content.HasProperty("excludeFromSitemap") && content.Value<bool>("excludeFromSitemap")))
+                if (content is not IVisibilityControls { HideFromXmlsitemap: true })
                 {
 <url><loc>@content.Url(mode:UrlMode.Absolute)</loc><lastmod>@content.UpdateDate.ToString("yyyy-MM-ddTHH:mm:sszzz")</lastmod></url>
                     if (content.Children().Any(x => x.IsVisible()))

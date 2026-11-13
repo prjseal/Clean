@@ -10,7 +10,7 @@
     var author = Model.Author;
 }
 
-@await Html.PartialAsync("~/Views/Partials/pageHeader.cshtml", new PageHeaderViewModel(Model.Name, Model.Title, Model.Subtitle, Model.MainImage, author.Name, Model.ArticleDate, Model.Categories))
+@await Html.PartialAsync("~/Views/Partials/pageHeader.cshtml", new PageHeaderViewModel(Model.Name, Model.Title, Model.Subtitle, Model.MainImage, author?.Name, Model.ArticleDate, Model.Categories))
 
 <article>
     <div class="container">

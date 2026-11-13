@@ -49,10 +49,17 @@ Validates that the Clean package can be successfully installed into a fresh Umbr
    - Tests frontend and backoffice functionality
    - Takes screenshots of key pages
    - Verifies Clean components are working
+   - Fails straight away if the home page shows that the site did not boot
 
 6. **Cleanup**
    - Stops site process
    - Removes LocalPackages NuGet source
+
+7. **Failure Report**
+   - If the Playwright tests fail, prints the warnings and errors from the newest Umbraco log (`UmbracoTraceLog*.json` under `test-installation`), with each message's placeholders filled in and any exception
+   - Exits with the Playwright test's exit code
+
+The PR workflow uploads `site.log`, `site.err` and the Umbraco logs as the `package-test-logs-<version>` artifact, whether the test passes or fails.
 
 ## Test Scenarios
 
@@ -147,9 +154,23 @@ Test script exits with non-zero code
 - Clean components not installed
 
 **Solution**:
-- Review test output
+- Review test output, including the Umbraco log warnings and errors printed after the test
 - Check screenshots for clues
+- Download the `package-test-logs-<version>` artifact for the full site and Umbraco logs
 - Verify package installation
+
+### Issue: Site Did Not Boot
+
+**Symptoms**:
+```
+Error during testing: Error: The home page returned HTTP 500 and did not render. The site did not boot:
+```
+
+The site process started and listens, but Umbraco failed to boot, for example with a `BootFailedException` while the package migrations ran.
+
+**Solution**:
+- Read the Umbraco log errors printed after the test, then the full logs in the `package-test-logs-<version>` artifact
+- Check `01-home.png` for the error page
 
 ### Issue: Package Not Found
 

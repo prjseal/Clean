@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyVersion>19.0.0</AssemblyVersion>
     <FileVersion>19.0.0.0</FileVersion>
-    <Version>19.0.0-rc01</Version>
+    <Version>19.0.0-rc02</Version>
     <InformationalVersion>19.0.0</InformationalVersion>
     <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -30,7 +30,7 @@
     <PackageReference Include="System.Security.Cryptography.Xml" Version="11.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Revalidate\" />
+    <ProjectReference Include="..\Clean.Core\Clean.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />

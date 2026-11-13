@@ -150,12 +150,57 @@ Write-Host "`nRunning Playwright tests..." -ForegroundColor Yellow
 $env:SITE_URL = "$siteUrl"
 $env:CONTENT_KEYS = ($contentKeys | ConvertTo-Json -Compress)
 node test.js
+$playwrightExitCode = $LASTEXITCODE
 
 # Stop the site process
 Write-Host "`nStopping site process..." -ForegroundColor Yellow
 if (-not $process.HasExited) {
     Stop-Process -Id $process.Id -Force
     Write-Host "Site process stopped" -ForegroundColor Green
+}
+
+if ($playwrightExitCode -ne 0) {
+    Write-Host "`nPlaywright tests failed with exit code: $playwrightExitCode" -ForegroundColor Red
+
+    # Show the Umbraco log's warnings and errors, so a site that failed to boot can be diagnosed
+    # from the run log. The workflow uploads the full logs as an artifact.
+    $umbracoLog = Get-ChildItem -Path $testDir -Recurse -Filter "UmbracoTraceLog*.json" -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -notmatch '\\node_modules\\' } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+
+    if ($umbracoLog) {
+        Write-Host "`nWarnings and errors in $($umbracoLog.FullName):" -ForegroundColor Yellow
+        foreach ($line in Get-Content $umbracoLog.FullName) {
+            try {
+                $entry = $line | ConvertFrom-Json
+            }
+            catch {
+                continue
+            }
+
+            if ($entry.'@l' -notin @('Warning', 'Error', 'Fatal')) {
+                continue
+            }
+
+            # Fill the message template's placeholders from the entry's properties
+            $message = [regex]::Replace($entry.'@mt', '\{@?(\w+)(:[^}]*)?\}', {
+                param($match)
+                $value = $entry.($match.Groups[1].Value)
+                if ($null -ne $value) { "$value" } else { $match.Value }
+            })
+
+            Write-Host "[$($entry.'@t')] $($entry.'@l'): $message"
+            if ($entry.'@x') {
+                Write-Host $entry.'@x'
+            }
+        }
+    }
+    else {
+        Write-Host "No Umbraco log found under $testDir" -ForegroundColor Yellow
+    }
+
+    exit $playwrightExitCode
 }
 
 Write-Host "`n================================================" -ForegroundColor Cyan

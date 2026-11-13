@@ -2,21 +2,11 @@
 
 ## Delivery API Setup
 
-The Clean starter kit includes full support for headless implementations. To enable the Content Delivery API, update your `appsettings.json`:
+The Clean starter kit includes full support for headless implementations. The Content Delivery API is not turned on by default, and needs two changes.
 
-```json
-{
-    "Umbraco": {
-        "CMS": {
-            "DeliveryApi": {
-                "Enabled": true
-            }
-        }
-    }
-}
-```
+### 1. Register the Delivery API
 
-Update your `program.cs`:
+Add `.AddDeliveryApi()` to your `Program.cs`:
 
 ```csharp
 builder.CreateUmbracoBuilder()
@@ -27,9 +17,30 @@ builder.CreateUmbracoBuilder()
     .Build();
 ```
 
-Once the Content Delivery API is enabled, the next step is to rebuild the Delivery API content index **DeliveryApiContentIndex**. This can be done using the Examine Management dashboard in the Settings section of the Umbraco Backoffice.
+Umbraco 19 projects only include this call if they were created with the `--use-delivery-api` option (`dotnet new umbraco --use-delivery-api`). The `Clean.Blog` project in this repository and sites created from the `umbraco-starter-clean` template leave it out, as a fresh Umbraco 19 project does. Without it, the Delivery API URLs (`/umbraco/delivery/api/v2/...`) return a 500 error, because the Delivery API's services are not registered. Clean's own endpoints under `/api/v1` work either way.
 
+### 2. Enable it in configuration
 
+Update your `appsettings.json`. On Umbraco 18 and 19, also set `GenerateContentTypeSchemas`:
+
+```json
+{
+    "Umbraco": {
+        "CMS": {
+            "DeliveryApi": {
+                "Enabled": true,
+                "OpenApi": {
+                    "GenerateContentTypeSchemas": true
+                }
+            }
+        }
+    }
+}
+```
+
+### 3. Rebuild the indexes
+
+Once the Content Delivery API is enabled, rebuild the search indexes. In Umbraco 19 this is done from **Settings > Search** in the Umbraco Backoffice, which lists each index with its health status and a rebuild action. In Umbraco 17 and earlier, rebuild **DeliveryApiContentIndex** from the Examine Management dashboard in the Settings section instead.
 
 ## Headless Frontend Example
 
@@ -37,25 +48,7 @@ Phil Whittaker has created a complete headless Next.js frontend for this starter
 
 **[Clean Starter Kit Headless Frontend](https://github.com/hifi-phil/clean-headless)**
 
-This implementation demonstrates how to use the Clean starter kit as a headless CMS with a modern Next.js frontend.
-
- **Note for Umbraco 18**:  DeliveryApi configuration must also include `GenerateContentTypeSchemas`:
-
-
- ```json
- {
-     "Umbraco": {
-         "CMS": {
-             "DeliveryApi": {
-                 "Enabled": true,
-                 "OpenApi": {
-                     "GenerateContentTypeSchemas": true
-                 }
-             }
-         }
-     }
- }
- ```
+This implementation demonstrates how to use the Clean starter kit as a headless CMS with a modern Next.js frontend. It reads content through the Delivery API, so turn the Delivery API on first.
 
 ---
 
@@ -68,9 +61,25 @@ The Clean starter kit provides a suite of custom API endpoints for common functi
 - **Search API**: Perform content searches via REST API
 - **Contact API**: Handle contact form submissions
 
-## OpenAPI/Swagger Documentation
+### Search
 
-Explore and test the API endpoints using the built-in Swagger UI:
+The search page and the Search API both use `ISiteSearchService` from `Clean.Core`. It queries the published content index through Umbraco Search (`ISearcher`, with Examine as the default provider) and leaves out the `error`, `search` and `xMLSitemap` page types.
+
+`GET /api/v1/search/getSearchResults`
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `searchQuery` | Yes | | The text to search for |
+| `page` | No | `1` | The page of results to return |
+| `pageSize` | No | `10` | The number of results per page, up to 100 |
+
+The response has a `count` with the total number of matches and an `items` array holding the requested page. Each item has `contentName`, `url`, `title`, `subtitle`, `articleDate` and `author`.
+
+The indexes are listed under **Settings > Search** in the Umbraco Backoffice. Rebuild the published content index there if search results are missing.
+
+## OpenAPI Documentation
+
+Explore and test the API endpoints using the built-in OpenAPI UI:
 
 **Umbraco 18+**: `/umbraco/openapi/`
 

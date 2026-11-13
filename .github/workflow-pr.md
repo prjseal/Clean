@@ -204,9 +204,12 @@ The workflow performs **two complete end-to-end tests**:
    - Discover and visit up to 10 internal links
    - Test the Umbraco login page
    - Capture full-page screenshots of each page
+   - Fail straight away if the home page shows that the site did not boot
+5. If the browser tests fail, prints the warnings and errors from the site's Umbraco log
 
 **Location**: `test-installation/` directory
 **Screenshots**: Uploaded as workflow artifacts
+**Logs**: `site.log`, `site.err` and the Umbraco logs, uploaded as workflow artifacts
 
 #### Test 2: Template Installation Testing
 
@@ -218,9 +221,12 @@ The workflow performs **two complete end-to-end tests**:
    - Discover and visit up to 10 internal links
    - Test the Umbraco login page
    - Capture full-page screenshots of each page
+   - Fail straight away if the home page shows that the site did not boot
+5. If the browser tests fail, prints the warnings and errors from the site's Umbraco log
 
 **Location**: `test-template/` directory
 **Screenshots**: Uploaded as workflow artifacts
+**Logs**: `site.log`, `site.err` and the Umbraco logs, uploaded as workflow artifacts
 
 ### 5. **Artifacts**
 
@@ -231,6 +237,8 @@ The workflow uploads the following artifacts for every PR:
 | NuGet Packages | All four `.nupkg` files | `nuget-packages-{version}` |
 | Package Test Screenshots | Screenshots from package installation test | `package-test-screenshots-{version}` |
 | Template Test Screenshots | Screenshots from template installation test | `template-screenshots-{version}` |
+| Package Test Logs | `site.log`, `site.err` and the Umbraco logs from the package installation test | `package-test-logs-{version}` |
+| Template Test Logs | `site.log`, `site.err` and the Umbraco logs from the template installation test | `template-test-logs-{version}` |
 
 **Access**: Available in the "Actions" tab of the PR for download and review.
 
@@ -377,6 +385,8 @@ When reviewing a PR, check:
    - `nuget-packages-{version}` - The actual .nupkg files
    - `package-test-screenshots-{version}` - Package test screenshots
    - `template-screenshots-{version}` - Template test screenshots
+   - `package-test-logs-{version}` - Package test site and Umbraco logs
+   - `template-test-logs-{version}` - Template test site and Umbraco logs
 
 ## Troubleshooting
 

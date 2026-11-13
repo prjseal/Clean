@@ -98,6 +98,17 @@ jobs:
           path: test-installation/screenshots/*.png
           if-no-files-found: warn
 
+      - name: Upload Package Test Logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-test-logs-${{ steps.version.outputs.version }}
+          path: |
+            test-installation/site.log
+            test-installation/site.err
+            test-installation/TestProject/umbraco/Logs/*.json
+          if-no-files-found: warn
+
       - name: Post first screenshot as PR comment
         if: always() && github.event_name != 'workflow_dispatch'
         shell: pwsh
@@ -120,6 +131,17 @@ jobs:
         with:
           name: template-screenshots-${{ steps.version.outputs.version }}
           path: test-template-TestTemplateProject/TestTemplateProject/screenshots/*.png
+          if-no-files-found: warn
+
+      - name: Upload Template Test Logs
+        if: always() && inputs.run-template-tests == true
+        uses: actions/upload-artifact@v7
+        with:
+          name: template-test-logs-${{ steps.version.outputs.version }}
+          path: |
+            test-template-TestTemplateProject/TestTemplateProject/site.log
+            test-template-TestTemplateProject/TestTemplateProject/site.err
+            test-template-TestTemplateProject/TestTemplateProject/**/umbraco/Logs/*.json
           if-no-files-found: warn
 
       - name: Build Summary

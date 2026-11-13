@@ -1,5 +1,70 @@
 # Changelog
 
+## [19.0.0-rc02] - 2026-11-13
+
+Clean rebuilt as if it had been made on a fresh Umbraco 19 install, rather than upgraded through 13, 17 and 18.
+
+### Added
+- Reusable blocks: Rich Text blocks in Content Rows can come from the Library. The sample content has a `Reusable Blocks` Library folder with a `Join the Umbraco Community` block, placed on the Codegarden 2026 and Meetups articles, so editing it once updates both. The Rich Text Row element type has Allow in Library turned on, which is how Umbraco 19 offers a block type from the Library tab of the block picker
+- `Clean.Core` turns on `Umbraco:CMS:Indexing:IndexExternalBlockElements` unless the site sets it, so the search page and the search API find a page by the text of its reusable blocks
+
+### Changed
+- Umbraco's built-in Data Types match a fresh Umbraco 19.0.0-rc1 install: stock names (for example `Single Document Picker`, `Single Media Picker`, `URL Picker`, `Single Select Dropdown`) and stock config. They are filed under `Umbraco Defaults/<Family>` in the Data Types tree
+- Clean's own Data Types have plain Title Case names and are filed under `Clean/<Family>`. Their keys are unchanged:
+  - `[BlockList] Main Content` is now `Main Content Block List`
+  - `[BlockList] Icon List` is now `Social Links`
+  - `[MNTP] Authors` is now `Author Picker (single)`, a single document picker instead of the deprecated Multi Node Tree Picker
+  - `[ElementPicker] Categories` is now `Category Picker (multiple)`
+  - `[MediaPicker] SVG Image` is now `Icon Media Picker`
+  - `[MultiUrlPicker] Single Url Picker` is now `Link Picker (single)`
+  - `[Dropdown] Spacing` is now `Spacing Dropdown`
+  - `[Toggle] Default True` is now `Toggle (default on)`
+- The built-in `Richtext editor` Data Type is back to stock. Clean's toolbar and `/dropdownStyles.css` moved to a new `Rich Text (Standard)` Data Type, used by the rich text row and the contact form messages
+- Installing the `Clean` package files Umbraco's built-in Data Types under `Umbraco Defaults`. The package now exports every Data Type with its folder, instead of only the ones whose name started with `[`
+- Search uses Umbraco Search (`ISearcher`, with Examine as the default provider) through a new `ISiteSearchService` in `Clean.Core`. The search page has paging, and `GET /api/v1/search/getSearchResults` accepts optional `page` and `pageSize` parameters
+- `Clean.Headless` now depends on `Clean.Core`
+- Sample content and Library Elements were saved again on Umbraco 19, so their stored values are in the shape the Umbraco 19 editors write
+- The media types match a fresh install, with Clean's `altText` property on `Image`
+- `PageHeaderViewModel.BackgroundImage` is a `MediaWithCrops`
+- `Clean.Core` has nullable reference types enabled
+- The package install publishes the category elements through the element publishing service, before it publishes the Home branch
+- `NextJsRevalidateService` uses `IHttpClientFactory`
+- `Clean.Blog` loads an optional `appsettings.Local.json` in debug builds, as a fresh Umbraco 19 project does
+- The embedded `package.zip` was regenerated on Umbraco 19. It was still the Umbraco 17 export
+
+### Fixed
+- The XML sitemap now leaves out pages with "Hide from XML sitemap" switched on. It read a property that does not exist
+- Pagination links keep an existing query string
+- Articles without an author no longer throw on the article page, the article list and the search page
+- The template package no longer ships a database, logs or build output, which takes it from about 280 MB to about 116 MB
+- Missing pages show the Clean Error page with a 404 status, unless `Error404Collection` sets another page
+- Pages with Hide From Search turned on are left out of the search page and the search API
+- The social sharing image tags use the page's Main Image instead of a `/socialimage.png` that did not exist
+- The Delivery API setup steps in the marketplace readmes, the headless guide and the contributing guide include `.AddDeliveryApi()` in `Program.cs`. Umbraco 19 projects, including `Clean.Blog` and sites created from the template, leave it out unless they were created with `--use-delivery-api`, and the Delivery API returns a 500 error without it
+- On SQLite, the first boot after installing the `Clean` package could fail with "Failed to acquire write lock" on a slow machine, because Umbraco Search indexing overlapped the URL rebuild Umbraco 19.0.0-rc1 runs after the package migration. During an unattended install, the package now publishes its content once Umbraco has finished starting
+
+### Removed
+- The unused `category` and `categoryList` document types and the empty `listPageSettings` element type, with their generated models. Categories are Library Elements
+- The `Media Picker (legacy)`, `Multiple Media Picker (legacy)` and `List View - Members` Data Types, which a fresh Umbraco 19 install does not have, and the unused `[Slider] Spacing`
+- The legacy grid and unused block grid partial views
+- The `Global:SanitizeTinyMce`, `Content:AllowEditInvariantFromNonDefault`, `Content:MacroErrors` and `RuntimeMinification` settings, which Umbraco 19 does not use. Editing shared content from a non-default language is now the "Allow editing shared content" permission
+- The block label workaround in `CreateNuGetPackages.ps1`. Umbraco 19.0.0-rc1 exports block labels in the package
+- The unused `ArticleList.ViewAll`, `Paging.Page` and `Paging.Of` dictionary items
+
+### Upgrade notes
+- Umbraco 19 on .NET 11 does not start if `Umbraco:CMS:Imaging:HMACSecretKey` is not canonical Base64. Correct the key's final character rather than generating a new key, so signed image URLs stay valid. The README shows how
+- Umbraco 19 sets `Umbraco:CMS:ModelsBuilder:ModelsMode` to `Nothing` by default unless the site references `Umbraco.Cms.DevelopmentMode.Backoffice`. Clean's views need generated models, so keep that package, which `dotnet new umbraco` adds by default
+- `Umbraco:CMS:Imaging:Memory:Enabled` and `Umbraco:CMS:ScheduledPublishing:AlignToClock` now default to `true` in Umbraco 19. Set them to `false` to keep the Umbraco 18 behaviour
+- `Connect Timeout` in the connection string no longer sets the database command timeout, which drops to 30 seconds. Set `Command Timeout` or `Umbraco:CMS:Global:DatabaseCommandTimeout` if a site relied on it
+- An existing site that upgrades `Clean.Core` gets `IndexExternalBlockElements` turned on. Rebuild the indexes in Settings > Search, then save and publish the pages that use reusable blocks, so the search finds them by the reusable blocks' text
+
+### Known issues
+- Umbraco 19 is still a release candidate
+- A fresh install writes an `Imaging:HMACSecretKey` into `appsettings.json` on first run
+- An existing site that upgrades the `Clean` package does not get the renamed Data Types or folders, because the package import only runs on a site that has not installed Clean before
+- In the block list, a reusable block is labelled with its Library element's name, so a hidden reusable block does not show `[HIDDEN]` in the list. The label is shown in the block's Settings dialog
+- On Umbraco 19.0.0-rc1, opening a reusable block's Settings in the page editor and saving the page stores a copy of the Library element's content in the page. The page still renders the Library element, but the search index also picks up the copy, so a page can still be found by text that was later removed from the Library element
+
 ## [19.0.0-rc01] - 2026-11-12
 
 Release candidate of Clean for Umbraco 19.

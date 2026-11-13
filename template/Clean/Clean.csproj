@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyVersion>19.0.0</AssemblyVersion>
     <FileVersion>19.0.0.0</FileVersion>
-    <Version>19.0.0-rc01</Version>
+    <Version>19.0.0-rc02</Version>
     <InformationalVersion>19.0.0</InformationalVersion>
     <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -29,13 +29,13 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToPublishDirectory>Always</CopyToPublishDirectory>
     </Content>
-    <None Remove="Views\Components\Contact\default.cshtml" />
+    <None Remove="Views\Components\Contact\Default.cshtml" />
     <Content Include="Views\**\*.*">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToPublishDirectory>Always</CopyToPublishDirectory>
     </Content>
     <None Remove="Migrations\package.zip" />
-    <None Remove="Views\Components\Pagination\default.cshtml" />
+    <None Remove="Views\Components\Pagination\Default.cshtml" />
     <EmbeddedResource Include="Migrations\package.zip" />
   </ItemGroup>
   <ItemGroup>

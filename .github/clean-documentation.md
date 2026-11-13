@@ -11,7 +11,6 @@ Welcome to the comprehensive documentation for the Clean Starter Kit for Umbraco
 - [For Contributors and Developers](#for-contributors-and-developers)
 - [Package Management](#package-management)
 - [Workflow Documentation](#workflow-documentation)
-- [Technical References](#technical-references)
 
 ---
 
@@ -20,6 +19,11 @@ Welcome to the comprehensive documentation for the Clean Starter Kit for Umbraco
 New to Clean Starter Kit? Start with these essential guides:
 
 - **[README](../README.md)** - Installation instructions, features overview, and quick start guide
+- **[Feature Guide](clean-features.md)** - What the starter kit does, with screenshots of the website and the backoffice
+  - **[Pages](clean-features-pages.md)** - Every page type, on the website and in the backoffice
+  - **[Content Blocks](clean-features-blocks.md)** - The block list rows, and their spacing and hide settings
+  - **[SEO, Navigation and Site Settings](clean-features-seo-and-navigation.md)** - Meta tags, visibility, navigation, the XML sitemap, the footer, dictionary items and security headers
+  - **[Backoffice Structure](clean-features-backoffice.md)** - Document types, compositions, Library categories, Data Types, media types and templates
 - **[Package Architecture](clean-packages.md)** - Understanding the NuGet packages, dependencies, and migration path
 
 ---

@@ -8,11 +8,18 @@
 
 A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 19.
 
-Clean targets **Umbraco 19 (STS)**, currently in beta. From version 19, the Clean major version matches the Umbraco major version. For complete version mapping for previous versions, see the [Versioning and Releases](https://github.com/prjseal/Clean/blob/main/.github/workflow-versioning-releases.md#version-mapping) documentation.
+Clean targets **Umbraco 19 (STS)**, currently a release candidate. From version 19, the Clean major version matches the Umbraco major version. For complete version mapping for previous versions, see the [Versioning and Releases](https://github.com/prjseal/Clean/blob/main/.github/workflow-versioning-releases.md#version-mapping) documentation.
 
 For detailed information about the package architecture and the different NuGet packages, see the [Package Architecture](https://github.com/prjseal/Clean/blob/main/.github/clean-packages.md) documentation.
 
 ## Documentation
+
+To see what the starter kit does, with screenshots of the website and the backoffice, read the [Feature Guide](https://github.com/prjseal/Clean/blob/main/.github/clean-features.md). It covers:
+
+- [Pages](https://github.com/prjseal/Clean/blob/main/.github/clean-features-pages.md): every page type, on the website and in the backoffice
+- [Content blocks](https://github.com/prjseal/Clean/blob/main/.github/clean-features-blocks.md): the rows editors build pages from, and their spacing and hide settings
+- [SEO, navigation and site settings](https://github.com/prjseal/Clean/blob/main/.github/clean-features-seo-and-navigation.md): meta tags, visibility, the menu, the XML sitemap, the footer, dictionary items and security headers
+- [Backoffice structure](https://github.com/prjseal/Clean/blob/main/.github/clean-features-backoffice.md): document types, compositions, Library categories and Data Types
 
 For detailed documentation about this package and the repository, please see the [docs](https://github.com/prjseal/Clean/blob/main/.github/clean-documentation.md).
 
@@ -44,7 +51,7 @@ dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --emai
 dotnet sln add "MyProject"
 
 # Add Clean package
-dotnet add "MyProject" package Clean --version 19.0.0-rc01
+dotnet add "MyProject" package Clean --version 19.0.0-rc02
 
 # Run the project
 dotnet run --project "MyProject"
@@ -54,18 +61,22 @@ dotnet run --project "MyProject"
 # The site should now be running and visible on the front end
 ```
 
+**ℹ️ Data Types**: Installing the `Clean` package arranges the Data Types tree into two folders. `Clean` holds the starter kit's own Data Types, and `Umbraco Defaults` holds Umbraco's built-in ones, which keep their names, keys and settings.
+
+**ℹ️ Models Builder**: Clean's views use the models that Models Builder generates for your site, so the site needs a models mode that generates them. Create the project with the default development mode, as above: `dotnet new umbraco` then references `Umbraco.Cms.DevelopmentMode.Backoffice`, which generates the models in memory. In Umbraco 19, `ModelsMode` defaults to `Nothing` without that package, and Clean's views will not compile. If you want models as source code instead, change `Umbraco:CMS:ModelsBuilder:ModelsMode` after Clean is installed and running.
+
 **⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
 
 ```powershell
 dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 19.0.0-rc01
+dotnet add "MyProject" package Clean.Core --version 19.0.0-rc02
 ```
 
 ### dotnet Template Method
 
 ```powershell
 # Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::19.0.0-rc01 --force
+dotnet new install Umbraco.Community.Templates.Clean::19.0.0-rc02 --force
 
 # Create a new project using the template
 dotnet new umbraco-starter-clean -n MyProject
@@ -82,6 +93,15 @@ dotnet run --project "MyProject.Blog"
 ```
 
 > **✨ Note**: As of version 8.0.0, the template now supports periods in project names (e.g., `Company.Website`).
+
+### Upgrading from Clean 8.x
+
+Read Umbraco's [Umbraco 19 upgrade notes](https://docs.umbraco.com/umbraco-cms/19.latest/get-started/upgrading-and-migrating/version-specific) first. These points affect Clean sites in particular:
+
+- **Image URL key**: on .NET 11, a site whose `Umbraco:CMS:Imaging:HMACSecretKey` is not canonical Base64 does not start. A key is canonical when decoding it and encoding it again returns the same string. Keys that Umbraco generates are canonical, so check any key that was set by hand. Correct the key rather than generating a new one, so image URLs already signed with it stay valid: only the final character changes, for example `zx==` becomes `zw==`. In Windows PowerShell, `[Convert]::ToBase64String([Convert]::FromBase64String('<your key>'))` returns the corrected key.
+- **Models Builder**: `ModelsMode` now defaults to `Nothing` unless the site references `Umbraco.Cms.DevelopmentMode.Backoffice`, and setting `InMemoryAuto` without that package stops the site at startup. Keep the package, or move to a source code models mode, before you upgrade.
+- **Changed defaults**: `Umbraco:CMS:Imaging:Memory:Enabled` and `Umbraco:CMS:ScheduledPublishing:AlignToClock` now default to `true`. Set them to `false` to keep the Umbraco 18 behaviour. `Connect Timeout` in the connection string no longer sets the database command timeout, which drops to the provider default of 30 seconds. Set `Command Timeout` in the connection string, or `Umbraco:CMS:Global:DatabaseCommandTimeout`, if the site relied on it.
+- **Data Types**: upgrading the `Clean` package does not rename or refile the Data Types on a site that already has Clean. The new names and folders only apply to new installs.
 
 ## Umbraco 18 (STS)
 
@@ -120,6 +140,8 @@ dotnet run --project "MyProject"
 # Save and publish the home page and save one of the dictionary items in the translation section
 # The site should now be running and visible on the front end
 ```
+
+**ℹ️ Data Types**: Installing the `Clean` package arranges the Data Types tree into two folders. `Clean` holds the starter kit's own Data Types, and `Umbraco Defaults` holds Umbraco's built-in ones, which keep their names, keys and settings.
 
 **⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
 

@@ -27,3 +27,7 @@ template/Clean.Blog/wwwroot/media/created-packages/Clean/package.zip
 
 # Local environment secrets
 .env
+
+# Local install test sites (Test-PackageInstallation.ps1, Test-TemplateInstallation.ps1)
+/test-installation/
+/test-template-*/
