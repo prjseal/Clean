@@ -26,7 +26,8 @@ Clean Starter Kit provides everything you need to launch a professional blog or 
 - **Content Delivery API** - Full integration with Umbraco's Content Delivery API
 - **Next.js Revalidation** - Built-in support for Next.js on-demand revalidation
 - **Custom API Endpoints** - Dictionary, search, and contact form APIs included
-- **OpenAPI/Swagger** - Interactive API documentation at `/umbraco/swagger`
+- **Umbraco Search** - Site search and the search API run on Umbraco Search, with Examine as the default provider
+- **OpenAPI** - Interactive API documentation at `/umbraco/openapi/`
 
 #### Developer Experience
 
@@ -73,7 +74,7 @@ dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --emai
 dotnet sln add "MyProject"
 
 # Add Clean package
-dotnet add "MyProject" package Clean --version 19.0.0-rc01
+dotnet add "MyProject" package Clean --version 19.0.0-rc02
 
 # Run the project
 dotnet run --project "MyProject"
@@ -87,14 +88,14 @@ dotnet run --project "MyProject"
 
 ```powershell
 dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 19.0.0-rc01
+dotnet add "MyProject" package Clean.Core --version 19.0.0-rc02
 ```
 
 ### dotnet Template Method
 
 ```powershell
 # Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::19.0.0-rc01 --force
+dotnet new install Umbraco.Community.Templates.Clean::19.0.0-rc02 --force
 
 # Create a new project using the template
 dotnet new umbraco-starter-clean -n MyProject
@@ -186,6 +187,8 @@ dotnet run --project "MyProject.Blog"
 
 **Remember:** After setup, switch from `Clean` to `Clean.Core` package reference to prevent view overrides.
 
+**Data Types:** Installing the `Clean` package arranges the Data Types tree into two folders. `Clean` holds the starter kit's own Data Types, and `Umbraco Defaults` holds Umbraco's built-in ones, which keep their names, keys and settings.
+
 ## Headless Implementation
 
 Clean includes full headless CMS support. Enable the Content Delivery API in your `appsettings.json`:
@@ -193,8 +196,10 @@ Clean includes full headless CMS support. Enable the Content Delivery API in you
 ```json
 {
   "Umbraco": {
-    "DeliveryApi": {
-      "Enabled": true
+    "CMS": {
+      "DeliveryApi": {
+        "Enabled": true
+      }
     }
   }
 }
@@ -221,14 +226,14 @@ Check out the complete Next.js frontend example by Phil Whittaker:
 
 ## API Documentation
 
-Explore the built-in API endpoints using Swagger UI:
+Explore the built-in API endpoints using the OpenAPI UI:
 
-**URL:** `/umbraco/swagger/index.html?urls.primaryName=Clean%20starter%20kit`
+**URL:** `/umbraco/openapi/index.html?urls.primaryName=Clean%20starter%20kit` (Umbraco 18 and later; earlier versions use `/umbraco/swagger/`)
 
 Available APIs:
 
 - **Dictionary API** - Access translation/dictionary items
-- **Search API** - Full-text content search
+- **Search API** - Full-text content search with paging, on Umbraco Search
 - **Contact API** - Handle contact form submissions
 
 ## Version Compatibility

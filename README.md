@@ -8,7 +8,7 @@
 
 A modern, clean, and fully-featured starter kit for Umbraco CMS that provides a ready-to-use blog theme with headless/API capabilities. Built with Bootstrap and designed to get you up and running quickly with Umbraco 19.
 
-Clean targets **Umbraco 19 (STS)**, currently in beta. From version 19, the Clean major version matches the Umbraco major version. For complete version mapping for previous versions, see the [Versioning and Releases](https://github.com/prjseal/Clean/blob/main/.github/workflow-versioning-releases.md#version-mapping) documentation.
+Clean targets **Umbraco 19 (STS)**, currently a release candidate. From version 19, the Clean major version matches the Umbraco major version. For complete version mapping for previous versions, see the [Versioning and Releases](https://github.com/prjseal/Clean/blob/main/.github/workflow-versioning-releases.md#version-mapping) documentation.
 
 For detailed information about the package architecture and the different NuGet packages, see the [Package Architecture](https://github.com/prjseal/Clean/blob/main/.github/clean-packages.md) documentation.
 
@@ -44,7 +44,7 @@ dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --emai
 dotnet sln add "MyProject"
 
 # Add Clean package
-dotnet add "MyProject" package Clean --version 19.0.0-rc01
+dotnet add "MyProject" package Clean --version 19.0.0-rc02
 
 # Run the project
 dotnet run --project "MyProject"
@@ -54,18 +54,20 @@ dotnet run --project "MyProject"
 # The site should now be running and visible on the front end
 ```
 
+**ℹ️ Data Types**: Installing the `Clean` package arranges the Data Types tree into two folders. `Clean` holds the starter kit's own Data Types, and `Umbraco Defaults` holds Umbraco's built-in ones, which keep their names, keys and settings.
+
 **⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
 
 ```powershell
 dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 19.0.0-rc01
+dotnet add "MyProject" package Clean.Core --version 19.0.0-rc02
 ```
 
 ### dotnet Template Method
 
 ```powershell
 # Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::19.0.0-rc01 --force
+dotnet new install Umbraco.Community.Templates.Clean::19.0.0-rc02 --force
 
 # Create a new project using the template
 dotnet new umbraco-starter-clean -n MyProject
@@ -120,6 +122,8 @@ dotnet run --project "MyProject"
 # Save and publish the home page and save one of the dictionary items in the translation section
 # The site should now be running and visible on the front end
 ```
+
+**ℹ️ Data Types**: Installing the `Clean` package arranges the Data Types tree into two folders. `Clean` holds the starter kit's own Data Types, and `Umbraco Defaults` holds Umbraco's built-in ones, which keep their names, keys and settings.
 
 **⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
 

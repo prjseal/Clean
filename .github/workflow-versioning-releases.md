@@ -40,17 +40,19 @@ MAJOR.MINOR.PATCH[-PRERELEASE]
 |------|--------|---------|-------------|
 | **CI Build** | `X.Y.Z-ci.bNNNNNNN` | `7.0.0-ci.b0000123` | Automatic on every PR |
 | **Stable Release** | `X.Y.Z` | `7.0.0` | Production-ready release |
-| **Release Candidate** | `X.Y.Z-rc.N` | `7.0.0-rc.1` | Near-final testing |
-| **Beta** | `X.Y.Z-beta.N` | `7.0.0-beta.1` | Feature-complete testing |
-| **Alpha** | `X.Y.Z-alpha.N` | `7.0.0-alpha.1` | Early testing |
+| **Release Candidate** | `X.Y.Z-rcNN` | `19.0.0-rc02` | Near-final testing |
+| **Beta** | `X.Y.Z-betaNN` | `19.0.0-beta01` | Feature-complete testing |
+| **Alpha** | `X.Y.Z-alphaNN` | `19.0.0-alpha01` | Early testing |
 
 ### Version Precedence
 
 NuGet follows SemVer 2.0 precedence rules:
 
 ```
-1.0.0-alpha.1 < 1.0.0-beta.1 < 1.0.0-rc.1 < 1.0.0 < 1.0.1-ci.b0000001
+1.0.0-alpha01 < 1.0.0-beta01 < 1.0.0-rc01 < 1.0.0 < 1.0.1-ci.b0000001
 ```
+
+Pre-release numbers are two digits with a leading zero and no dot (`rc01`, `rc02`), so they sort correctly as text: `rc02` comes before `rc10`.
 
 **Important**: CI builds (`-ci.bNNNNNNN`) sort **after** stable releases, ensuring they don't interfere with production package resolution.
 
@@ -192,9 +194,9 @@ See [general-consuming-packages.md](general-consuming-packages.md) for consumpti
 
 4. **Create Pre-release**
    ```bash
-   gh release create v7.1.0-rc.1 \
-     --title "Version 7.1.0 RC1" \
-     --notes "Release candidate for 7.1.0" \
+   gh release create v19.0.0-rc01 \
+     --title "Version 19.0.0 RC1" \
+     --notes "Release candidate for 19.0.0" \
      --prerelease
    ```
 
@@ -392,7 +394,7 @@ Invalid version format: 7.0.0.1. Expected format: X.Y.Z or X.Y.Z-prerelease
 **Solution**:
 Use semantic versioning format:
 - ✅ `v7.0.0`
-- ✅ `v7.0.0-rc.1`
+- ✅ `v19.0.0-rc01`
 - ❌ `v7.0.0.1` (4 segments not allowed)
 - ❌ `7.0.0_rc1` (use hyphen, not underscore)
 
@@ -455,14 +457,14 @@ dotnet nuget locals all --clear
 
 ### Pre-release Not Showing in NuGet Package Manager
 
-**Problem**: Published `7.0.0-rc.1` but can't find it in Visual Studio.
+**Problem**: Published `19.0.0-rc01` but can't find it in Visual Studio.
 
 **Solution**:
 Pre-release packages require "Include prerelease" checkbox:
 - Visual Studio: Check "Include prerelease"
 - CLI: Use `--prerelease` flag
   ```bash
-  dotnet add package Clean --version 7.0.0-rc.1
+  dotnet add package Clean --version 19.0.0-rc01
   # Or
   dotnet add package Clean --prerelease
   ```
@@ -527,7 +529,7 @@ Pre-release packages require "Include prerelease" checkbox:
 gh release create v7.0.0 --title "Version 7.0.0" --notes "Release notes..."
 
 # Create pre-release
-gh release create v7.1.0-rc.1 --title "7.1.0 RC1" --notes "..." --prerelease
+gh release create v19.0.0-rc01 --title "19.0.0 RC1" --notes "..." --prerelease
 
 # List releases
 gh release list
@@ -554,10 +556,10 @@ v7.1.0
 v7.0.1
 
 # Pre-releases
-v7.0.0-alpha.1
-v7.0.0-beta.1
-v7.0.0-rc.1
-v7.1.0-rc.2
+v19.0.0-alpha01
+v19.0.0-beta01
+v19.0.0-rc01
+v19.0.0-rc02
 
 # CI builds (automatic)
 7.0.0-ci.b0000123

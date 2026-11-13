@@ -1,5 +1,51 @@
 # Changelog
 
+## [19.0.0-rc02] - 2026-11-13
+
+Clean rebuilt as if it had been made on a fresh Umbraco 19 install, rather than upgraded through 13, 17 and 18.
+
+### Changed
+- Umbraco's built-in Data Types match a fresh Umbraco 19.0.0-rc1 install: stock names (for example `Single Document Picker`, `Single Media Picker`, `URL Picker`, `Single Select Dropdown`) and stock config. They are filed under `Umbraco Defaults/<Family>` in the Data Types tree
+- Clean's own Data Types have plain Title Case names and are filed under `Clean/<Family>`. Their keys are unchanged:
+  - `[BlockList] Main Content` is now `Main Content Block List`
+  - `[BlockList] Icon List` is now `Social Links`
+  - `[MNTP] Authors` is now `Author Picker (single)`, a single document picker instead of the deprecated Multi Node Tree Picker
+  - `[ElementPicker] Categories` is now `Category Picker (multiple)`
+  - `[MediaPicker] SVG Image` is now `Icon Media Picker`
+  - `[MultiUrlPicker] Single Url Picker` is now `Link Picker (single)`
+  - `[Dropdown] Spacing` is now `Spacing Dropdown`
+  - `[Toggle] Default True` is now `Toggle (default on)`
+- The built-in `Richtext editor` Data Type is back to stock. Clean's toolbar and `/dropdownStyles.css` moved to a new `Rich Text (Standard)` Data Type, used by the rich text row and the contact form messages
+- Installing the `Clean` package files Umbraco's built-in Data Types under `Umbraco Defaults`. The package now exports every Data Type with its folder, instead of only the ones whose name started with `[`
+- Search uses Umbraco Search (`ISearcher`, with Examine as the default provider) through a new `ISiteSearchService` in `Clean.Core`. The search page has paging, and `GET /api/v1/search/getSearchResults` accepts optional `page` and `pageSize` parameters
+- `Clean.Headless` now depends on `Clean.Core`
+- Sample content and Library Elements were saved again on Umbraco 19, so their stored values are in the shape the Umbraco 19 editors write
+- The media types match a fresh install, with Clean's `altText` property on `Image`
+- `PageHeaderViewModel.BackgroundImage` is a `MediaWithCrops`
+- `Clean.Core` has nullable reference types enabled
+- The package install publishes the category elements through the element publishing service, before it publishes the Home branch
+- `NextJsRevalidateService` uses `IHttpClientFactory`
+- `Clean.Blog` loads an optional `appsettings.Local.json` in debug builds, as a fresh Umbraco 19 project does
+- The embedded `package.zip` was regenerated on Umbraco 19. It was still the Umbraco 17 export
+
+### Fixed
+- The XML sitemap now leaves out pages with "Hide from XML sitemap" switched on. It read a property that does not exist
+- Pagination links keep an existing query string
+- Articles without an author no longer throw on the article page, the article list and the search page
+- The template package no longer ships a database, logs or build output, which takes it from about 280 MB to about 116 MB
+
+### Removed
+- The unused `category` and `categoryList` document types and the empty `listPageSettings` element type, with their generated models. Categories are Library Elements
+- The `Media Picker (legacy)`, `Multiple Media Picker (legacy)` and `List View - Members` Data Types, which a fresh Umbraco 19 install does not have, and the unused `[Slider] Spacing`
+- The legacy grid and unused block grid partial views
+- The `Global:SanitizeTinyMce`, `Content:AllowEditInvariantFromNonDefault`, `Content:MacroErrors` and `RuntimeMinification` settings, which Umbraco 19 does not use. Editing shared content from a non-default language is now the "Allow editing shared content" permission
+- The block label workaround in `CreateNuGetPackages.ps1`. Umbraco 19.0.0-rc1 exports block labels in the package
+
+### Known issues
+- Umbraco 19 is still a release candidate
+- A fresh install writes an `Imaging:HMACSecretKey` into `appsettings.json` on first run
+- An existing site that upgrades the `Clean` package does not get the renamed Data Types or folders, because the package import only runs on a site that has not installed Clean before
+
 ## [19.0.0-rc01] - 2026-11-12
 
 Release candidate of Clean for Umbraco 19.

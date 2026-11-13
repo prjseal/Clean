@@ -26,7 +26,7 @@ This project adheres to a code of professionalism and respect. By participating,
 
 ### Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or higher (depending on which version you're working with)
+- [.NET 11 SDK](https://dotnet.microsoft.com/download/dotnet/11.0) for Clean 19 (Umbraco 19). Older branches need the SDK for their Umbraco version, for example .NET 10 for `dev/v8` and `dev/v7`
 - [Git](https://git-scm.com/)
 - A code editor ([Visual Studio](https://visualstudio.microsoft.com/), [VS Code](https://code.visualstudio.com/), or [Rider](https://www.jetbrains.com/rider/))
 - Basic understanding of [Umbraco CMS](https://umbraco.com/)
@@ -94,6 +94,7 @@ template/Clean.Blog/uSync/
     ├── ContentTypes/      # Document Types
     ├── DataTypes/         # Data Type definitions
     ├── Dictionary/        # Dictionary items for translations
+    ├── Element/           # Library Elements (the article categories)
     ├── Languages/         # Language configurations
     ├── Media/             # Media items
     ├── MediaTypes/        # Media Type definitions
@@ -119,6 +120,19 @@ This includes:
 - Modifying Languages
 - Creating initial Content or Media (if it should be part of the starter kit)
 - Changing Relation Types
+
+### Data Type Conventions
+
+Clean is kept as if it had been built on a fresh Umbraco install, so the Data Types follow these rules:
+
+- **Umbraco's built-in Data Types are never customised.** They keep the name, key and config a fresh install gives them. If a property needs different settings, create a new Data Type for it.
+- **Validation and limits live in the Data Type**, so one Data Type is reused wherever that constraint applies.
+- **Names are plain Title Case and say what the Data Type is for**, with any constraint in brackets at the end: `Author Picker (single)`, `Category Picker (multiple)`, `Toggle (default on)`. Do not prefix names with the editor kind in square brackets.
+- **Nothing sits at the root of the Data Types tree.** There are two root folders, each with one sub-folder per family of editor:
+  - `Clean/<Family>` for Clean's own Data Types, for example `Clean/Block List/Main Content Block List`
+  - `Umbraco Defaults/<Family>` for Umbraco's built-ins, for example `Umbraco Defaults/Media Picker/Single Media Picker`
+- **Keep the key when you rename or move a Data Type**, so existing properties and content still point at it.
+- The `Clean` package exports every Data Type with its folder. A Data Type that a document, element or media type uses must be on the site when the package is built, or the export fails.
 
 ### How to Export Changes
 
@@ -288,7 +302,7 @@ When modifying API controllers:
 1. **Update OpenAPI documentation** (Swagger annotations)
 2. **Maintain backward compatibility** when possible
 3. **Follow RESTful conventions**
-4. **Test endpoints** using the Swagger UI at `/umbraco/swagger/`
+4. **Test endpoints** using the OpenAPI UI at `/umbraco/openapi/`
 
 ## Testing Your Changes
 
@@ -296,8 +310,8 @@ When modifying API controllers:
 
 1. **Test with a fresh installation:**
    ```bash
-   # Delete the Umbraco database file (if using SQLite)
-   rm template/Clean.Blog/umbraco.db
+   # Delete the Umbraco SQLite database and its temp files
+   rm -r template/Clean.Blog/umbraco/Data
 
    # Run the project
    dotnet run --project template/Clean.Blog
