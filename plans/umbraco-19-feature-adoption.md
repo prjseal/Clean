@@ -41,7 +41,7 @@ Last checked: 2026-11-13, against Umbraco 19.0.0-rc1 and Clean 19.0.0-rc02.
 | Settings > Search dashboard with index health | #23321 | Done | Headless guide points to it |
 | Deferred index build | | Automatic | |
 | Block elements indexed with the page | | Automatic | Checked in work item D: text inside a Main Content Rich Text block is found by the search page and the search API |
-| Reusable blocks indexed on the pages that use them (`Umbraco:CMS:Indexing:IndexExternalBlockElements`) | | Not started | Off by default. Needed by work item A |
+| Reusable blocks indexed on the pages that use them (`Umbraco:CMS:Indexing:IndexExternalBlockElements`) | | Done | Off by default. `CleanCoreComposer` turns it on unless the site sets it. Clean 19.0.0-rc02, work item A |
 | Merged values from content indexers, file-to-text extension point | | Not applicable | No custom indexers or file indexing in Clean |
 | External members indexed | | Not applicable | Clean has no members |
 
@@ -50,8 +50,8 @@ Last checked: 2026-11-13, against Umbraco 19.0.0-rc1 and Clean 19.0.0-rc02.
 | Feature | Umbraco PR | Status | Notes |
 |---|---|---|---|
 | Library Elements (shared elements picked by an Element Picker) | | Done | Article categories, `Category Picker (multiple)` |
-| Reusable content of blocks: a block in Block List, Block Grid, Single Block or the Rich Text Editor references a Library Element | #22448, #23195 | Not started | Work item A, Clean's headline Umbraco 19 feature |
-| Transfer a block to the Library; Library action in the block Create bar | #22448 | Not started | Part of work item A |
+| Reusable content of blocks: a block in Block List, Block Grid, Single Block or the Rich Text Editor references a Library Element | #22448, #23195 | Done | Work item A: Rich Text blocks in Main Content, sample `Join the Umbraco Community` block on two articles. Clean 19.0.0-rc02 |
+| Transfer a block to the Library; Library action in the block Create bar | #22448 | Done | Comes with Allow in Library on Rich Text Row (work item A). The Create bar is "Add content", with a Library tab |
 | Document Blueprints in the Library, with folders | #23905, #23907 | Not started | Work item B |
 | Blueprints limited to the document types that allow them | #23908 | Not started | Part of work item B |
 | Blueprint access per user group and user | #23906 | Optional | Clean ships no user groups beyond the defaults |
@@ -60,7 +60,7 @@ Last checked: 2026-11-13, against Umbraco 19.0.0-rc1 and Clean 19.0.0-rc02.
 | Min item count as a floor | #23693 | Automatic | Clean's Block Lists set no minimum |
 | Default picker Data Types named after their editors | #24568 | Done | Clean 19.0.0-rc02, under `Umbraco Defaults` |
 | Folders can be moved in the Document Type, Media Type, Member Type, Data Type and Blueprint trees | #23637 | Automatic | |
-| Reference warnings on trash, delete and publish | #23625 | Automatic | Deleting a category used by an article now warns. Check during work item A |
+| Reference warnings on trash, delete and publish | #23625 | Automatic | Checked in work item A: trashing the Library block or a category used by an article offers "View items that depend on this…" |
 
 ### Multilingual and personalisation
 
@@ -108,7 +108,7 @@ Suggested order: D, then A, B, F, C. E only if A shows a need for it.
 
 ### A. Reusable blocks in the main content
 
-**Status:** Not started.
+**Status:** Done, on `feature/v19-native-rebuild` (Clean 19.0.0-rc02). Findings are below the steps.
 
 Goal: show Umbraco 19's main new feature in the sample site. An editor can save a Main Content
 block to the Library and place the same block on several pages; editing it once updates every page.
@@ -137,6 +137,76 @@ the content is shared; does uSync 19 export a Library block and its references c
 
 Done when: the sample shows one Library block on two pages, editing it updates both, the
 template and package install paths both keep it, and the docs describe it.
+
+#### Findings (2026-11-13, Umbraco 19.0.0-rc1)
+
+**The setting.** There is no Block List Data Type key. A block type is offered from the Library
+when its content element type is allowed in the Library: **Allow in Library** on the element type
+(Settings > Document Types > Structure), stored by uSync as `<AllowedInLibrary>` in the
+`ContentTypes` config and by the Management API as `allowedInLibrary`. The backoffice reads the
+element types allowed at the Library root (`requestAllowedChildrenOf(null)`) and offers the
+Library tab in "Add content" for each block type in the Data Type whose element type is among
+them. The same rule turns on **Transfer to Library** for a block. `Main Content Block List` is
+unchanged.
+
+**The choice.** Only `richTextRow` is allowed in the Library. The sample is a Rich Text element,
+`Join the Umbraco Community` (key `13dc6b08-056c-4cd5-959c-f57861b60279`), in a `Reusable Blocks`
+folder (key `ea03efe5-169d-403a-b731-3948e1c4c71c`), at the end of Codegarden 2026 and Meetups.
+
+**Storage.** A Library block is a layout entry
+`{ "contentKey": "<element key>", "isExternalContent": true, "key": "<new key>", "settingsKey": ... }`
+with no `contentData` entry. The settings are the page's own `settingsData` entry.
+
+**Rendering.** `blocklist/default.cshtml` and `richTextRow.cshtml` render a Library block the same
+as an inline block (`<div class="richtext ...">`), with `BlockListItem.Content` from the published
+element and `Settings` from the page. No view changes. Hide works per page: hidden on Meetups, still
+shown on Codegarden 2026. A trashed element is left out of the page, and the backoffice shows the
+block greyed out with a "Trashed" tag. Restoring it from the recycle bin brings it back as a draft.
+
+**Label.** The block list labels a Library block with the element's name, not the Data Type's
+label template, so `[HIDDEN]` does not show in the list for a hidden Library block. The label
+template, with `[HIDDEN]`, is shown in the header of the block's Settings dialog. Nothing Clean can
+change without a custom block view.
+
+**Reference warnings.** Trashing the Library block or a category used by an article shows
+"View items that depend on this…", which lists the pages.
+
+**Search.** Not automatic. By default a Library element's text is only in the `Umb_Elements`
+draft index, not on the pages that reference it. `Umbraco:CMS:Indexing:IndexExternalBlockElements`
+(default `false`) flattens it into the referencing pages' entries in `Umb_PublishedContent`, using
+the "Related External Block Element" relation written when a page is saved, and re-indexes those
+pages when the element is published, unpublished or trashed. `CleanCoreComposer` turns it on unless
+the site configures it. On a site that already has the pages, rebuild the index and save the pages
+again; a fresh template or package install needs nothing.
+
+**Package path.** `PackageController` already exports every Library element, and the
+`package.xml` entry carries `Folders="Reusable+Blocks"` and `FolderKeys`. The install creates the
+folder as "Reusable Blocks". `PostMigrationNotification.cs` needed no change: it publishes every
+element the package marks `isPublished="true"`, whatever its folder, and the install log shows
+"Result of publishing element 'Join the Umbraco Community' = Success". The installed pages keep
+the layout reference (`isExternalContent: true`), render the block, are found by its text, and
+editing the element once updates both.
+
+**Answers to the open questions.**
+
+- Per Data Type or per block type: per element type (Allow in Library). Every Block List, Block
+  Grid, Single Block or RTE that offers the block type gets the Library option.
+- Settings per page: yes. Content is shared, settings are stored on each page.
+- uSync 19: exports and imports the folder (`Element/Reusable Blocks.config`, an
+  `ElementContainer`), the element (`Element/join-the-umbraco-community.config`) and the page
+  references cleanly. A second import of a fresh database reports 0 changes out of 188 items.
+
+**Umbraco issue to report (rc1).** Opening a Library block's Settings dialog in the page editor
+and saving the page writes a copy of the element's content into the page's `contentData`, with
+an `expose` entry, under the element's key. The page still renders the Library element, but the
+published index picks up the copy, so after the element's text changes the page is still found by
+the old text. Saving a page without opening the dialog does not add the copy. The sample content
+does not contain one. Recorded in the CHANGELOG's known issues.
+
+**Local testing note.** `Test-PackageInstallation.ps1` installs `Clean` 19.0.0-rc02 from
+`.artifacts/nuget`, but NuGet uses the global packages cache first. After regenerating the package
+under the same version, delete `~/.nuget/packages/clean*/19.0.0-rc02` before running the test, or
+it installs the earlier build.
 
 ### B. Document Blueprints for articles
 
