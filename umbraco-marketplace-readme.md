@@ -191,19 +191,39 @@ dotnet run --project "MyProject.Blog"
 
 ## Headless Implementation
 
-Clean includes full headless CMS support. Enable the Content Delivery API in your `appsettings.json`:
+Clean includes full headless CMS support. The Content Delivery API needs two changes to turn it on.
+
+Register it in your `Program.cs`:
+
+```csharp
+builder.CreateUmbracoBuilder()
+    .AddBackOffice()
+    .AddWebsite()
+    .AddDeliveryApi()
+    .AddComposers()
+    .Build();
+```
+
+Umbraco 19 projects only include `.AddDeliveryApi()` if they were created with the `--use-delivery-api` option. Without it, the Delivery API URLs return a 500 error.
+
+Then enable it in your `appsettings.json`. On Umbraco 18 and 19, also set `GenerateContentTypeSchemas`:
 
 ```json
 {
   "Umbraco": {
     "CMS": {
       "DeliveryApi": {
-        "Enabled": true
+        "Enabled": true,
+        "OpenApi": {
+          "GenerateContentTypeSchemas": true
+        }
       }
     }
   }
 }
 ```
+
+Once the Delivery API is enabled, rebuild the search indexes from **Settings > Search** in the backoffice.
 
 For Next.js integration with automatic revalidation:
 
