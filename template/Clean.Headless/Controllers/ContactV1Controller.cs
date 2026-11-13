@@ -32,9 +32,10 @@ public class ContactApiV1Controller : ControllerBase
     }
 	
     ///<summary>
-    ///Get all dictionary items
+    ///Send the contact form as an email
     ///</summary>
-    ///<returns>All dictionary items</returns>
+    ///<param name="model">The name, email address and message entered in the contact form</param>
+    ///<returns>True when the email was sent</returns>
     [HttpPost]
     [Route("postContactForm")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]

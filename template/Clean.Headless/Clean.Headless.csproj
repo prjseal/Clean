@@ -30,9 +30,6 @@
     <PackageReference Include="System.Security.Cryptography.Xml" Version="11.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Revalidate\" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Clean.Core\Clean.Core.csproj" />
   </ItemGroup>
   <ItemGroup>

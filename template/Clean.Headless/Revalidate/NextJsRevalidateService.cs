@@ -11,12 +11,17 @@ namespace Clean.Headless.Revalidate
 {
     public class NextJsRevalidateService
     {
+        public const string HttpClientName = "Clean.Headless.NextJsRevalidate";
+
         private readonly NextJsRevalidateOptions _config;
         private readonly ILogger<NextJsRevalidateService> _logger;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public NextJsRevalidateService(
-            IOptions<NextJsRevalidateOptions> options, ILogger<NextJsRevalidateService> logger)
+            IOptions<NextJsRevalidateOptions> options, ILogger<NextJsRevalidateService> logger,
+            IHttpClientFactory httpClientFactory)
         {
+            _httpClientFactory = httpClientFactory;
             _config = options.Value;
             _logger = logger;
         }
@@ -79,7 +84,7 @@ namespace Clean.Headless.Revalidate
 
         public async Task Send(object payload)
         {
-            using (var client = new HttpClient())
+            using (var client = _httpClientFactory.CreateClient(HttpClientName))
             {
                 var jsonString = System.Text.Json.JsonSerializer.Serialize(payload);
                 var content = new StringContent(jsonString, Encoding.UTF8, "application/json");

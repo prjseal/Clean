@@ -10,8 +10,9 @@ using Umbraco.Cms.Infrastructure.Security;
 namespace Clean.Blog.Composing;
 
 // Provisions the backoffice API client used by CreateNuGetPackages.ps1 to export
-// the package via the management API. This replaces uSync.Command.Setup, which has
-// no Umbraco 18 release; content/schema sync itself is handled by uSync.
+// the package via the management API, and by the Models Builder regeneration steps.
+// It reads the uSync:Command settings that uSync.Command.Setup used, a package that has
+// no release for Umbraco 18 or later. Content and schema sync itself is handled by uSync.
 internal static class ApiClientSetup
 {
     public static async Task EnsureAsync(IServiceProvider rootServices, CancellationToken ct = default)

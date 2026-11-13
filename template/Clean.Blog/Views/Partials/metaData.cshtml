@@ -4,11 +4,14 @@
     var homePage = Model.AncestorOrSelf<Home>();
     string domainAddress = homePage.Url(mode:UrlMode.Absolute).TrimEnd('/');
     string canonicalLink = domainAddress + Model.Url();
-    string metaName = Model.Value<string>("metaName");
-    string metaDescription = Model.Value<string>("metaDescription");
-    var metaKeywords = Model.Value<IEnumerable<string>>("metaKeywords");
-    bool isFollowable = Model.Value<bool>("isFollowable", fallback: Fallback.ToAncestors);
-    bool isIndexable = Model.Value<bool>("isIndexable", fallback: Fallback.ToAncestors);
+    var seo = Model as ISEocontrols;
+    // Pages without SEO controls take the robots settings from their nearest ancestor that has them
+    var robots = seo ?? Model.Ancestors().OfType<ISEocontrols>().FirstOrDefault();
+    string? metaName = seo?.MetaName;
+    string? metaDescription = seo?.MetaDescription;
+    var metaKeywords = seo?.MetaKeywords ?? [];
+    bool isFollowable = robots?.IsFollowable ?? false;
+    bool isIndexable = robots?.IsIndexable ?? false;
 }
 
 <meta charset="utf-8" />

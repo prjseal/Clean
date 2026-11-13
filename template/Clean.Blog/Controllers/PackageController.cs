@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Api.Common.Attributes;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Mapping;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Packaging;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
@@ -30,7 +31,7 @@ public class PackageController : CreatedPackageControllerBase
     private readonly IPartialViewService _partialViewService;
     private readonly IStylesheetService _stylesheetService;
     private readonly IDictionaryItemService _dictionaryItemService;
-    private readonly IElementService _elementService;
+    private readonly IEntityService _entityService;
     private readonly ILogger<PackageController> _logger;
 
     public PackageController(
@@ -46,7 +47,7 @@ public class PackageController : CreatedPackageControllerBase
         IPartialViewService partialViewService,
         IStylesheetService stylesheetService,
         IDictionaryItemService dictionaryItemService,
-        IElementService elementService,
+        IEntityService entityService,
         ILogger<PackageController> logger)
     {
         _packagingService = packagingService;
@@ -61,7 +62,7 @@ public class PackageController : CreatedPackageControllerBase
         _partialViewService = partialViewService;
         _stylesheetService = stylesheetService;
         _dictionaryItemService = dictionaryItemService;
-        _elementService = elementService;
+        _entityService = entityService;
         _logger = logger;
     }
 
@@ -133,23 +134,43 @@ public class PackageController : CreatedPackageControllerBase
         package.DocumentTypes = documentTypes;
         _logger.LogInformation("Retrieved {Count} document types.", documentTypes.Count);
 
-        var elementTypeIds = allDocumentTypes.Where(dt => dt.IsElement).Select(dt => dt.Id).ToArray();
-        var elements = elementTypeIds.Length == 0
-            ? []
-            : _elementService.GetPagedOfTypes(elementTypeIds, 0, int.MaxValue, out _, null!, null!)
-                .Where(e => e.Trashed == false)
-                .Select(e => e.Key)
-                .ToList();
+        var elements = _entityService.GetAll(UmbracoObjectTypes.Element)
+            .Where(e => e.Trashed == false)
+            .Select(e => e.Key)
+            .ToList();
         package.Elements = elements;
         _logger.LogInformation("Retrieved {Count} element library items.", elements.Count);
 
-        var mediaTypes = _mediaTypeService.GetAll().Where(x => x.Alias == "Image").Select(mt => mt.Key.ToString()).ToList();
+        var exportedMediaTypes = _mediaTypeService.GetAll().Where(x => x.Alias == "Image").ToList();
+        var mediaTypes = exportedMediaTypes.Select(mt => mt.Key.ToString()).ToList();
         package.MediaTypes = mediaTypes;
         _logger.LogInformation("Retrieved {Count} media types.", mediaTypes.Count);
 
-        var dataTypes = await _dataTypeService.GetAllAsync();
-        package.DataTypes = dataTypes.Where(x => x.Name != null && x.Name.StartsWith("[")).Select(dt => dt.Key.ToString()).ToList();
-        _logger.LogInformation("Retrieved {Count} data types matching criteria.", package.DataTypes.Count);
+        // Every Data Type on the site is exported, with its folder: Clean's own under "Clean" and
+        // Umbraco's built-ins under "Umbraco Defaults". Nothing is selected by name.
+        var dataTypes = (await _dataTypeService.GetAllAsync()).ToList();
+        package.DataTypes = dataTypes.Select(dt => dt.Key.ToString()).ToList();
+        _logger.LogInformation("Retrieved {Count} data types.", package.DataTypes.Count);
+
+        // Fail the export if a type in the package uses a Data Type that is not in the package.
+        var exportedDataTypeKeys = dataTypes.Select(dt => dt.Key).ToHashSet();
+        var missingDataTypes = allDocumentTypes
+            .Cast<IContentTypeComposition>()
+            .Concat(exportedMediaTypes)
+            .SelectMany(type => type.PropertyTypes
+                .Where(property => exportedDataTypeKeys.Contains(property.DataTypeKey) is false)
+                .Select(property => $"{type.Alias}.{property.Alias} ({property.DataTypeKey})"))
+            .ToList();
+
+        if (missingDataTypes.Count > 0)
+        {
+            var missing = string.Join(", ", missingDataTypes);
+            _logger.LogError("Package export stopped. These properties use a Data Type that is not in the export: {Missing}", missing);
+            return Problem(
+                title: "The package export is missing Data Types",
+                detail: $"These properties use a Data Type that is not in the export: {missing}",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
 
         var templates = await _templateService.GetAllAsync();
         package.Templates = templates.Select(t => t.Key.ToString()).ToList();

@@ -5,6 +5,7 @@
     <Version>19.0.0-rc01</Version>
     <InformationalVersion>19.0.0</InformationalVersion>
     <TargetFramework>net11.0</TargetFramework>
+    <Nullable>enable</Nullable>
     <Authors>Paul Seal</Authors>
     <ContentTargetFolders>.</ContentTargetFolders>
     <Product>Clean.Core</Product>
@@ -25,8 +26,5 @@
   <ItemGroup>
     <None Include="../images/logo.png" Pack="true" PackPath="\" />
     <None Include="../../README.md" Pack="true" PackPath="\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="TagHelpers\" />
   </ItemGroup>
 </Project>

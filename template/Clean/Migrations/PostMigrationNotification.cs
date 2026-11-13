@@ -8,6 +8,7 @@ using System.Xml.Linq;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Models.ContentPublishing;
 using Umbraco.Cms.Core.Packaging;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Migrations;
@@ -18,50 +19,59 @@ namespace Clean.Migrations
     public class PostMigrationNotificationHandler : INotificationAsyncHandler<MigrationPlansExecutedNotification>
     {
         private readonly IContentService _contentService;
+        private readonly IContentPublishingService _contentPublishingService;
         private readonly IElementService _elementService;
+        private readonly IElementPublishingService _elementPublishingService;
         private readonly ILogger<PostMigrationNotificationHandler> _logger;
 
         public PostMigrationNotificationHandler(
             IContentService contentService,
+            IContentPublishingService contentPublishingService,
             IElementService elementService,
+            IElementPublishingService elementPublishingService,
             ILogger<PostMigrationNotificationHandler> logger)
         {
             _contentService = contentService;
+            _contentPublishingService = contentPublishingService;
             _elementService = elementService;
+            _elementPublishingService = elementPublishingService;
             _logger = logger;
         }
 
-        public Task HandleAsync(MigrationPlansExecutedNotification notification, CancellationToken cancellationToken)
+        public async Task HandleAsync(MigrationPlansExecutedNotification notification, CancellationToken cancellationToken)
         {
-            // Check if we have run the right migration, otherwise skip  
+            // Check if we have run the right migration, otherwise skip
             if (HasMigrationRun(notification.ExecutedPlans) is false)
             {
-                return Task.CompletedTask;
+                return;
             }
+
+            // The elements are published first, so the pages that pick them can render them
+            await PublishPackageElementsAsync();
 
             var contentHome = _contentService.GetRootContent().FirstOrDefault(x => x.ContentType.Alias == "home");
             if (contentHome != null)
             {
-                var publishResult = _contentService.PublishBranch(contentHome, PublishBranchFilter.All, []);
-                foreach (var item in publishResult)
-                {
-                    _logger.LogInformation("Result of publishing '{nodeName}' = {publishResult}", item.Content.Name, item.Result.ToString());
-                }
+                // Publishing checks the access of the user, so it runs as the super user
+                var publishResult = await _contentPublishingService.PublishBranchAsync(
+                    contentHome.Key,
+                    ["*"],
+                    PublishBranchFilter.All,
+                    Constants.Security.SuperUserKey,
+                    useBackgroundThread: false);
+
+                _logger.LogInformation("Result of publishing the '{nodeName}' branch = {publishResult}", contentHome.Name, publishResult.Status);
             }
             else
             {
                 _logger.LogWarning("The installed Home page was not found");
             }
-
-            PublishPackageElements();
-
-            return Task.CompletedTask;
         }
 
         // The package import creates element library items unpublished, so publish the
         // ones the package marks as published. Only the package's own elements are
         // touched, so existing elements on the site are left as they are.
-        private void PublishPackageElements()
+        private async Task PublishPackageElementsAsync()
         {
             if (PackageMigrationResource.TryGetEmbeddedPackageDataManifest(typeof(ImportPackageXmlMigration), out var packageXml, out var zipArchive) is false
                 || packageXml?.Root is null)
@@ -88,8 +98,12 @@ namespace Clean.Migrations
                     continue;
                 }
 
-                var publishResult = _elementService.Publish(element, ["*"]);
-                _logger.LogInformation("Result of publishing element '{elementName}' = {publishResult}", element.Name, publishResult.Result.ToString());
+                var publishResult = await _elementPublishingService.PublishAsync(
+                    element.Key,
+                    [new CulturePublishScheduleModel { Culture = null }],
+                    Constants.Security.SuperUserKey);
+
+                _logger.LogInformation("Result of publishing element '{elementName}' = {publishResult}", element.Name, publishResult.Status);
             }
         }
 

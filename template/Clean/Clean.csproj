@@ -29,13 +29,13 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToPublishDirectory>Always</CopyToPublishDirectory>
     </Content>
-    <None Remove="Views\Components\Contact\default.cshtml" />
+    <None Remove="Views\Components\Contact\Default.cshtml" />
     <Content Include="Views\**\*.*">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToPublishDirectory>Always</CopyToPublishDirectory>
     </Content>
     <None Remove="Migrations\package.zip" />
-    <None Remove="Views\Components\Pagination\default.cshtml" />
+    <None Remove="Views\Components\Pagination\Default.cshtml" />
     <EmbeddedResource Include="Migrations\package.zip" />
   </ItemGroup>
   <ItemGroup>
