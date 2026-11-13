@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <PackageVersion>19.0.0-rc01</PackageVersion>
+    <PackageVersion>19.0.0-rc02</PackageVersion>
     <PackageType>Template</PackageType>
     <PackageId>Umbraco.Community.Templates.Clean</PackageId>
     <Title>Umbraco.Community.Templates.Clean</Title>
@@ -24,7 +24,7 @@
     <AssemblyVersion>19.0.0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="template\**\*" Exclude="template\**\bin\**;template\**\obj\**,template\.vs\**,template\**\created-packages\**" />
+    <Content Include="template\**\*" Exclude="template\**\bin\**;template\**\obj\**;template\**\.vs\**;template\**\created-packages\**;template\**\umbraco\Data\**;template\**\umbraco\Logs\**" />
     <Compile Remove="**\*" />
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="template\images\logo.png" Pack="true" PackagePath="\" />

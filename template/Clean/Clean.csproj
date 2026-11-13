@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyVersion>19.0.0</AssemblyVersion>
     <FileVersion>19.0.0.0</FileVersion>
-    <Version>19.0.0-rc01</Version>
+    <Version>19.0.0-rc02</Version>
     <InformationalVersion>19.0.0</InformationalVersion>
     <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
