@@ -40,7 +40,8 @@ Last checked: 2026-11-13, against Umbraco 19.0.0-rc1 and Clean 19.0.0-rc02.
 | Umbraco Search in core (`ISearcher`, Examine as default provider) | #23321 | Done | `ISiteSearchService` in `Clean.Core`, Clean 19.0.0-rc02 |
 | Settings > Search dashboard with index health | #23321 | Done | Headless guide points to it |
 | Deferred index build | | Automatic | |
-| Block elements and reusable blocks indexed | | Automatic, to check | Work item D |
+| Block elements indexed with the page | | Automatic | Checked in work item D: text inside a Main Content Rich Text block is found by the search page and the search API |
+| Reusable blocks indexed on the pages that use them (`Umbraco:CMS:Indexing:IndexExternalBlockElements`) | | Not started | Off by default. Needed by work item A |
 | Merged values from content indexers, file-to-text extension point | | Not applicable | No custom indexers or file indexing in Clean |
 | External members indexed | | Not applicable | Clean has no members |
 
@@ -180,7 +181,7 @@ passes.
 
 ### D. Check search finds text inside blocks
 
-**Status:** Not started.
+**Status:** Done, no code change.
 
 Umbraco 19 indexes block elements and reusable blocks. Clean's article text lives in Main Content
 Rich Text blocks.
@@ -190,6 +191,15 @@ Rich Text blocks.
 2. If it is not found, find which field in the published content index holds block text, and add
    it to the query in `Clean.Core/Services/SiteSearchService.cs`.
 3. Record the result here. If it already works, mark D Done with no PR.
+
+Result (2026-11-13, fresh template site on Umbraco 19.0.0-rc1): "Bingo" appears only in the first
+Rich Text block of the Codegarden 2026 article. `GET /api/v1/search/getSearchResults?searchQuery=Bingo`
+returns that article (`count: 1`) and `/search/?q=Bingo` shows "We found 1 results". Umbraco Search
+indexes block text on the page's own entry in `Umb_PublishedContent`, so `SiteSearchService` needs
+no change for inline blocks.
+
+Library (reusable) blocks are different: by default their text is only in the `Umb_Elements` draft
+index, not on the pages that use them. See work item A.
 
 ### E. Single Block and blocks in the Rich Text Editor (optional)
 
