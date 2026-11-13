@@ -56,6 +56,8 @@ On the website, an article's categories are shown as tags in its hero, sorted by
 
 ![Category tags on an article](images/frontend/article.png)
 
+**Reusable blocks:** the Library also has a **Reusable Blocks** folder, with one Rich Text element, **Join the Umbraco Community**, which is placed on the Codegarden 2026 and Meetups articles. Editing it in the Library updates both pages. See [Reusable blocks](clean-features-blocks.md#reusable-blocks).
+
 ---
 
 ## Document types
@@ -122,6 +124,8 @@ Each block has a content element type and a settings element type. See [Content 
 | Image Carousel Row (`imageCarouselRow`) | `imageCarouselRowSettings` | Hide Property, Spacing Properties |
 | Latest Articles Row (`latestArticlesRow`) | `latestArticlesRowSettings` | Hide Property, Spacing Properties |
 | Icon Link Row (`iconLinkRow`) | `iconLinkRowSettings` | Hide Property |
+
+Rich Text Row is the only element type with **Allow in Library** turned on, so Rich Text blocks are the only blocks that can be [reusable](clean-features-blocks.md#reusable-blocks).
 
 ---
 
