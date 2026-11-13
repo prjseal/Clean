@@ -46,6 +46,12 @@ Clean rebuilt as if it had been made on a fresh Umbraco 19 install, rather than 
 - The block label workaround in `CreateNuGetPackages.ps1`. Umbraco 19.0.0-rc1 exports block labels in the package
 - The unused `ArticleList.ViewAll`, `Paging.Page` and `Paging.Of` dictionary items
 
+### Upgrade notes
+- Umbraco 19 on .NET 11 does not start if `Umbraco:CMS:Imaging:HMACSecretKey` is not canonical Base64. Correct the key's final character rather than generating a new key, so signed image URLs stay valid. The README shows how
+- Umbraco 19 sets `Umbraco:CMS:ModelsBuilder:ModelsMode` to `Nothing` by default unless the site references `Umbraco.Cms.DevelopmentMode.Backoffice`. Clean's views need generated models, so keep that package, which `dotnet new umbraco` adds by default
+- `Umbraco:CMS:Imaging:Memory:Enabled` and `Umbraco:CMS:ScheduledPublishing:AlignToClock` now default to `true` in Umbraco 19. Set them to `false` to keep the Umbraco 18 behaviour
+- `Connect Timeout` in the connection string no longer sets the database command timeout, which drops to 30 seconds. Set `Command Timeout` or `Umbraco:CMS:Global:DatabaseCommandTimeout` if a site relied on it
+
 ### Known issues
 - Umbraco 19 is still a release candidate
 - A fresh install writes an `Imaging:HMACSecretKey` into `appsettings.json` on first run

@@ -84,6 +84,8 @@ dotnet run --project "MyProject"
 # The site should now be running and visible on the front end
 ```
 
+**ℹ️ Models Builder**: Clean's views use the models that Models Builder generates for your site, so the site needs a models mode that generates them. Create the project with the default development mode, as above: `dotnet new umbraco` then references `Umbraco.Cms.DevelopmentMode.Backoffice`, which generates the models in memory. In Umbraco 19, `ModelsMode` defaults to `Nothing` without that package, and Clean's views will not compile. If you want models as source code instead, change `Umbraco:CMS:ModelsBuilder:ModelsMode` after Clean is installed and running.
+
 **⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
 
 ```powershell
@@ -112,6 +114,15 @@ dotnet run --project "MyProject.Blog"
 ```
 
 > **✨ Note**: As of version 7.0.0, the template now supports periods in project names (e.g., `Company.Website`).
+
+### Upgrading from Clean 8.x
+
+Read Umbraco's [Umbraco 19 upgrade notes](https://docs.umbraco.com/umbraco-cms/19.latest/get-started/upgrading-and-migrating/version-specific) first. These points affect Clean sites in particular:
+
+- **Image URL key**: on .NET 11, a site whose `Umbraco:CMS:Imaging:HMACSecretKey` is not canonical Base64 does not start. A key is canonical when decoding it and encoding it again returns the same string. Keys that Umbraco generates are canonical, so check any key that was set by hand. Correct the key rather than generating a new one, so image URLs already signed with it stay valid: only the final character changes, for example `zx==` becomes `zw==`. In Windows PowerShell, `[Convert]::ToBase64String([Convert]::FromBase64String('<your key>'))` returns the corrected key.
+- **Models Builder**: `ModelsMode` now defaults to `Nothing` unless the site references `Umbraco.Cms.DevelopmentMode.Backoffice`, and setting `InMemoryAuto` without that package stops the site at startup. Keep the package, or move to a source code models mode, before you upgrade.
+- **Changed defaults**: `Umbraco:CMS:Imaging:Memory:Enabled` and `Umbraco:CMS:ScheduledPublishing:AlignToClock` now default to `true`. Set them to `false` to keep the Umbraco 18 behaviour. `Connect Timeout` in the connection string no longer sets the database command timeout, which drops to the provider default of 30 seconds. Set `Command Timeout` in the connection string, or `Umbraco:CMS:Global:DatabaseCommandTimeout`, if the site relied on it.
+- **Data Types**: upgrading the `Clean` package does not rename or refile the Data Types on a site that already has Clean. The new names and folders only apply to new installs.
 
 ## Umbraco 18 (STS)
 
