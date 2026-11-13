@@ -19,20 +19,17 @@ namespace Clean.Migrations
     public class PostMigrationNotificationHandler : INotificationAsyncHandler<MigrationPlansExecutedNotification>
     {
         private readonly IContentService _contentService;
-        private readonly IContentPublishingService _contentPublishingService;
         private readonly IElementService _elementService;
         private readonly IElementPublishingService _elementPublishingService;
         private readonly ILogger<PostMigrationNotificationHandler> _logger;
 
         public PostMigrationNotificationHandler(
             IContentService contentService,
-            IContentPublishingService contentPublishingService,
             IElementService elementService,
             IElementPublishingService elementPublishingService,
             ILogger<PostMigrationNotificationHandler> logger)
         {
             _contentService = contentService;
-            _contentPublishingService = contentPublishingService;
             _elementService = elementService;
             _elementPublishingService = elementPublishingService;
             _logger = logger;
@@ -52,15 +49,15 @@ namespace Clean.Migrations
             var contentHome = _contentService.GetRootContent().FirstOrDefault(x => x.ContentType.Alias == "home");
             if (contentHome != null)
             {
-                // Publishing checks the access of the user, so it runs as the super user
-                var publishResult = await _contentPublishingService.PublishBranchAsync(
-                    contentHome.Key,
-                    ["*"],
-                    PublishBranchFilter.All,
-                    Constants.Security.SuperUserKey,
-                    useBackgroundThread: false);
-
-                _logger.LogInformation("Result of publishing the '{nodeName}' branch = {publishResult}", contentHome.Name, publishResult.Status);
+                // Publishing checks the access of the user. PublishBranch runs as the super user by default.
+                // IContentPublishingService is not used here: it checks each page for URL collisions,
+                // which needs the document URL service, and that is not initialized yet while
+                // package migrations run during boot.
+                var publishResult = _contentService.PublishBranch(contentHome, PublishBranchFilter.All, []);
+                foreach (var item in publishResult)
+                {
+                    _logger.LogInformation("Result of publishing '{nodeName}' = {publishResult}", item.Content.Name, item.Result.ToString());
+                }
             }
             else
             {
