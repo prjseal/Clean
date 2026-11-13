@@ -36,6 +36,7 @@ Clean rebuilt as if it had been made on a fresh Umbraco 19 install, rather than 
 - Missing pages show the Clean Error page with a 404 status, unless `Error404Collection` sets another page
 - Pages with Hide From Search turned on are left out of the search page and the search API
 - The social sharing image tags use the page's Main Image instead of a `/socialimage.png` that did not exist
+- The Delivery API setup steps in the marketplace readmes, the headless guide and the contributing guide include `.AddDeliveryApi()` in `Program.cs`. Umbraco 19 projects, including `Clean.Blog` and sites created from the template, leave it out unless they were created with `--use-delivery-api`, and the Delivery API returns a 500 error without it
 
 ### Removed
 - The unused `category` and `categoryList` document types and the empty `listPageSettings` element type, with their generated models. Categories are Library Elements

@@ -328,7 +328,7 @@ When modifying API controllers:
    - Verify all features work
 
 4. **Test headless/API features:**
-   - Enable the Content Delivery API in `appsettings.json`
+   - `Clean.Blog` does not register the Content Delivery API. To test it, add `.AddDeliveryApi()` to `template/Clean.Blog/Program.cs` and set `Umbraco:CMS:DeliveryApi:Enabled` to `true` in `template/Clean.Blog/appsettings.Local.json` (loaded in debug builds and ignored by git). Do not commit the `Program.cs` change
    - Test API endpoints
    - Check Swagger documentation
 
