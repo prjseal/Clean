@@ -1,5 +1,22 @@
 # Clean Starter Kit
 
+## Log Umbraco bugs in `umbraco-bugs/`
+
+When work on Clean turns up a bug in Umbraco CMS or one of its packages (Umbraco Search, uSync,
+the templates), write it up in `umbraco-bugs/` so it can be raised on GitHub later. Do not file
+it yourself; Paul does that.
+
+- One markdown file per bug, named after the bug in kebab-case, e.g.
+  `umbraco-bugs/sqlite-url-rebuild-lock-race.md`. Write it there, not in `plans/`.
+- Start the file with a short header: status ("Not filed", "Filed: <issue link>" or
+  "Fixed in <version>"), target repository, the date found with the Umbraco and Clean versions,
+  whether Clean has a workaround (and where), and any background plan in `plans/`.
+- Below that, the issue text ready to paste: title, version, bug summary, specifics, steps to
+  reproduce, expected and actual result, and any suggestions marked as suggestions. Keep what is
+  proven separate from what is likely but unproven.
+- Add a row for it to the table in `umbraco-bugs/README.md`, and keep its status there in step
+  with the file.
+
 ## Regenerate Models Builder models after schema or package changes
 
 `template/Clean.Models/*.generated.cs` is committed to source control. Clean.Blog runs

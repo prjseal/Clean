@@ -280,7 +280,7 @@ Whatever is chosen:
 
 ### Step 1: Umbraco issue drafted
 
-`plans/umbraco-issue-sqlite-url-rebuild-lock-race.md`, not filed. Its link to
+`umbraco-bugs/sqlite-url-rebuild-lock-race.md` (first written to `plans/`, then moved), not filed. Its link to
 `PostMigrationNotification.cs` points at commit `ea1448b`, which still has the original code.
 
 ### Step 2: known issue recorded, then fixed

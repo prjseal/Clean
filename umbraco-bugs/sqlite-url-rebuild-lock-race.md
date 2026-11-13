@@ -1,6 +1,13 @@
-# Draft issue for umbraco/Umbraco-CMS
+# SQLite lock race between the URL rebuild and Umbraco Search indexing
 
-Not filed. Paul files it on GitHub. Everything below the line is the issue text.
+- **Status:** Not filed
+- **Repository:** umbraco/Umbraco-CMS
+- **Found:** 2026-11-13, Umbraco 19.0.0-rc1, Clean 19.0.0-rc02
+- **Clean workaround:** yes, the package publishes its content once Umbraco has finished starting
+  (`template/Clean/Migrations/PostMigrationNotification.cs`)
+- **Background:** `plans/package-install-boot-lock-race.md`
+
+Everything below the line is the issue text, ready to paste.
 
 ---
 

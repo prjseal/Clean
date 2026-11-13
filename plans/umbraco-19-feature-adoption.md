@@ -32,7 +32,7 @@ Last checked: 2026-11-13, against Umbraco 19.0.0-rc1 and Clean 19.0.0-rc02.
 | Scheduled publishing aligned to the clock by default (`ScheduledPublishing:AlignToClock`) | | Automatic | In the rc02 upgrade notes |
 | Entra ID SQL authentication (`Microsoft.Data.SqlClient.Extensions.Azure` shipped) | #24453 | Automatic | Clean uses SQLite for development |
 | Kestrel profile first in `launchSettings.json` | #22427 | Done | Clean 19.0.0-rc02 |
-| SQLite: first boot after the `Clean` package install can fail with "Failed to acquire write lock" | | Done | An Umbraco rc1 bug: Umbraco Search indexing overlaps the URL rebuild after the package migration. Clean works around it in 19.0.0-rc02 by publishing its content once Umbraco has finished starting (30 installs under load, 0 failures). The Umbraco issue is still to file. See [package-install-boot-lock-race.md](package-install-boot-lock-race.md) and the issue draft [umbraco-issue-sqlite-url-rebuild-lock-race.md](umbraco-issue-sqlite-url-rebuild-lock-race.md) |
+| SQLite: first boot after the `Clean` package install can fail with "Failed to acquire write lock" | | Done | An Umbraco rc1 bug: Umbraco Search indexing overlaps the URL rebuild after the package migration. Clean works around it in 19.0.0-rc02 by publishing its content once Umbraco has finished starting (30 installs under load, 0 failures). The Umbraco issue is still to file. See [package-install-boot-lock-race.md](package-install-boot-lock-race.md) and the issue draft [umbraco-bugs/sqlite-url-rebuild-lock-race.md](../umbraco-bugs/sqlite-url-rebuild-lock-race.md) |
 
 ### Search
 
