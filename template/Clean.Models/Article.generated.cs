@@ -20,7 +20,7 @@ namespace Umbraco.Cms.Web.Common.PublishedModels
 {
 	/// <summary>Article</summary>
 	[PublishedModel("article")]
-	public partial class Article : PublishedContentModel, IArticleControls, IContentControls, IHeaderControls, IListPageSettings, IMainImageControls, ISEocontrols, IVisibilityControls
+	public partial class Article : PublishedContentModel, IArticleControls, IContentControls, IHeaderControls, IMainImageControls, ISEocontrols, IVisibilityControls
 	{
 		// helpers
 #pragma warning disable 0109 // new is redundant

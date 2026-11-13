@@ -58,14 +58,14 @@ namespace Umbraco.Cms.Web.Common.PublishedModels
 		public virtual string AltText => this.Value<string>(_publishedValueFallback, "altText");
 
 		///<summary>
-		/// Size: in bytes
+		/// File size
 		///</summary>
 		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "19.0.0-rc1+b158b78")]
 		[ImplementPropertyType("umbracoBytes")]
 		public virtual long UmbracoBytes => this.Value<long>(_publishedValueFallback, "umbracoBytes");
 
 		///<summary>
-		/// Type
+		/// File extension
 		///</summary>
 		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "19.0.0-rc1+b158b78")]
 		[global::System.Diagnostics.CodeAnalysis.MaybeNull]
@@ -81,14 +81,14 @@ namespace Umbraco.Cms.Web.Common.PublishedModels
 		public virtual global::Umbraco.Cms.Core.PropertyEditors.ValueConverters.ImageCropperValue UmbracoFile => this.Value<global::Umbraco.Cms.Core.PropertyEditors.ValueConverters.ImageCropperValue>(_publishedValueFallback, "umbracoFile");
 
 		///<summary>
-		/// Height: in pixels
+		/// Height
 		///</summary>
 		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "19.0.0-rc1+b158b78")]
 		[ImplementPropertyType("umbracoHeight")]
 		public virtual int UmbracoHeight => this.Value<int>(_publishedValueFallback, "umbracoHeight");
 
 		///<summary>
-		/// Width: in pixels
+		/// Width
 		///</summary>
 		[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Umbraco.ModelsBuilder.Embedded", "19.0.0-rc1+b158b78")]
 		[ImplementPropertyType("umbracoWidth")]
