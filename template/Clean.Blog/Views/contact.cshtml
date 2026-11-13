@@ -34,7 +34,7 @@
                 {
                     @Model.InstructionMessage
                     <div class="my-5">
-                        @await Component.InvokeAsync("Contact")
+                        @await Component.InvokeAsync("Contact", new { model = new ContactViewModel() })
                     </div>
 
                 }
