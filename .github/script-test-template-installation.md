@@ -51,10 +51,17 @@ Validates that the Clean template can be successfully installed and used to crea
    - Tests frontend and backoffice functionality
    - Takes screenshots of key pages
    - Verifies template-generated site works correctly
+   - Fails straight away if the home page shows that the site did not boot
 
 6. **Cleanup**
    - Stops site process
    - Removes LocalPackages NuGet source
+
+7. **Failure Report**
+   - If the Playwright tests fail, prints the warnings and errors from the newest Umbraco log (`UmbracoTraceLog*.json` under the test directory), with each message's placeholders filled in and any exception
+   - Exits with the Playwright test's exit code
+
+When the PR workflow runs the template tests, it uploads `site.log`, `site.err` and the Umbraco logs as the `template-test-logs-<version>` artifact, whether the test passes or fails.
 
 ## Project Name Handling
 
@@ -173,6 +180,19 @@ Timeout reached! Site failed to start.
 - Check site.log and site.err files
 - Verify template generated correctly
 - Check for port conflicts
+
+### Issue: Site Did Not Boot
+
+**Symptoms**:
+```
+Error during testing: Error: The home page returned HTTP 500 and did not render. The site did not boot:
+```
+
+The site process started and listens, but Umbraco failed to boot.
+
+**Solution**:
+- Read the Umbraco log errors printed after the test, then the full logs in the `template-test-logs-<version>` artifact
+- Check `01-home.png` for the error page
 
 ## Related Documentation
 

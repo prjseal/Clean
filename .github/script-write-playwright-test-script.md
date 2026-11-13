@@ -118,7 +118,11 @@ flowchart TD
 
     Home --> Screenshot1[Capture Full-Page Screenshot<br/>01-home.png]
 
-    Screenshot1 --> Discover[Discover Internal Links<br/>- Query all 'a href' elements<br/>- Filter same hostname<br/>- Exclude /umbraco, #, javascript:<br/>- Remove duplicates]
+    Screenshot1 --> BootCheck{HTTP 5xx or<br/>BootFailedException?}
+
+    BootCheck -->|Yes| CatchError
+
+    BootCheck -->|No| Discover[Discover Internal Links<br/>- Query all 'a href' elements<br/>- Filter same hostname<br/>- Exclude /umbraco, #, javascript:<br/>- Remove duplicates]
 
     Discover --> LogCount[Log Link Count<br/>console.log]
 
@@ -236,6 +240,16 @@ try {
 
 **Behavior**: Logs errors but continues testing remaining pages.
 
+The home page is the exception. An Umbraco site that failed to boot still listens and answers every request with an error page, so after saving `01-home.png` the test checks the home page's response. If it returned HTTP 500 or above, or its HTML contains `BootFailedException`, the test stops with exit code 1 and logs the first lines of the error page:
+
+```
+Error during testing: Error: The home page returned HTTP 500 and did not render. The site did not boot:
+An unhandled exception occurred while processing the request.
+BootFailedException: Boot failed: Umbraco cannot run. See Umbraco's log file for more details.
+```
+
+The screenshot is saved before the check, so the PR comment still shows the error page.
+
 ## Output
 
 ### PowerShell Script Output
@@ -316,7 +330,7 @@ ignoreHTTPSErrors: true
 | Code | Meaning |
 |------|---------|
 | 0 | Success - All pages tested successfully |
-| 1 | Error - Navigation failed or exception thrown |
+| 1 | Error - Navigation failed, an exception was thrown, or the home page shows that the site did not boot |
 
 ## Error Scenarios
 
@@ -331,6 +345,16 @@ ignoreHTTPSErrors: true
 $env:SITE_URL = "https://localhost:44359"
 node test.js
 ```
+
+### Site Did Not Boot
+
+**Error**: `The home page returned HTTP 500 and did not render. The site did not boot`
+
+**Cause**: Umbraco failed to start, for example a `BootFailedException` during package migrations
+
+**Solution**:
+- Read the Umbraco log. `Test-PackageInstallation.ps1` and `Test-TemplateInstallation.ps1` print its warnings and errors when the test fails, and the PR workflow uploads the site and Umbraco logs as the `package-test-logs-<version>` and `template-test-logs-<version>` artifacts
+- Check `01-home.png` for the error page
 
 ### Navigation Timeout
 
