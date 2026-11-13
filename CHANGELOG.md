@@ -41,6 +41,7 @@ Clean rebuilt as if it had been made on a fresh Umbraco 19 install, rather than 
 - Pages with Hide From Search turned on are left out of the search page and the search API
 - The social sharing image tags use the page's Main Image instead of a `/socialimage.png` that did not exist
 - The Delivery API setup steps in the marketplace readmes, the headless guide and the contributing guide include `.AddDeliveryApi()` in `Program.cs`. Umbraco 19 projects, including `Clean.Blog` and sites created from the template, leave it out unless they were created with `--use-delivery-api`, and the Delivery API returns a 500 error without it
+- On SQLite, the first boot after installing the `Clean` package could fail with "Failed to acquire write lock" on a slow machine, because Umbraco Search indexing overlapped the URL rebuild Umbraco 19.0.0-rc1 runs after the package migration. During an unattended install, the package now publishes its content once Umbraco has finished starting
 
 ### Removed
 - The unused `category` and `categoryList` document types and the empty `listPageSettings` element type, with their generated models. Categories are Library Elements
@@ -63,7 +64,6 @@ Clean rebuilt as if it had been made on a fresh Umbraco 19 install, rather than 
 - An existing site that upgrades the `Clean` package does not get the renamed Data Types or folders, because the package import only runs on a site that has not installed Clean before
 - In the block list, a reusable block is labelled with its Library element's name, so a hidden reusable block does not show `[HIDDEN]` in the list. The label is shown in the block's Settings dialog
 - On Umbraco 19.0.0-rc1, opening a reusable block's Settings in the page editor and saving the page stores a copy of the Library element's content in the page. The page still renders the Library element, but the search index also picks up the copy, so a page can still be found by text that was later removed from the Library element
-- On SQLite, the first boot after installing the `Clean` package can fail with "Failed to acquire write lock" on a slow machine, because Umbraco Search indexing overlaps the URL rebuild Umbraco 19.0.0-rc1 runs after the package migration. Restart the site to finish the boot. The content is already installed and published
 
 ## [19.0.0-rc01] - 2026-11-12
 

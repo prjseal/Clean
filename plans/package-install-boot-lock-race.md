@@ -275,3 +275,66 @@ Whatever is chosen:
 - Step 3: either a committed fix proven by the loop (30+ runs, no failure) and both install tests,
   or a written record of what was tried.
 - Nothing pushed. Tell Paul the push command at the end.
+
+## Outcome (2026-11-13)
+
+### Step 1: Umbraco issue drafted
+
+`plans/umbraco-issue-sqlite-url-rebuild-lock-race.md`, not filed. Its link to
+`PostMigrationNotification.cs` points at commit `ea1448b`, which still has the original code.
+
+### Step 2: known issue recorded, then fixed
+
+Checked on the repro first: after a failed boot (baseline loop, run 5 failed with lock -345), running
+the site again on the same database boots. The package migration does not run again, the URLs are
+rebuilt at startup, Home and the other pages return 200 with their content, and Codegarden 2026
+shows the `Join the Umbraco Community` reusable block. The known issue line said to restart the
+site. Step 3 replaced it with a Fixed line, and the tracker row is now Done.
+
+### Step 3: Clean-side workaround (approach 1 worked)
+
+What Umbraco 19.0.0-rc1 does (decompiled from the NuGet cache): when unattended migrations are
+pending, the runtime level is `Upgrading`. `CoreRuntime.StartAsync` then returns early, and
+`UnattendedUpgradeBackgroundService` runs the migrations (including `UnattendedUpgrader`, the
+`RefreshAllPublishedSnapshot` and so the URL rebuild), re-determines the runtime level, initialises
+the components, publishes `UmbracoApplicationStartingNotification`, marks content routing ready,
+and only then registers `UmbracoApplicationStartedNotification` on `ApplicationStarted`. The host
+has already started, so that notification runs straight away on the upgrade thread, after the URL
+rebuild. Umbraco Search indexing is queued on `IBackgroundTaskQueue` when the publishing scope
+completes (`DeferredActions`).
+
+The change (`template/Clean/Migrations/PostMigrationNotification.cs`, registration in
+`template/Clean/CleanComposer.cs`):
+
+- `HandleAsync(MigrationPlansExecutedNotification)`: if the Clean migration ran and
+  `IRuntimeState.Level` is not `Run`, set a static pending flag and log "The Clean package content
+  will be published when Umbraco has finished starting". At `Run` (a package migration started
+  from the backoffice), publish straight away as before.
+- New `HandleAsync(UmbracoApplicationStartedNotification)`: if the flag is set, clear it and publish
+  the Library elements, then the Home branch, as before.
+- No fixed delay. The comment about `IContentPublishingService` was removed, because its reason
+  (the document URL service not being initialised during the migration) no longer applies;
+  `PublishBranch` is still used.
+
+Results:
+
+| Loop (disk load during boot) | Runs | Failures |
+|---|---|---|
+| Baseline, before the change | 5 | 1 (run 5, lock -345) |
+| With the change | 30 | 0 |
+
+In all 30 runs: no `Error` level log entries, 17 pages `SuccessPublish` and 8 elements published.
+The URL rebuild starts, the deferred publishing starts 0.5 to 0.8 seconds later, and the first
+indexing starts after the publishing has finished, so indexing never overlaps the rebuild.
+
+Checks: `dotnet build template/Clean.sln` and `template-pack.sln` 0 warnings, 0 errors;
+`CreateNuGetPackages.ps1 -Version 19.0.0-rc02` ran; `Test-PackageInstallation.ps1` passed (8
+elements and 17 pages published, Codegarden 2026 renders its categories and the reusable block);
+`Test-TemplateInstallation.ps1` passed.
+
+A side effect: during an unattended install, the content is published about a second after content
+routing becomes ready instead of before it, so for that second the site has no published pages
+(not checked what a request gets in that window; the install tests open the home page much later).
+
+Still open: the Umbraco bug itself (file the issue draft), since any other package that publishes
+content in a migration handler can still hit it.

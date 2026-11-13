@@ -9,6 +9,7 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.ContentPublishing;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Packaging;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Migrations;
@@ -16,22 +17,32 @@ using Umbraco.Cms.Infrastructure.Migrations.Notifications;
 
 namespace Clean.Migrations
 {
-    public class PostMigrationNotificationHandler : INotificationAsyncHandler<MigrationPlansExecutedNotification>
+    public class PostMigrationNotificationHandler :
+        INotificationAsyncHandler<MigrationPlansExecutedNotification>,
+        INotificationAsyncHandler<UmbracoApplicationStartedNotification>
     {
+        // Set when the package migration runs during an unattended upgrade, and cleared by the
+        // handler that publishes the content once the upgrade has finished. Notification handlers
+        // are transient, so this is static.
+        private static int _publishPending;
+
         private readonly IContentService _contentService;
         private readonly IElementService _elementService;
         private readonly IElementPublishingService _elementPublishingService;
+        private readonly IRuntimeState _runtimeState;
         private readonly ILogger<PostMigrationNotificationHandler> _logger;
 
         public PostMigrationNotificationHandler(
             IContentService contentService,
             IElementService elementService,
             IElementPublishingService elementPublishingService,
+            IRuntimeState runtimeState,
             ILogger<PostMigrationNotificationHandler> logger)
         {
             _contentService = contentService;
             _elementService = elementService;
             _elementPublishingService = elementPublishingService;
+            _runtimeState = runtimeState;
             _logger = logger;
         }
 
@@ -43,6 +54,33 @@ namespace Clean.Migrations
                 return;
             }
 
+            // During an unattended install or upgrade, the package migration runs before Umbraco
+            // rebuilds the document URLs. Publishing here queues Umbraco Search indexing, and on
+            // SQLite that indexing can stop the URL rebuild getting its write lock, so the boot
+            // fails. Publish once the upgrade has finished instead.
+            if (_runtimeState.Level != RuntimeLevel.Run)
+            {
+                Interlocked.Exchange(ref _publishPending, 1);
+                _logger.LogInformation("The Clean package content will be published when Umbraco has finished starting");
+                return;
+            }
+
+            await PublishPackageContentAsync();
+        }
+
+        // Umbraco raises this after the unattended upgrade has finished, including the URL rebuild.
+        public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Exchange(ref _publishPending, 0) == 0)
+            {
+                return;
+            }
+
+            await PublishPackageContentAsync();
+        }
+
+        private async Task PublishPackageContentAsync()
+        {
             // The elements are published first, so the pages that pick them can render them
             await PublishPackageElementsAsync();
 
@@ -50,9 +88,6 @@ namespace Clean.Migrations
             if (contentHome != null)
             {
                 // Publishing checks the access of the user. PublishBranch runs as the super user by default.
-                // IContentPublishingService is not used here: it checks each page for URL collisions,
-                // which needs the document URL service, and that is not initialized yet while
-                // package migrations run during boot.
                 var publishResult = _contentService.PublishBranch(contentHome, PublishBranchFilter.All, []);
                 foreach (var item in publishResult)
                 {

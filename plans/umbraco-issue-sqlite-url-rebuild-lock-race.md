@@ -131,6 +131,15 @@ returns `BootFailedException` on every request until it is restarted.
 Restarting the site on the same database recovers it: the package migration is not run again, the
 URLs are rebuilt at startup, and the package's content is published and renders.
 
+## Workaround for package authors
+
+Clean now avoids it by not publishing in the `MigrationPlansExecutedNotification` handler during an
+unattended upgrade (`IRuntimeState.Level` is not `Run`). It records that the migration ran and
+publishes in an `UmbracoApplicationStartedNotification` handler, which
+`UnattendedUpgradeBackgroundService` raises after the upgrade and the URL rebuild have finished.
+With that change, 30 installs in a row under the same disk load booted, against 1 failure in 5
+without it.
+
 ## Suggestions
 
 These are only suggestions; the maintainers will know the better place for a fix.
