@@ -14,6 +14,13 @@ For detailed information about the package architecture and the different NuGet 
 
 ## Documentation
 
+To see what the starter kit does, with screenshots of the website and the backoffice, read the [Feature Guide](https://github.com/prjseal/Clean/blob/main/.github/clean-features.md). It covers:
+
+- [Pages](https://github.com/prjseal/Clean/blob/main/.github/clean-features-pages.md): every page type, on the website and in the backoffice
+- [Content blocks](https://github.com/prjseal/Clean/blob/main/.github/clean-features-blocks.md): the rows editors build pages from, and their spacing and hide settings
+- [SEO, navigation and site settings](https://github.com/prjseal/Clean/blob/main/.github/clean-features-seo-and-navigation.md): meta tags, visibility, the menu, the XML sitemap, the footer, dictionary items and security headers
+- [Backoffice structure](https://github.com/prjseal/Clean/blob/main/.github/clean-features-backoffice.md): document types, compositions, Library categories and Data Types
+
 For detailed documentation about this package and the repository, please see the [docs](https://github.com/prjseal/Clean/blob/main/.github/clean-documentation.md).
 
 ### GitHub Workflows and Automation
