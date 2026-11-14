@@ -2,11 +2,15 @@
 
 ## [Unreleased]
 
+## [19.0.0-rc03] - 2026-11-14
+
 ### Changed
 - `template/Clean/Migrations/package.zip` is no longer committed. The package build script generates it, `Clean.csproj` embeds it only when it exists, and `dotnet pack` of `Clean` fails with a clear error if it is missing
 
 ### Fixed
 - A fresh install of the `Clean` package shows its dictionary text (form labels, button text, paging links, the site name) on first boot. The package install clears Umbraco's dictionary cache, which Umbraco leaves stale after a package import until the site restarts
+- The contact form renders when its view component is invoked without a model: `ContactViewComponent.Invoke` falls back to an empty `ContactViewModel` (#510)
+- The contact form logs an error and reports the send as failed when the SMTP `From` address is not configured (#510)
 
 ## [19.0.0-rc02] - 2026-11-13
 
