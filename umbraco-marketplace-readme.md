@@ -26,14 +26,15 @@ Clean Starter Kit provides everything you need to launch a professional blog or 
 - **Content Delivery API** - Full integration with Umbraco's Content Delivery API
 - **Next.js Revalidation** - Built-in support for Next.js on-demand revalidation
 - **Custom API Endpoints** - Dictionary, search, and contact form APIs included
-- **OpenAPI/Swagger** - Interactive API documentation at `/umbraco/swagger`
+- **Umbraco Search** - Site search and the search API run on Umbraco Search, with Examine as the default provider
+- **OpenAPI** - Interactive API documentation at `/umbraco/openapi/`
 
 #### Developer Experience
 
 - **Quick Setup** - SQLite by default for instant development environment
 - **No External Dependencies** - Self-contained with no third-party package requirements
 - **dotnet Template** - Install with `dotnet new umbraco-starter-clean`
-- **Multi-version Support** - Works on all versions since Umbraco 8. Latest version targets Umbraco 18 (.NET 10)
+- **Multi-version Support** - Works on all versions since Umbraco 8. Latest version targets Umbraco 19 (.NET 11)
 
 ## Package Structure
 
@@ -57,13 +58,15 @@ API controllers and headless CMS functionality. Enables full Content Delivery AP
 
 dotnet CLI template for creating new projects. Use `dotnet new umbraco-starter-clean` to scaffold a complete Umbraco project with Clean pre-installed.
 
-## Umbraco 18 (STS)
+## Umbraco 19 (STS)
+
+> **🧪 Pre-release**: Clean 19 is a release candidate and runs on Umbraco 19.0.0-rc1. Use it to try out Umbraco 19, not for production sites. Clean for Umbraco 19 needs the [.NET 11 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/11.0).
 
 ### NuGet Package Method
 
 ```powershell
 # Ensure we have the version specific Umbraco templates
-dotnet new install Umbraco.Templates::18.0.0 --force
+dotnet new install Umbraco.Templates::19.0.0-rc1 --force
 
 # Create solution/project
 dotnet new sln --name "MySolution"
@@ -71,7 +74,7 @@ dotnet new umbraco --force -n "MyProject" --friendly-name "Administrator" --emai
 dotnet sln add "MyProject"
 
 # Add Clean package
-dotnet add "MyProject" package Clean --version 8.0.0
+dotnet add "MyProject" package Clean --version 19.0.0-rc03
 
 # Run the project
 dotnet run --project "MyProject"
@@ -81,18 +84,20 @@ dotnet run --project "MyProject"
 # The site should now be running and visible on the front end
 ```
 
+**ℹ️ Models Builder**: Clean's views use the models that Models Builder generates for your site, so the site needs a models mode that generates them. Create the project with the default development mode, as above: `dotnet new umbraco` then references `Umbraco.Cms.DevelopmentMode.Backoffice`, which generates the models in memory. In Umbraco 19, `ModelsMode` defaults to `Nothing` without that package, and Clean's views will not compile. If you want models as source code instead, change `Umbraco:CMS:ModelsBuilder:ModelsMode` after Clean is installed and running.
+
 **⚠️ Important**: After your site is set up and running, switch from the `Clean` package to `Clean.Core` to prevent views and assets from being overridden:
 
 ```powershell
 dotnet remove "MyProject" package Clean
-dotnet add "MyProject" package Clean.Core --version 8.0.0
+dotnet add "MyProject" package Clean.Core --version 19.0.0-rc03
 ```
 
 ### dotnet Template Method
 
 ```powershell
 # Install the Clean Starter Kit template
-dotnet new install Umbraco.Community.Templates.Clean::8.0.0 --force
+dotnet new install Umbraco.Community.Templates.Clean::19.0.0-rc03 --force
 
 # Create a new project using the template
 dotnet new umbraco-starter-clean -n MyProject
@@ -110,11 +115,27 @@ dotnet run --project "MyProject.Blog"
 
 > **✨ Note**: As of version 8.0.0, the template now supports periods in project names (e.g., `Company.Website`).
 
+### Upgrading from Clean 8.x
+
+Read Umbraco's [Umbraco 19 upgrade notes](https://docs.umbraco.com/umbraco-cms/19.latest/get-started/upgrading-and-migrating/version-specific) first. These points affect Clean sites in particular:
+
+- **Image URL key**: on .NET 11, a site whose `Umbraco:CMS:Imaging:HMACSecretKey` is not canonical Base64 does not start. A key is canonical when decoding it and encoding it again returns the same string. Keys that Umbraco generates are canonical, so check any key that was set by hand. Correct the key rather than generating a new one, so image URLs already signed with it stay valid: only the final character changes, for example `zx==` becomes `zw==`. In Windows PowerShell, `[Convert]::ToBase64String([Convert]::FromBase64String('<your key>'))` returns the corrected key.
+- **Models Builder**: `ModelsMode` now defaults to `Nothing` unless the site references `Umbraco.Cms.DevelopmentMode.Backoffice`, and setting `InMemoryAuto` without that package stops the site at startup. Keep the package, or move to a source code models mode, before you upgrade.
+- **Changed defaults**: `Umbraco:CMS:Imaging:Memory:Enabled` and `Umbraco:CMS:ScheduledPublishing:AlignToClock` now default to `true`. Set them to `false` to keep the Umbraco 18 behaviour. `Connect Timeout` in the connection string no longer sets the database command timeout, which drops to the provider default of 30 seconds. Set `Command Timeout` in the connection string, or `Umbraco:CMS:Global:DatabaseCommandTimeout`, if the site relied on it.
+- **Data Types**: upgrading the `Clean` package does not rename or refile the Data Types on a site that already has Clean. The new names and folders only apply to new installs.
+
+## Umbraco 18 (STS)
+
+If you need to use Clean with Umbraco 18 (STS), use the latest `8.x` release. The `dev/v8` branch on GitHub is where ongoing Umbraco 18 development takes place.
+
+- **NuGet**: `dotnet add package Clean --version 8.0.2`
+- **Branch**: [dev/v8](https://github.com/prjseal/Clean/tree/dev/v8)
+
 ## Umbraco 17 (LTS)
 
 If you need to use Clean with Umbraco 17 (LTS), use the latest `7.x` release. The `dev/v7` branch on GitHub is where ongoing Umbraco 17 development takes place.
 
-- **NuGet**: `dotnet add package Clean --version 7.0.7`
+- **NuGet**: `dotnet add package Clean --version 7.0.8`
 - **Branch**: [dev/v7](https://github.com/prjseal/Clean/tree/dev/v7)
 
 ## Umbraco 13 (LTS)
@@ -177,19 +198,43 @@ dotnet run --project "MyProject.Blog"
 
 **Remember:** After setup, switch from `Clean` to `Clean.Core` package reference to prevent view overrides.
 
+**Data Types:** Installing the `Clean` package arranges the Data Types tree into two folders. `Clean` holds the starter kit's own Data Types, and `Umbraco Defaults` holds Umbraco's built-in ones, which keep their names, keys and settings.
+
 ## Headless Implementation
 
-Clean includes full headless CMS support. Enable the Content Delivery API in your `appsettings.json`:
+Clean includes full headless CMS support. The Content Delivery API needs two changes to turn it on.
+
+Register it in your `Program.cs`:
+
+```csharp
+builder.CreateUmbracoBuilder()
+    .AddBackOffice()
+    .AddWebsite()
+    .AddDeliveryApi()
+    .AddComposers()
+    .Build();
+```
+
+Umbraco 19 projects only include `.AddDeliveryApi()` if they were created with the `--use-delivery-api` option. Without it, the Delivery API URLs return a 500 error.
+
+Then enable it in your `appsettings.json`. On Umbraco 18 and 19, also set `GenerateContentTypeSchemas`:
 
 ```json
 {
   "Umbraco": {
-    "DeliveryApi": {
-      "Enabled": true
+    "CMS": {
+      "DeliveryApi": {
+        "Enabled": true,
+        "OpenApi": {
+          "GenerateContentTypeSchemas": true
+        }
+      }
     }
   }
 }
 ```
+
+Once the Delivery API is enabled, rebuild the search indexes from **Settings > Search** in the backoffice.
 
 For Next.js integration with automatic revalidation:
 
@@ -212,14 +257,14 @@ Check out the complete Next.js frontend example by Phil Whittaker:
 
 ## API Documentation
 
-Explore the built-in API endpoints using Swagger UI:
+Explore the built-in API endpoints using the OpenAPI UI:
 
-**URL:** `/umbraco/swagger/index.html?urls.primaryName=Clean%20starter%20kit`
+**URL:** `/umbraco/openapi/index.html?urls.primaryName=Clean%20starter%20kit` (Umbraco 18 and later; earlier versions use `/umbraco/swagger/`)
 
 Available APIs:
 
 - **Dictionary API** - Access translation/dictionary items
-- **Search API** - Full-text content search
+- **Search API** - Full-text content search with paging, on Umbraco Search
 - **Contact API** - Handle contact form submissions
 
 ## Version Compatibility
@@ -229,6 +274,7 @@ Available APIs:
 | 4.x           | 13              | .NET 8       | LTS          |
 | 7.x           | 17              | .NET 10      | LTS          |
 | 8.x           | 18              | .NET 10      | STS          |
+| 19.x          | 19              | .NET 11      | STS          |
 
 ## Getting Help
 

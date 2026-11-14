@@ -29,7 +29,7 @@ Orchestrates the entire package creation process including running Umbraco, down
 3. **Restores Solution** - Explicitly restores with all sources
 4. **Starts Umbraco** - Runs Clean.Blog project
 5. **Waits for API** - Polls until Umbraco responds
-6. **Downloads Package** - Gets package.zip via API
+6. **Downloads Package** - Gets package.zip via API and saves it to `template/Clean/Migrations/`. The file is generated and git-ignored, not committed. It must exist before Clean is packed: `dotnet pack` of Clean fails with an error if it is missing
 7. **Updates Versions** - Sets version in all .csproj files
 8. **Builds Packages** - In dependency order: Core → Headless → Clean → Template
 
@@ -51,7 +51,10 @@ Updates in .csproj files:
 - `<InformationalVersion>` (base version without suffix)
 - `<AssemblyVersion>` (base version without suffix)
 - `<FileVersion>` (four-part base version, e.g. `8.0.2.0`; only where the project already sets one)
-- `<PackageReference>` for Clean.* packages
+
+`Clean.csproj` references `Clean.Core` and `Clean.Headless` as projects, not packages, so no
+Clean.* package versions need updating: `dotnet pack` turns those project references into
+package dependencies at the versions set above.
 
 ## Output
 

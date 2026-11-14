@@ -4,7 +4,7 @@ This document describes the automated PR workflow for the Clean Umbraco starter 
 
 ## Overview
 
-The PR workflow automatically builds, tests, and publishes development packages to GitHub Packages whenever a pull request is opened or updated against the `main` branch. This ensures that all changes are validated before merging and provides immediate access to pre-release packages for testing.
+The PR workflow automatically builds, tests, and publishes development packages to GitHub Packages whenever a pull request is opened or updated against the `main` branch or a `dev/` branch (such as `dev/v19`). This ensures that all changes are validated before merging and provides immediate access to pre-release packages for testing.
 
 ## Workflow File
 
@@ -13,6 +13,8 @@ Location: `.github/workflows/pr-build-packages.yml`
 ## Custom NuGet Sources
 
 The PR workflow supports specifying custom NuGet package sources directly in the PR description. This is useful for testing with pre-release packages from feeds like Umbraco's development feed, MyGet, or Azure DevOps.
+
+Custom sources only apply to pull request runs. A manual run (`workflow_dispatch`) has no PR description, so it skips this step and uses the default NuGet sources.
 
 ### How to Use
 
@@ -124,9 +126,18 @@ nuget-source: https://www.myget.org/F/myfeed/api/v3/index.json
 ## When Does It Run?
 
 The workflow triggers automatically on:
-- **Pull Request opened** to the `main` branch
+- **Pull Request opened** to the `main` branch or a `dev/` branch
 - **Pull Request updated** (new commits pushed)
 - **Pull Request synchronized** (rebased or updated)
+
+PRs into `main` use the `pull_request_target` event. GitHub always runs `pull_request_target` workflows
+from the default branch (`main`), whatever branch the PR targets. `main`'s copy can't build other
+major versions, such as Clean 19 on .NET 11.
+
+PRs into `dev/` branches therefore use the `pull_request` event, which runs the PR's own copy of the
+workflow. For PRs from branches in this repository, the build works exactly as it does for `main`. For
+PRs from forks, GitHub gives the workflow a read-only token and no secrets, so publishing to GitHub
+Packages and posting the screenshot comment fail.
 
 ## What It Does
 
@@ -193,9 +204,12 @@ The workflow performs **two complete end-to-end tests**:
    - Discover and visit up to 10 internal links
    - Test the Umbraco login page
    - Capture full-page screenshots of each page
+   - Fail straight away if the home page shows that the site did not boot
+5. If the browser tests fail, prints the warnings and errors from the site's Umbraco log
 
 **Location**: `test-installation/` directory
 **Screenshots**: Uploaded as workflow artifacts
+**Logs**: `site.log`, `site.err` and the Umbraco logs, uploaded as workflow artifacts
 
 #### Test 2: Template Installation Testing
 
@@ -207,9 +221,12 @@ The workflow performs **two complete end-to-end tests**:
    - Discover and visit up to 10 internal links
    - Test the Umbraco login page
    - Capture full-page screenshots of each page
+   - Fail straight away if the home page shows that the site did not boot
+5. If the browser tests fail, prints the warnings and errors from the site's Umbraco log
 
 **Location**: `test-template/` directory
 **Screenshots**: Uploaded as workflow artifacts
+**Logs**: `site.log`, `site.err` and the Umbraco logs, uploaded as workflow artifacts
 
 ### 5. **Artifacts**
 
@@ -220,6 +237,8 @@ The workflow uploads the following artifacts for every PR:
 | NuGet Packages | All four `.nupkg` files | `nuget-packages-{version}` |
 | Package Test Screenshots | Screenshots from package installation test | `package-test-screenshots-{version}` |
 | Template Test Screenshots | Screenshots from template installation test | `template-screenshots-{version}` |
+| Package Test Logs | `site.log`, `site.err` and the Umbraco logs from the package installation test | `package-test-logs-{version}` |
+| Template Test Logs | `site.log`, `site.err` and the Umbraco logs from the template installation test | `template-test-logs-{version}` |
 
 **Access**: Available in the "Actions" tab of the PR for download and review.
 
@@ -230,7 +249,7 @@ Here's the complete sequence:
 ```mermaid
 flowchart TD
     Start([PR Opened/Updated]) --> Checkout[1. Checkout Repository<br/>Fetch full git history]
-    Checkout --> DotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+    Checkout --> DotNet[2. Setup .NET 11<br/>Install .NET 11 SDK]
 
     DotNet --> CheckPR{3. Custom NuGet<br/>Sources in PR?}
     CheckPR -->|Yes| ConfigSources[Configure Custom Sources<br/>- Parse nuget-source: lines from PR<br/>- Add to NuGet config<br/>- List configured sources]
@@ -261,13 +280,7 @@ flowchart TD
 
     PlaywrightTemplate --> UploadTemplateScreens[12. Upload Template Screenshots<br/>Save as workflow artifact]
 
-    UploadTemplateScreens --> TestPeriod[13. Test Template with Period in Name<br/>Issue #11 Fix Verification<br/>- Create project: Company.Website<br/>- Start site max 180s<br/>- Run browser tests]
-
-    TestPeriod --> PlaywrightPeriod[Run Browser Tests - Period Name<br/>- Navigate home page<br/>- Discover internal links<br/>- Visit up to 10 pages<br/>- Test Umbraco login<br/>- Capture screenshots]
-
-    PlaywrightPeriod --> UploadPeriodScreens[14. Upload Period Name Screenshots<br/>Save as workflow artifact]
-
-    UploadPeriodScreens --> Summary[15. Build Summary<br/>- Display version, PR number, branch<br/>- List generated packages<br/>- Show GitHub Packages link]
+    UploadTemplateScreens --> Summary[13. Build Summary<br/>- Display version, PR number, branch<br/>- List generated packages<br/>- Show GitHub Packages link]
 
     Summary --> End2([End: Success])
 
@@ -279,10 +292,8 @@ flowchart TD
     style CheckPR fill:#e6e6fa
     style PlaywrightPkg fill:#ffe6cc
     style PlaywrightTemplate fill:#ffe6cc
-    style PlaywrightPeriod fill:#ffe6cc
     style TestPkg fill:#e6f3ff
     style TestTemplate fill:#e6f3ff
-    style TestPeriod fill:#e6f3ff
 ```
 
 ## Technical Details
@@ -374,6 +385,8 @@ When reviewing a PR, check:
    - `nuget-packages-{version}` - The actual .nupkg files
    - `package-test-screenshots-{version}` - Package test screenshots
    - `template-screenshots-{version}` - Template test screenshots
+   - `package-test-logs-{version}` - Package test site and Umbraco logs
+   - `template-test-logs-{version}` - Template test site and Umbraco logs
 
 ## Troubleshooting
 
@@ -430,7 +443,7 @@ Each major step displays:
 
 | Feature | PR Workflow | Release Workflow |
 |---------|-------------|------------------|
-| **Trigger** | Pull requests to main | GitHub Release published |
+| **Trigger** | Pull requests to main or `dev/` branches | GitHub Release published |
 | **Version Format** | `{version}-ci.{build}` | `{version}` (from git tag) |
 | **Publish Target** | GitHub Packages | NuGet.org |
 | **Testing** | Full E2E with screenshots | None (pre-tested in PR) |
@@ -475,12 +488,12 @@ This ensures high quality and prevents regressions before code reaches productio
 
 ## Workflow Steps
 
-The PR build workflow is triggered when a pull request is opened or updated targeting the main branch, and performs the following sequence:
+The PR build workflow is triggered when a pull request is opened or updated targeting the main branch or a `dev/` branch, and performs the following sequence:
 
 ```mermaid
 flowchart TD
-    Start([Pull Request to Main]) --> Checkout[1. Checkout Repository<br/>Checkout PR head SHA<br/>Fetch full git history]
-    Checkout --> DotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+    Start([Pull Request to Main or dev/ branch]) --> Checkout[1. Checkout Repository<br/>Checkout PR head SHA<br/>Fetch full git history]
+    Checkout --> DotNet[2. Setup .NET 11<br/>Install .NET 11 SDK]
     
     DotNet --> CustomSources[3. Configure Custom NuGet Sources<br/>Parse PR description<br/>Add custom sources if present]
     
@@ -502,17 +515,12 @@ flowchart TD
     
     TestTemplate --> UploadTplScreenshots[12. Upload Template Screenshots<br/>Save screenshots as artifacts<br/>Always runs]
     
-    UploadTplScreenshots --> TestPeriod[13. Test Period Name Template<br/>Verify Issue #11 fix<br/>Create project: Company.Website<br/>Run same tests]
-    
-    TestPeriod --> UploadPeriodScreenshots[14. Upload Period Test Screenshots<br/>Save screenshots as artifacts<br/>Always runs]
-    
-    UploadPeriodScreenshots --> Summary[15. Build Summary<br/>Display version, packages, links<br/>Always runs]
+    UploadTplScreenshots --> Summary[13. Build Summary<br/>Display version, packages, links<br/>Always runs]
     
     Summary --> End([End: Success])
     
     style TestPackage fill:#e6f3ff
     style TestTemplate fill:#e6f3ff
-    style TestPeriod fill:#e6f3ff
     style Summary fill:#ccffcc
 ```
 
@@ -546,12 +554,6 @@ The workflow implements comprehensive testing:
 **What**: Tests using Clean template to create new project  
 **How**: Installs template, creates project, starts site  
 **Validates**: Template installation, project generation, site functionality
-
-### 3. Period Name Test (Issue #11)
-
-**What**: Tests template with period in project name  
-**How**: Creates project named "Company.Website"  
-**Validates**: Fix for Issue #11 works correctly
 
 All tests use Playwright for automated browser testing and generate screenshots for visual verification.
 

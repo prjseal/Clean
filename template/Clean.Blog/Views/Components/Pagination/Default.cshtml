@@ -9,13 +9,13 @@
             @if (Model.PageNumber > 1)
             {
                 <li class="page-item">
-                    <a class="page-link text-primary" href="@($"{Model.Url}?page={Model.PageNumber - 1}")">@Umbraco.GetDictionaryValue("Paging.Previous")</a>
+                    <a class="page-link text-primary" href="@Model.GetPageUrl(Model.PageNumber - 1)">@Umbraco.GetDictionaryValue("Paging.Previous")</a>
                 </li>
             }
             @if(Model.ShowFirst)
             {
                 <li class="page-item">
-                    <a class="page-link" href="@($"{Model.Url}?page={1}")">1</a>
+                    <a class="page-link" href="@Model.GetPageUrl(1)">1</a>
                 </li>
                 <li class="page-item disabled">
                     <a class="page-link" href="#">...</a>
@@ -30,7 +30,7 @@
                     {
                         @:<strong>
                     }
-                        <a class="page-link @(isCurrentPage ? "text-primary" : null)" href="@($"{Model.Url}?page={p}")">@p</a>
+                        <a class="page-link @(isCurrentPage ? "text-primary" : null)" href="@Model.GetPageUrl(p)">@p</a>
                     @if(isCurrentPage) 
                     {
                         @:</strong>
@@ -40,7 +40,7 @@
             @if (Model.PageNumber < Model.PageCount)
             {
                 <li class="page-item">
-                    <a class="page-link text-primary" href="@($"{Model.Url}?page={Model.PageNumber + 1}")">@Umbraco.GetDictionaryValue("Paging.Next")</a>
+                    <a class="page-link text-primary" href="@Model.GetPageUrl(Model.PageNumber + 1)">@Umbraco.GetDictionaryValue("Paging.Next")</a>
                 </li>
             }
         </ul>

@@ -507,7 +507,7 @@ The script is designed to integrate with OWASP ZAP security scanning workflows:
 
 ```yaml
 - name: Run OWASP ZAP Full Scan
-  uses: zaproxy/action-full-scan@v0.10.0
+  uses: zaproxy/action-full-scan@v0.13.0
   with:
     target: ${{ steps.setup-site.outputs.site_url }}
 ```
@@ -604,8 +604,8 @@ The script is designed to integrate with OWASP ZAP security scanning workflows:
 
 The script requires the following to be pre-installed:
 
-- **.NET 10 SDK**: For template installation and project creation
-- **Node.js 20+**: Required by Clean Blog template
+- **.NET 11 SDK**: For template installation and project creation
+- **Node.js 26**: Required by Clean Blog template
 - **PowerShell 7+**: For script execution
 
 ## Related Documentation

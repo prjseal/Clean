@@ -56,7 +56,13 @@ namespace Clean.Core.Controllers.Surface
         {
             try
             {
-                var fromAddress = _globalSettings.Smtp.From;
+                if(string.IsNullOrWhiteSpace(_globalSettings.Smtp?.From))
+                {
+                    _logger.LogError("SMTP From Address is not configured.");
+                    return false;
+                }
+
+                var fromAddress = _globalSettings.Smtp?.From;
 
                 var subject = string.Format("Enquiry from: {0} - {1}", model.Name, model.Email);
                 EmailMessage message = new EmailMessage(fromAddress, fromAddress, subject, model.Message, false);

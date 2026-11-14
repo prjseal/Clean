@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using Lucene.Net.Queries.Function.DocValues;
 
 namespace Clean.Headless.Revalidate
 {

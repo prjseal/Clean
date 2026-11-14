@@ -3,127 +3,6 @@ param(
     [string]$Version
 )
 
-# ============================================================================
-# TEMPORARY WORKAROUND - Remove when Umbraco fixes issue #20801
-# https://github.com/umbraco/Umbraco-CMS/issues/20801
-#
-# Set to $false to disable the BlockList label fix
-# Delete this entire section when Umbraco releases a fix
-# ============================================================================
-$FixBlockListLabels = $true
-
-# ============================================================================
-# TEMPORARY WORKAROUND - Remove when Umbraco supports element library items
-# natively in the package XML format.
-#
-# Set to $false to disable copying element library configs into Clean.
-# When removing: delete CreateElementLibraryMigration.cs, remove its To<>
-# step from StarterKitPackageMigrationPlan.cs, remove the EmbeddedResource
-# line for Migrations\ElementLibrary\*.config from Clean.csproj, and delete
-# the Migrations\ElementLibrary folder.
-# ============================================================================
-$CreateElementLibraryItems = $true
-
-function Fix-BlockListLabels {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$PackageXmlPath,
-        [Parameter(Mandatory = $true)]
-        [string]$USyncConfigPath
-    )
-
-    try {
-        Write-Host "Fixing BlockList labels in package.xml..." -ForegroundColor Yellow
-
-        # Read and parse uSync config to get label mappings
-        [xml]$usyncXml = Get-Content $USyncConfigPath -Encoding UTF8
-        $configCData = $usyncXml.DataType.Config.'#cdata-section'
-        $usyncConfig = $configCData | ConvertFrom-Json
-
-        # Create label mapping
-        $labelMap = @{}
-        foreach ($block in $usyncConfig.blocks) {
-            if ($block.contentElementTypeKey -and $block.label) {
-                # Preserve asterisks for markdown formatting
-                $labelMap[$block.contentElementTypeKey] = $block.label
-            }
-        }
-
-        Write-Verbose "Found $($labelMap.Count) block labels in uSync config"
-
-        # Read package.xml
-        $packageXmlContent = Get-Content $PackageXmlPath -Raw -Encoding UTF8
-
-        # Find and extract the [BlockList] Main Content DataType Configuration
-        $pattern = '(<DataType Name="\[BlockList\] Main Content"[^>]*Configuration=")([^"]+)(")'
-        $match = [regex]::Match($packageXmlContent, $pattern)
-
-        if (-not $match.Success) {
-            Write-Host "Warning: Could not find [BlockList] Main Content DataType in package.xml" -ForegroundColor Yellow
-            return $false
-        }
-
-        # Decode HTML entities and parse JSON
-        $configEncoded = $match.Groups[2].Value
-        $configJson = [System.Web.HttpUtility]::HtmlDecode($configEncoded)
-        $config = $configJson | ConvertFrom-Json
-
-        # Display BEFORE
-        Write-Host "`n========================================" -ForegroundColor Cyan
-        Write-Host "BEFORE - DataType Configuration:" -ForegroundColor Cyan
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host $match.Value -ForegroundColor Gray
-        Write-Host "`nDecoded Configuration JSON:" -ForegroundColor Cyan
-        Write-Host ($configJson | ConvertFrom-Json | ConvertTo-Json -Depth 10) -ForegroundColor Gray
-
-        # Add labels to each block
-        $labelsAdded = 0
-        foreach ($block in $config.blocks) {
-            if ($block.contentElementTypeKey -and $labelMap.ContainsKey($block.contentElementTypeKey)) {
-                # Add the label property
-                $block | Add-Member -MemberType NoteProperty -Name "label" -Value $labelMap[$block.contentElementTypeKey] -Force
-                $labelsAdded++
-            }
-        }
-
-        # Convert back to JSON (compact format)
-        $modifiedJson = $config | ConvertTo-Json -Depth 10 -Compress
-
-        # Unicode-escape single quotes to match Umbraco format
-        $modifiedJson = $modifiedJson -replace "'", '\u0027'
-
-        # HTML-encode for XML attribute (properly escape all special XML characters: <, >, &, ", ')
-        $modifiedEncoded = [System.Web.HttpUtility]::HtmlEncode($modifiedJson)
-
-        # Replace in the original XML content
-        $prefix = $match.Groups[1].Value
-        $suffix = $match.Groups[3].Value
-        $replacement = $prefix + $modifiedEncoded + $suffix
-        $packageXmlContent = $packageXmlContent -replace [regex]::Escape($match.Value), $replacement
-
-        # Display AFTER
-        Write-Host "`n========================================" -ForegroundColor Cyan
-        Write-Host "AFTER - DataType Configuration:" -ForegroundColor Cyan
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host $replacement -ForegroundColor Green
-        Write-Host "`nDecoded Configuration JSON:" -ForegroundColor Cyan
-        Write-Host ($modifiedJson | ConvertFrom-Json | ConvertTo-Json -Depth 10) -ForegroundColor Green
-        Write-Host "========================================`n" -ForegroundColor Cyan
-
-        # Write back to file
-        $packageXmlContent | Set-Content $PackageXmlPath -Encoding UTF8 -NoNewline
-
-        Write-Host "Successfully added $labelsAdded labels to [BlockList] Main Content" -ForegroundColor Green
-        return $true
-    }
-    catch {
-        Write-Host "Error fixing BlockList labels: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Verbose $_.ScriptStackTrace
-        return $false
-    }
-}
-# ============================================================================
-
 # Enable verbose output
 $VerbosePreference = "Continue"
 
@@ -428,57 +307,6 @@ try {
     }
     Invoke-RestMethod @downloadParams
     Write-Host "✅ Package downloaded successfully to $outputFile" -ForegroundColor Green
-
-    # ========================================================================
-    # BEGIN TEMPORARY WORKAROUND - Umbraco issue #20801
-    # Remove this entire block when Umbraco fixes BlockList label export
-    # ========================================================================
-    if ($FixBlockListLabels) {
-        Write-Host ""
-
-        # Extract package.zip to temp location
-        $tempExtractPath = Join-Path $OutputFolder "temp_package_extract"
-        if (Test-Path $tempExtractPath) {
-            Remove-Item $tempExtractPath -Recurse -Force
-        }
-        New-Item -ItemType Directory -Path $tempExtractPath | Out-Null
-
-        # Extract the package
-        Expand-Archive -Path $outputFile -DestinationPath $tempExtractPath -Force
-
-        # Paths
-        $packageXmlPath = Join-Path $tempExtractPath "package.xml"
-        $usyncConfigPath = Join-Path $CurrentDir "template\Clean.Blog\uSync\v18\DataTypes\BlockListMainContent.config"
-
-        if ((Test-Path $packageXmlPath) -and (Test-Path $usyncConfigPath)) {
-            # Call the PowerShell function to fix labels
-            $success = Fix-BlockListLabels -PackageXmlPath $packageXmlPath -USyncConfigPath $usyncConfigPath
-
-            if ($success) {
-                # Repack the package.zip
-                if (Test-Path $outputFile) {
-                    Remove-Item $outputFile -Force
-                }
-                Compress-Archive -Path "$tempExtractPath\*" -DestinationPath $outputFile -CompressionLevel Optimal
-                Write-Host "Package repacked successfully" -ForegroundColor Green
-            }
-        } else {
-            if (-not (Test-Path $packageXmlPath)) {
-                Write-Host "Warning: package.xml not found in extracted package" -ForegroundColor Yellow
-            }
-            if (-not (Test-Path $usyncConfigPath)) {
-                Write-Host "Warning: uSync config not found at $usyncConfigPath" -ForegroundColor Yellow
-            }
-        }
-
-        # Clean up temp directory
-        if (Test-Path $tempExtractPath) {
-            Remove-Item $tempExtractPath -Recurse -Force
-        }
-    }
-    # ========================================================================
-    # END TEMPORARY WORKAROUND
-    # ========================================================================
 }
 catch {
     Write-Host "An error occurred during package download: $($_.Exception.Message)" -ForegroundColor Red
@@ -495,18 +323,6 @@ catch {
 if ($umbracoProcess -and !$umbracoProcess.HasExited) {
     Write-Host "Stopping Umbraco process with ID: $($umbracoProcess.Id)"
     Stop-Process -Id $umbracoProcess.Id -Force
-}
-
-if ($CreateElementLibraryItems) {
-    $elementLibrarySource = Join-Path $CurrentDir "template\Clean.Blog\uSync\v18\Element"
-    $elementLibraryDest   = Join-Path $CurrentDir "template\Clean\Migrations\ElementLibrary"
-    if (Test-Path $elementLibrarySource) {
-        New-Item -ItemType Directory -Path $elementLibraryDest -Force | Out-Null
-        Copy-Item -Path "$elementLibrarySource\*.config" -Destination $elementLibraryDest -Force
-        Write-Host "Copied element library configs to Clean\Migrations\ElementLibrary" -ForegroundColor Green
-    } else {
-        Write-Host "Warning: element library source folder not found at $elementLibrarySource" -ForegroundColor Yellow
-    }
 }
 
 # update the Version and PackageVersion in all .csproj files except Clean.Blog.csproj and Clean.Models.csproj
@@ -611,19 +427,9 @@ foreach ($file in $csprojFiles) {
         }
     }
 
-    # Update any PackageReference elements that reference Clean.* packages
-    $cleanPackageRefs = $xml.SelectNodes("//ns:PackageReference[starts-with(@Include, 'Clean.')]", $nsmgr)
-    foreach ($packageRef in $cleanPackageRefs) {
-        if ($packageRef.HasAttribute("Version")) {
-            $currentVersion = $packageRef.GetAttribute("Version")
-            if ($currentVersion -ne $Version) {
-                $packageRef.SetAttribute("Version", $Version)
-                $fileModified = $true
-                $packageName = $packageRef.GetAttribute("Include")
-                $updatedFiles += "$($file.FullName) (PackageReference: $packageName)"
-            }
-        }
-    }
+    # Clean.csproj references Clean.Core and Clean.Headless as projects, so there are no
+    # Clean.* package versions to update here: dotnet pack turns those project references
+    # into package dependencies at the versions set above.
 
     # Save the file if any modifications were made
     if ($fileModified) {
@@ -800,7 +606,8 @@ try {
         }
     }
 
-    # Step 3: Build and pack Clean (depends on Clean.Core and Clean.Headless)
+    # Step 3: Build and pack Clean (its project references to Clean.Core and Clean.Headless
+    # become package dependencies on the versions packed above)
     if ($cleanPath) {
         Write-Host "`n=== Building Clean ==="
 

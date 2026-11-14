@@ -150,7 +150,7 @@ Here's the complete sequence:
 ```mermaid
 flowchart TD
     Start([Scheduled/Manual Trigger]) --> Checkout[1. Checkout Repository<br/>Fetch full git history]
-    Checkout --> DotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+    Checkout --> DotNet[2. Setup .NET 11<br/>Install .NET 11 SDK]
 
     DotNet --> CustomSources{3. Custom NuGet<br/>Sources Provided?}
     CustomSources -->|Yes| ConfigSources[Configure Custom NuGet Sources<br/>Parse and add to NuGet config]

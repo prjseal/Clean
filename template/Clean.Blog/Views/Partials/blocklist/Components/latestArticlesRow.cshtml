@@ -27,7 +27,6 @@
         @foreach (var article in pageOfArticles)
         {
             var author = article.Author;
-            bool.TryParse(article.Value<string>("showFullArticleOnListPage", fallback: Fallback.ToAncestors), out var showFullArticleOnListPage);
 
             <div class="post-preview">
                 <a href="@article.Url()">
@@ -39,30 +38,15 @@
                         <h3 class="post-subtitle">@article.Subtitle</h3>
                     }
                 </a>
-                <p class="post-meta @(showFullArticleOnListPage ? "mb-0" : "")">
+                <p class="post-meta">
                     @Umbraco.GetDictionaryValue("Article.Posted")
-                    @Umbraco.GetDictionaryValue("Article.By")@Html.Raw("&nbsp;")@author.Name
+                    @if (author != null)
+                    {
+                        @Umbraco.GetDictionaryValue("Article.By")@Html.Raw("&nbsp;")@author.Name
+                    }
                     @Umbraco.GetDictionaryValue("Article.On") @article.ArticleDate.ToString("MMMM dd, yyyy")
                 </p>
-                @if (showFullArticleOnListPage && article.Categories != null && article.Categories.Any())
-                {
-                    <span class="mt-2 d-block"></span>
-                    @foreach (var category in article.Categories.Select(x => x.Name).OrderBy(y => y))
-                    {
-                        <span class="badge rounded-pill bg-light text-dark border-dark border-5">@category</span>
-                    }
-
-                }
             </div>
-
-            @if (showFullArticleOnListPage)
-            {
-                <div class="row">
-                    <div class="col-12">
-                        @Html.GetBlockListHtml(article.ContentRows)
-                    </div>
-                </div>
-            }
 
             <hr>
         }

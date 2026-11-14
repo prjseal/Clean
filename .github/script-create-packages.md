@@ -202,7 +202,7 @@ The `update-packages.yml` workflow does NOT use this script. It uses `UpdateThir
 **Package Creation:**
 - Calls the custom package API: `/api/v1/package/{version}`
 - Downloads the package from: `/umbraco/management/api/v1/package/created/{packageId}/download/`
-- Saves the package as `package.zip` in the output folder
+- Saves the package as `package.zip` in the output folder. `template/Clean/Migrations/package.zip` is generated and git-ignored, not committed, and must exist before Clean is packed
 
 ### 5. Version Updates in .csproj Files
 
@@ -215,7 +215,7 @@ The `update-packages.yml` workflow does NOT use this script. It uses `UpdateThir
 - **InformationalVersion:** Set to base version without suffix (e.g., `7.0.0`)
 - **AssemblyVersion:** Set to base version without suffix (e.g., `7.0.0`)
 - **FileVersion:** Set to the four-part base version (e.g., `7.0.0.0`), only in projects that already have a `<FileVersion>`
-- **PackageReference for Clean.* packages:** Updated to match the new version
+- **Clean.* dependencies:** Nothing to update. `Clean.csproj` references `Clean.Core` and `Clean.Headless` as projects, and `dotnet pack` turns those into package dependencies at the versions set above
 
 ### 6. Clean Build Environment
 

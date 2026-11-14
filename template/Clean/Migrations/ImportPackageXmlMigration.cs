@@ -31,10 +31,11 @@ namespace Clean.Migrations
         {
         }
 
-        protected async override Task MigrateAsync()
+        protected override Task MigrateAsync()
         {
             //import the xml package
             ImportPackage.FromEmbeddedResource(GetType()).Do();
+            return Task.CompletedTask;
         }
     }
 }
