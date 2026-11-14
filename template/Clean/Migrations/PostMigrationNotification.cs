@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.ContentPublishing;
@@ -30,6 +31,7 @@ namespace Clean.Migrations
         private readonly IElementService _elementService;
         private readonly IElementPublishingService _elementPublishingService;
         private readonly IRuntimeState _runtimeState;
+        private readonly AppCaches _appCaches;
         private readonly ILogger<PostMigrationNotificationHandler> _logger;
 
         public PostMigrationNotificationHandler(
@@ -37,12 +39,14 @@ namespace Clean.Migrations
             IElementService elementService,
             IElementPublishingService elementPublishingService,
             IRuntimeState runtimeState,
+            AppCaches appCaches,
             ILogger<PostMigrationNotificationHandler> logger)
         {
             _contentService = contentService;
             _elementService = elementService;
             _elementPublishingService = elementPublishingService;
             _runtimeState = runtimeState;
+            _appCaches = appCaches;
             _logger = logger;
         }
 
@@ -81,6 +85,14 @@ namespace Clean.Migrations
 
         private async Task PublishPackageContentAsync()
         {
+            // The package import leaves the dictionary items it creates missing from the by-key
+            // lookups until the dictionary item cache is cleared or the site restarts, so every
+            // dictionary value renders blank on a fresh install. This is an Umbraco bug, see
+            // umbraco-bugs/package-migration-dictionary-items-stale-cache.md. Remove this
+            // workaround once Umbraco fixes it.
+            _appCaches.IsolatedCaches.ClearCache<IDictionaryItem>();
+            _logger.LogInformation("Cleared the dictionary cache after the Clean package import");
+
             // The elements are published first, so the pages that pick them can render them
             await PublishPackageElementsAsync();
 

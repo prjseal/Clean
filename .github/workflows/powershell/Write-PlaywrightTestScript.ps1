@@ -105,6 +105,15 @@ const path = require('path');
       throw new Error('The home page returned HTTP ' + homeStatus + ' and did not render. The site did not boot:\n' + homeText);
     }
 
+    // A package install that leaves Umbraco's dictionary cache stale renders every dictionary
+    // value blank, so the contact page's Send button has no text
+    await page.goto(baseUrl + '/contact/', { waitUntil: 'networkidle', timeout: 30000 });
+    const sendButtonText = ((await page.locator('#submitButton').first().textContent()) || '').trim();
+    if (!sendButtonText) {
+      throw new Error("The contact page's Send button has no text: the dictionary values did not render");
+    }
+    console.log("Contact page Send button text: '" + sendButtonText + "'");
+
     // Find all internal links on the page
     const links = await page.evaluate((baseUrl) => {
       const anchors = Array.from(document.querySelectorAll('a[href]'));
