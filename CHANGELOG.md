@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- A fresh install of the `Clean` package shows its dictionary text (form labels, button text, paging links, the site name) on first boot. The package install clears Umbraco's dictionary cache, which Umbraco leaves stale after a package import until the site restarts
+
 ## [19.0.0-rc02] - 2026-11-13
 
 Clean rebuilt as if it had been made on a fresh Umbraco 19 install, rather than upgraded through 13, 17 and 18.
