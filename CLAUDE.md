@@ -34,10 +34,9 @@ root, and send their output to a file in the scratchpad: they print a lot and ta
    `.github/workflows/powershell/CreateNuGetPackages.ps1 -Version <version>` (for example
    `19.0.0-rc02`). It runs Clean.Blog to export the package and writes the `.nupkg` files to
    `.artifacts/nuget`. Two things to expect:
-   - It rewrites `template/Clean/Migrations/package.zip` from the local Clean.Blog database. If the
-     only difference is an `updateDate` or writer name, restore it with
-     `git checkout -- template/Clean/Migrations/package.zip`. Commit a regenerated `package.zip`
-     only when the content or schema changed on purpose.
+   - It generates `template/Clean/Migrations/package.zip` from the local Clean.Blog database before
+     packing Clean. Git ignores the file (it is not committed), so it never shows as a change. Without
+     it, `dotnet pack` of Clean fails with a message pointing at this script.
    - It can exit with code 1 from "Unable to find any package source(s) matching name:
      CleanLocalPackages" at the end. That is harmless if it listed the four generated packages.
 3. **Run the tests:**

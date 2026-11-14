@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- `template/Clean/Migrations/package.zip` is no longer committed. The package build script generates it, `Clean.csproj` embeds it only when it exists, and `dotnet pack` of `Clean` fails with a clear error if it is missing
+
 ### Fixed
 - A fresh install of the `Clean` package shows its dictionary text (form labels, button text, paging links, the site name) on first boot. The package install clears Umbraco's dictionary cache, which Umbraco leaves stale after a package import until the site restarts
 
