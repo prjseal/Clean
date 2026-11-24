@@ -6,6 +6,11 @@
 - **Clean workaround:** yes, the package publishes its content once Umbraco has finished starting
   (`template/Clean/Migrations/PostMigrationNotification.cs`)
 - **Background:** `plans/package-install-boot-lock-race.md`
+- **Umbraco 19.0.0-rc2:** probably fixed by [#24603](https://github.com/umbraco/Umbraco-CMS/pull/24603),
+  which makes `DocumentUrlService` and `DocumentUrlAliasService` take their write locks before
+  reading during the rebuild. Not verified yet: check with the 30-run install loop
+  (`tools/package-install-repro/`) with the workaround removed before filing this or removing the
+  workaround
 
 Everything below the line is the issue text, ready to paste.
 

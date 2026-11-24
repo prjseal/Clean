@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+- Updated to Umbraco 19.0.0-rc2 and uSync 19.0.0-rc2. The Models Builder models were regenerated, which only changed their version stamps. rc2 has no breaking changes that affect Clean
+- The package and template install tests wait for Umbraco's background unattended upgrade to finish before they run Playwright. Until then the site serves a maintenance page, and then returns 404 until the package content is published, so a fast machine could fail the test
+
 ## [19.0.0-rc03] - 2026-11-14
 
 ### Changed

@@ -22,9 +22,9 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.Website" Version="19.0.0-rc1" />
-    <PackageReference Include="Umbraco.Cms.Api.Common" Version="19.0.0-rc1" />
-    <!-- Pin a patched version of a vulnerable transitive dependency of Umbraco.Cms.Api.Common 19.0.0-rc1
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="19.0.0-rc2" />
+    <PackageReference Include="Umbraco.Cms.Api.Common" Version="19.0.0-rc2" />
+    <!-- Pin a patched version of a vulnerable transitive dependency of Umbraco.Cms.Api.Common 19.0.0-rc2
          (via OpenIddict.AspNetCore 7.7.2 > Microsoft.AspNetCore.DataProtection 10.0.11).
          Remove once Umbraco ships a build that references a fixed version. -->
     <PackageReference Include="System.Security.Cryptography.Xml" Version="11.0.0" />

@@ -14855,8 +14855,16 @@
                     ],
                     "type": "string"
                 },
+                "publishConfirmationMessage": {
+                    "description": "Overrides the confirmation text shown in the publish modal.\nUse a localization key, e.g. `#prompt_confirmPublish`.",
+                    "type": "string"
+                },
+                "publishedNotificationHeadline": {
+                    "description": "Overrides the success notification headline.\nUse a localization key, e.g. `#publish_publishedNotificationTitle`.",
+                    "type": "string"
+                },
                 "publishedNotificationMessage": {
-                    "description": "Overrides the success notification message when invariant content is published.\nUse a localization key, e.g. `#speechBubbles_editContentPublishedText`.",
+                    "description": "Overrides the success notification message when invariant content is published.\nUse a localization key, e.g. `#publish_publishedNotificationDescription` — the content name (shortened when\nlong) is passed as the first term argument.",
                     "type": "string"
                 },
                 "publishingRepositoryAlias": {
@@ -14868,7 +14876,7 @@
                     "type": "string"
                 },
                 "variantPublishedNotificationMessage": {
-                    "description": "Overrides the success notification message when one or more variants are published.\nUse a localization key, e.g. `#speechBubbles_editVariantPublishedText` — the list of published variants\nis passed as the first term argument, so a plain (non-key) string will not include it.",
+                    "description": "Overrides the success notification message when one or more variants are published.\nUse a localization key, e.g. `#publish_publishedVariantNotificationDescription` — the list of published\nvariants is passed as the first term argument and the content name (shortened when long) as the second, so a\nplain (non-key) string will not include them.",
                     "type": "string"
                 }
             },

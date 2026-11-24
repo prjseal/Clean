@@ -111,6 +111,14 @@ while (-not $siteStarted) {
         # Check if site is listening on HTTPS
         if ($logContent -match "Now listening on:\s*(https://[^\s]+)") {
             $siteUrl = $matches[1]
+            # Umbraco runs the unattended upgrade (package migrations included) in a background
+            # service after Kestrel starts listening. Until it finishes the site serves a maintenance
+            # page, and then 404s until the package content is published, so wait for it
+            if ($logContent -match "Unattended upgrade background service started" -and
+                $logContent -notmatch "Unattended upgrade (completed successfully|failed)") {
+                Start-Sleep -Seconds 2
+                continue
+            }
             $siteStarted = $true
             Write-Host "Site is running at: $siteUrl" -ForegroundColor Green
             break
