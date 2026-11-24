@@ -5,6 +5,9 @@
 - **Found:** 2026-11-13, Umbraco 19.0.0-rc1, Clean 19.0.0-rc02
 - **Clean workaround:** none. Recorded in the `[19.0.0-rc02]` CHANGELOG known issues
 - **Background:** `plans/umbraco-19-feature-adoption.md`, work item A (reusable blocks), "Findings"
+- **Umbraco 19.0.0-rc2:** probably fixed by [#24713](https://github.com/umbraco/Umbraco-CMS/pull/24713),
+  which stops the backoffice block manager writing a Library element's content and expose state
+  into the block value. Not verified yet: run the steps below on rc2 before filing
 
 The steps to reproduce below are written from the findings in work item A, with a made-up word
 ("pineapple") to search for. Run them once on a fresh site before filing, and fill in the two

@@ -1,11 +1,18 @@
 # SQLite lock race between the URL rebuild and Umbraco Search indexing
 
-- **Status:** Not filed
+- **Status:** Fixed in 19.0.0-rc2 (found and fixed before it was filed, so there is no need to file it)
 - **Repository:** umbraco/Umbraco-CMS
 - **Found:** 2026-11-13, Umbraco 19.0.0-rc1, Clean 19.0.0-rc02
-- **Clean workaround:** yes, the package publishes its content once Umbraco has finished starting
+- **Clean workaround:** removed on 2026-11-24, after the update to Umbraco 19.0.0-rc2. Until then
+  the package published its content once Umbraco had finished starting
   (`template/Clean/Migrations/PostMigrationNotification.cs`)
 - **Background:** `plans/package-install-boot-lock-race.md`
+- **Umbraco 19.0.0-rc2:** fixed by [#24603](https://github.com/umbraco/Umbraco-CMS/pull/24603),
+  which makes `DocumentUrlService` and `DocumentUrlAliasService` take their write locks before
+  reading during the rebuild. Verified on 2026-11-24 with the install loop and Clean's workaround
+  removed: 0 failures in 30 runs on rc2, against 6 in 30 on rc1 under the same load. The numbers
+  are in `plans/package-install-boot-lock-race.md`, step 4. Clean's workaround was then removed
+  (step 5)
 
 Everything below the line is the issue text, ready to paste.
 

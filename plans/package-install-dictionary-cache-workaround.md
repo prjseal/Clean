@@ -50,6 +50,9 @@ The full write-up, with the minimal repro, is
   `AppCaches.IsolatedCaches.ClearCache<IDictionaryItem>()`, in `PostMigrationNotificationHandler`
   at the start of `PublishPackageContentAsync()`. During an unattended install that method already
   runs from `UmbracoApplicationStartedNotification`, which is where the clear was proven to work.
+  (Update, 2026-11-24: with Umbraco 19.0.0-rc2 the deferred publishing was removed, see
+  `plans/package-install-boot-lock-race.md` step 5. The clear now runs in the
+  `MigrationPlansExecutedNotification` handler, and both install tests' Send button check passed.)
   Don't use `DistributedCache.RefreshAll(DictionaryCacheRefresher.UniqueId)`: it was proven not to
   work.
 - **Regression check:** the Playwright test fails when the contact page's Send button has no
