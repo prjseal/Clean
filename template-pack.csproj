@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <PackageVersion>19.0.0-rc02</PackageVersion>
+    <PackageVersion>19.0.0-rc04</PackageVersion>
     <PackageType>Template</PackageType>
     <PackageId>Umbraco.Community.Templates.Clean</PackageId>
     <Title>Umbraco.Community.Templates.Clean</Title>
