@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [19.0.0-rc04] - 2026-11-24
+
 ### Changed
 - Updated to Umbraco 19.0.0-rc2 and uSync 19.0.0-rc2. The Models Builder models were regenerated, which only changed their version stamps. rc2 has no breaking changes that affect Clean
 - The `Clean` package publishes its content straight after its migration again, rather than once Umbraco has finished starting. That deferral worked around an Umbraco 19.0.0-rc1 SQLite lock race between the URL rebuild and Umbraco Search indexing, which Umbraco 19.0.0-rc2 fixes (30 installs with the deferral removed: 0 failures on rc2, 6 on rc1)
