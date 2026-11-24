@@ -4,14 +4,13 @@ using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.Extensions.Options;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Routing;
 using Umbraco.Extensions;
-
-#nullable enable
 
 namespace Clean.Core.TagHelpers
 {
@@ -205,7 +204,8 @@ namespace Clean.Core.TagHelpers
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(sanitizedFileContents);
                 var svgs = doc.DocumentNode.SelectNodes("//svg");
-                foreach (var svgNode in svgs)
+                // SelectNodes returns null, not an empty collection, when the file has no <svg> node
+                foreach (var svgNode in svgs ?? Enumerable.Empty<HtmlNode>())
                 {
                     if (!string.IsNullOrEmpty(CssClass))
                     {

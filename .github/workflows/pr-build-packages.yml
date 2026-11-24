@@ -1,18 +1,20 @@
 name: PR - Build NuGet Packages
 
 on:
+  # pull_request_target always runs the copy of this workflow on the default branch (main),
+  # which can't build other major versions. PRs into dev/ branches use pull_request, which runs
+  # the PR's own copy of the workflow. Fork PRs into dev/ get a read-only token, so they can't
+  # publish packages or comment.
   pull_request_target:
     branches:
       - main
+  pull_request:
+    branches:
+      - 'dev/**'
   workflow_dispatch:
     inputs:
       run-template-tests:
         description: 'Run Template Installation and Site tests'
-        required: false
-        type: boolean
-        default: false
-      run-period-name-tests:
-        description: 'Run Template with Period in Name tests'
         required: false
         type: boolean
         default: false
@@ -28,17 +30,19 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        # Pinned to v6: this runs on pull_request_target, and v7 refuses to check out fork PR heads
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET 11
+        uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '11.0.x'
 
       - name: Configure custom NuGet sources from PR description
+        if: github.event_name != 'workflow_dispatch'
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -66,7 +70,7 @@ jobs:
           ./.github/workflows/powershell/CreateNuGetPackages.ps1 -Version "${{ steps.version.outputs.version }}"
 
       - name: Upload NuGet packages as artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages-${{ steps.version.outputs.version }}
           path: .artifacts/nuget/*.nupkg
@@ -88,14 +92,25 @@ jobs:
 
       - name: Upload Screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: package-test-screenshots-${{ steps.version.outputs.version }}
           path: test-installation/screenshots/*.png
           if-no-files-found: warn
 
+      - name: Upload Package Test Logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-test-logs-${{ steps.version.outputs.version }}
+          path: |
+            test-installation/site.log
+            test-installation/site.err
+            test-installation/TestProject/umbraco/Logs/*.json
+          if-no-files-found: warn
+
       - name: Post first screenshot as PR comment
-        if: always() && github.event_name == 'pull_request_target'
+        if: always() && github.event_name != 'workflow_dispatch'
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -112,33 +127,25 @@ jobs:
 
       - name: Upload Template Screenshots
         if: always() && inputs.run-template-tests == true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: template-screenshots-${{ steps.version.outputs.version }}
           path: test-template-TestTemplateProject/TestTemplateProject/screenshots/*.png
           if-no-files-found: warn
 
-      - name: Test Template with Period in Name - Verify Fix for Issue #11
-        if: inputs.run-period-name-tests == true
-        shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          Write-Host "================================================" -ForegroundColor Cyan
-          Write-Host "Testing Template with Period in Name (Issue #11 Fix)" -ForegroundColor Cyan
-          Write-Host "================================================" -ForegroundColor Cyan
-          ./.github/workflows/powershell/Test-TemplateInstallation.ps1 -Version "${{ steps.version.outputs.version }}" -WorkspacePath "${{ github.workspace }}" -ProjectName "Company.Website"
-
-      - name: Upload Period Name Test Screenshots
-        if: always() && inputs.run-period-name-tests == true
-        uses: actions/upload-artifact@v4
+      - name: Upload Template Test Logs
+        if: always() && inputs.run-template-tests == true
+        uses: actions/upload-artifact@v7
         with:
-          name: period-name-test-screenshots-${{ steps.version.outputs.version }}
-          path: test-template-Company-Website/Company.Website/screenshots/*.png
+          name: template-test-logs-${{ steps.version.outputs.version }}
+          path: |
+            test-template-TestTemplateProject/TestTemplateProject/site.log
+            test-template-TestTemplateProject/TestTemplateProject/site.err
+            test-template-TestTemplateProject/TestTemplateProject/**/umbraco/Logs/*.json
           if-no-files-found: warn
 
       - name: Build Summary
         if: always()
         shell: pwsh
         run: |
-          ./.github/workflows/powershell/Show-BuildSummary.ps1 -Version "${{ steps.version.outputs.version }}" -PrNumber "${{ github.event.pull_request.number }}" -Branch "${{ github.head_ref }}" -Actor "${{ github.actor }}" -Repository "${{ github.repository }}"
+          ./.github/workflows/powershell/Show-BuildSummary.ps1 -Version "${{ steps.version.outputs.version || 'not created' }}" -PrNumber "${{ github.event.pull_request.number || 'none (manual run)' }}" -Branch "${{ github.head_ref || github.ref_name }}" -Actor "${{ github.actor }}" -Repository "${{ github.repository }}"

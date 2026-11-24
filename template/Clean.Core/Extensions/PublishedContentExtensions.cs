@@ -5,10 +5,10 @@ namespace Clean.Core.Extensions;
 
 public static class PublishedContentExtensions
 {
-    public static string GetAltText(this IPublishedContent content, string altTextPropertyAlias = "altText")
+    public static string GetAltText(this IPublishedContent? content, string altTextPropertyAlias = "altText")
     {
         if (content == null) return "";
-        if (content.HasProperty(altTextPropertyAlias)) return content.Value<string>(altTextPropertyAlias);
+        if (content.HasProperty(altTextPropertyAlias)) return content.Value<string>(altTextPropertyAlias) ?? "";
 
         return "";
     }

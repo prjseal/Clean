@@ -66,6 +66,8 @@ flowchart TD
    - Maps to Umbraco major version:
      - Clean 4.x → Umbraco 13
      - Clean 7.x → Umbraco 17
+     - Clean 8.x → Umbraco 18
+     - Clean 19.x → Umbraco 19
    - Exits gracefully if no mapping exists
 
 2. **Umbraco Version Detection**
@@ -73,7 +75,7 @@ flowchart TD
    - Extracts Umbraco.Cms.Web.Website version
 
 3. **README Updates**
-   - Finds appropriate Umbraco section (`## Umbraco 13` or `## Umbraco 17`)
+   - Finds appropriate Umbraco section (for example `## Umbraco 13` or `## Umbraco 19`)
    - Updates installation commands:
      - `dotnet new install Umbraco.Templates::{version}`
      - `dotnet add package Clean --version {version}`
@@ -162,12 +164,15 @@ Updates with prerelease version.
 $umbracoMajorMap = @{
     4 = 13
     7 = 17
+    8 = 18
+    19 = 19
 }
 ```
 
-**Why only 4 and 7?**
+**Why no 5 or 6?**
 - Clean v5 (Umbraco 15) and v6 (Umbraco 16) are no longer maintained
 - Only actively supported versions have mappings
+- From Umbraco 19, the Clean major version matches the Umbraco major version
 
 ### Regex Pattern for Sections
 

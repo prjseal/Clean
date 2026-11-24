@@ -84,9 +84,9 @@ Screenshots are uploaded as workflow artifacts with naming pattern:
 flowchart TD
     Start([Trigger:<br/>Manual or Scheduled]) --> Checkout[1. Checkout Repository<br/>Fetch workflow scripts]
 
-    Checkout --> SetupDotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+    Checkout --> SetupDotNet[2. Setup .NET 11<br/>Install .NET 11 SDK]
 
-    SetupDotNet --> SetupNode[3. Setup Node.js 20<br/>For Playwright]
+    SetupDotNet --> SetupNode[3. Setup Node.js 26<br/>For Playwright]
 
     SetupNode --> RunScript[4. Run Test-LatestNuGetPackages Script<br/>Pass all parameters]
 

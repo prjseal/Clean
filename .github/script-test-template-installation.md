@@ -14,7 +14,7 @@ Validates that the Clean template can be successfully installed and used to crea
 
 ## When It's Used
 
-- **PR Workflow**: After package installation tests, run twice (normal name and period name test)
+- **PR Workflow**: After package installation tests, when the `run-template-tests` input is set on a manual run
 
 ## Parameters
 
@@ -51,10 +51,17 @@ Validates that the Clean template can be successfully installed and used to crea
    - Tests frontend and backoffice functionality
    - Takes screenshots of key pages
    - Verifies template-generated site works correctly
+   - Fails straight away if the home page shows that the site did not boot
 
 6. **Cleanup**
    - Stops site process
    - Removes LocalPackages NuGet source
+
+7. **Failure Report**
+   - If the Playwright tests fail, prints the warnings and errors from the newest Umbraco log (`UmbracoTraceLog*.json` under the test directory), with each message's placeholders filled in and any exception
+   - Exits with the Playwright test's exit code
+
+When the PR workflow runs the template tests, it uploads `site.log`, `site.err` and the Umbraco logs as the `template-test-logs-<version>` artifact, whether the test passes or fails.
 
 ## Project Name Handling
 
@@ -62,7 +69,7 @@ The script handles various project name formats:
 
 - **Default**: `TestTemplateProject`
 - **Custom**: Any name (e.g., `MyProject`)
-- **With Periods**: `Company.Website` (tests Issue #11 fix)
+- **With Periods**: `Company.Website`
 
 Project names with special characters are sanitized for directory names:
 - `Company.Website` → directory: `test-template-Company-Website`
@@ -115,33 +122,9 @@ Running Playwright tests...
 Screenshots saved to: test-template-TestTemplateProject/TestTemplateProject/screenshots/
 ```
 
-## Period Name Test (Issue #11)
-
-The workflow runs this test twice:
-
-1. **Normal Name**: `TestTemplateProject`
-2. **Period Name**: `Company.Website`
-
-The period test verifies fix for [Issue #11](https://github.com/prjseal/Clean/issues/11):
-
-```yaml
-- name: Test Template with Period in Name - Verify Fix for Issue #11
-  shell: pwsh
-  run: |
-    ./.github/workflows/powershell/Test-TemplateInstallation.ps1 `
-      -Version "${{ steps.version.outputs.version }}" `
-      -WorkspacePath "${{ github.workspace }}" `
-      -ProjectName "Company.Website"
-```
-
 ## Screenshots Generated
 
-### Default Name Test
 - Located in: `test-template-TestTemplateProject/TestTemplateProject/screenshots/`
-- Files: homepage.png, login-page.png, backoffice-dashboard.png
-
-### Period Name Test
-- Located in: `test-template-Company-Website/Company.Website/screenshots/`
 - Files: homepage.png, login-page.png, backoffice-dashboard.png
 
 ## Template Installation Command
@@ -181,18 +164,6 @@ Unable to find template 'umbraco-starter-clean'
 - Check template installation output
 - Verify package exists in local artifacts
 
-### Issue: Project Creation Fails with Period Name
-
-**Symptoms**:
-Project with period in name fails to create
-
-**Cause**:
-- Bug in template (should be fixed in Issue #11)
-
-**Solution**:
-- Verify template version includes Issue #11 fix
-- Check template configuration files
-
 ### Issue: Site Fails to Start
 
 **Symptoms**:
@@ -210,17 +181,28 @@ Timeout reached! Site failed to start.
 - Verify template generated correctly
 - Check for port conflicts
 
+### Issue: Site Did Not Boot
+
+**Symptoms**:
+```
+Error during testing: Error: The home page returned HTTP 500 and did not render. The site did not boot:
+```
+
+The site process started and listens, but Umbraco failed to boot.
+
+**Solution**:
+- Read the Umbraco log errors printed after the test, then the full logs in the `template-test-logs-<version>` artifact
+- Check `01-home.png` for the error page
+
 ## Related Documentation
 
 - [workflow-pr.md](workflow-pr.md) - Parent workflow
 - [script-test-package-installation.md](script-test-package-installation.md) - Package testing
-- GitHub Issue #11 - Period in project name fix
 
 ## Notes
 
 - **Tests template installation and usage**
 - **Supports custom project names**
-- **Validates Issue #11 fix** (period in name)
 - **Uses Playwright** for automated testing
 - **Generates screenshots** for verification
 - **Uninstalls existing templates** to avoid conflicts

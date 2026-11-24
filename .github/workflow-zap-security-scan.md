@@ -79,7 +79,7 @@ Ensures site is ready for ZAP scanning:
 
 Runs comprehensive security scan using ZAP:
 
-**Scan Type**: Full active scan (zaproxy/action-full-scan@v0.10.0)
+**Scan Type**: Full active scan (zaproxy/action-full-scan@v0.13.0)
 
 **Configuration**:
 - **Target**: Site URL from setup step
@@ -152,9 +152,9 @@ flowchart TD
 
     Proceed --> Checkout[1. Checkout Repository<br/>Fetch .zap rules and scripts]
 
-    Checkout --> SetupDotNet[2. Setup .NET 10<br/>Install .NET 10 SDK]
+    Checkout --> SetupDotNet[2. Setup .NET 11<br/>Install .NET 11 SDK]
 
-    SetupDotNet --> SetupNode[3. Setup Node.js 20<br/>For template tooling]
+    SetupDotNet --> SetupNode[3. Setup Node.js 26<br/>For template tooling]
 
     SetupNode --> SetupSite[4. Setup Clean Template Site<br/>Run Test-LatestWithZap.ps1]
 

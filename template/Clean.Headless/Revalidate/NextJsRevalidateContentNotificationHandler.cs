@@ -56,7 +56,7 @@ namespace Clean.Headless.Revalidate
                 {
                     if (_umbracoContextAccessor.TryGetUmbracoContext(out var umbracoContext) && umbracoContext.Content != null)
                     {
-                        var publishedContent = umbracoContext.Content.GetById(content.Id);
+                        var publishedContent = umbracoContext.Content.GetById(content.Key);
                         if (publishedContent != null)
                         {
                             var path = publishedContent.Url();

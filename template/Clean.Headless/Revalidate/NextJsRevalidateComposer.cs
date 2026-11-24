@@ -10,6 +10,7 @@ namespace Clean.Headless.Revalidate
     {
         public void Compose(IUmbracoBuilder builder)
         {
+            builder.Services.AddHttpClient(NextJsRevalidateService.HttpClientName);
             builder.Services.AddTransient<NextJsRevalidateService>();
             builder.AddNotificationAsyncHandler<ContentPublishedNotification, NextJsRevalidateContentNotificationHandler>();
             builder.AddNotificationAsyncHandler<ContentUnpublishedNotification, NextJsRevalidateContentNotificationHandler>();

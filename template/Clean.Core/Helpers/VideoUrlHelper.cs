@@ -5,9 +5,9 @@ namespace Clean.Core.Helpers;
 
 public static class VideoUrlHelper
 {
-    public static string GetVideoId(string youtubeUrl)
+    public static string? GetVideoId(string? youtubeUrl)
     {
-        if (Uri.TryCreate(youtubeUrl, UriKind.Absolute, out Uri uri))
+        if (Uri.TryCreate(youtubeUrl, UriKind.Absolute, out Uri? uri))
         {
             if (uri.Host.Equals("www.youtube.com", StringComparison.OrdinalIgnoreCase)
                 || uri.Host.Equals("youtube.com", StringComparison.OrdinalIgnoreCase))
