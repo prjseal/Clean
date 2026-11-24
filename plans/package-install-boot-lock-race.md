@@ -342,3 +342,31 @@ routing becomes ready instead of before it, so for that second the site has no p
 
 Still open: the Umbraco bug itself (file the issue draft), since any other package that publishes
 content in a migration handler can still hit it.
+
+### Step 4: Umbraco 19.0.0-rc2 (2026-11-24)
+
+Umbraco 19.0.0-rc2 includes [#24603](https://github.com/umbraco/Umbraco-CMS/pull/24603), which makes
+`DocumentUrlService` and `DocumentUrlAliasService` take their write locks before they read during
+the rebuild. To see whether that fixes the race without Clean's workaround, the loop was run on two
+throwaway builds of the `Clean` package with the deferral removed from
+`PostMigrationNotificationHandler`, so the content is published inside the migration handler as it
+was before step 3. The two builds were the same except for the Umbraco version: `19.0.0-rc90` was
+built on Umbraco 19.0.0-rc1 and `19.0.0-rc91` on 19.0.0-rc2. Neither was committed.
+
+Both loops ran on Linux (the cloud container) under the same disk load, copying the
+`umbraco.cms.staticassets/19.0.0-rc2` folder three times during each boot. The script was a copy
+with `taskkill` replaced by `pkill`.
+
+| Loop (workaround removed, disk load during boot) | Runs | Failures |
+|---|---|---|
+| Control: Umbraco 19.0.0-rc1 | 30 | 6 (runs 2, 6, 17, 20, 28, 29), all "Failed to acquire write lock for id: -348" |
+| Umbraco 19.0.0-rc2 | 30 | 0 |
+
+The control run shows the loop still catches the race on this machine, at about 1 boot in 5, the
+same rate as on Windows. On rc2 every run published 17 pages, with no `Error` level log entries.
+The rc2 timelines show the rebuild taking its write lock (-345, then -348 for the aliases) as soon
+as it starts, and the whole rebuild finishes in about 40 ms.
+
+Conclusion: Umbraco 19.0.0-rc2 fixes the race. Clean's deferred publishing is no longer needed on
+rc2. It is still in place: removing it is a separate change, which needs both install tests run
+again.
