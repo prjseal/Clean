@@ -368,5 +368,21 @@ The rc2 timelines show the rebuild taking its write lock (-345, then -348 for th
 as it starts, and the whole rebuild finishes in about 40 ms.
 
 Conclusion: Umbraco 19.0.0-rc2 fixes the race. Clean's deferred publishing is no longer needed on
-rc2. It is still in place: removing it is a separate change, which needs both install tests run
-again.
+rc2.
+
+### Step 5: Workaround removed (2026-11-24)
+
+The step 3 change was taken out of `template/Clean/Migrations/PostMigrationNotification.cs`: the
+pending flag, the `IRuntimeState` check and the `UmbracoApplicationStartedNotification` handler,
+and its registration in `template/Clean/CleanComposer.cs`. The handler publishes straight away in
+`MigrationPlansExecutedNotification` again, as it did before step 3. It is the same code as the
+rc91 build in step 4, which had 0 failures in 30 runs.
+
+The dictionary cache clear (`plans/package-install-dictionary-cache-workaround.md`) now runs in the
+migration handler too, rather than once Umbraco has started. Both install tests check that the
+contact page's Send button has its dictionary text, and both passed.
+
+Both install tests passed on Linux with Umbraco 19.0.0-rc2 (package built as 19.0.0-rc05, not
+committed): exit code 0 and 26 screenshots each. The package install published 8 elements
+(`Success`) and 17 pages (`SuccessPublish`). The only `Error` log entry in each was the backoffice
+news dashboard, whose host the sandbox blocks.
